@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סיכום מוצרים ואירועים - הפרתיה</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+
+        .logo {
+            width: 65px;
+            height: 65px;
+        }
+
+        .header-text h1 {
+            font-size: 24px;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        /* בקרות מעוצבות */
+        .controls-section {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .mode-selector {
+            display: flex;
+            gap: 0;
+            margin-bottom: 25px;
+            background: white;
+            border-radius: 15px;
+            padding: 6px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .mode-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #6c757d;
+            text-align: center;
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(135deg, #E67E22, #D35400);
+            color: white;
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .date-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-group label {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .input-group input,
+        .input-group select {
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: white;
+        }
+        
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #E67E22;
+            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
+        }
+        
+        .generate-btn {
+            background: linear-gradient(135deg, #E67E22, #D35400);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+        }
+        
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(230, 126, 34, 0.4);
+        }
+        
+        .generate-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* תוצאות */
+        .results-section {
+            display: none;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #E67E22;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .stat-number.negative {
+            color: #dc3545;
+        }
+        
+        .stat-number.positive {
+            color: #28a745;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* סטטיסטיקת זיכויים חדשה */
+        .stat-card.credits-card {
+            background: linear-gradient(135deg, #fff5f5, #ffe0e0);
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+        
+        .stat-card.credits-card .stat-number {
+            color: #dc3545;
+        }
+        
+        /* גרף */
+        .chart-section {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+            margin-bottom: 40px;
+        }
+        
+        .chart-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .chart-canvas {
+            max-width: 100%;
+            max-height: 500px;
+        }
+        
+        /* טבלה מתקדמת */
+        .table-section {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+        }
+        
+        .table-header {
+            background: linear-gradient(135deg, #E67E22, #D35400);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .table-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .export-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .export-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+        
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .products-table th {
+            background: #f8f9fa;
+            color: #495057;
+            padding: 15px 20px;
+            text-align: right;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .products-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+        
+        .products-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .product-main {
+            font-weight: bold;
+            color: #E67E22;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .product-emoji {
+            font-size: 20px;
+        }
+        
+        .product-details {
+            font-size: 13px;
+            color: #6c757d;
+            margin-right: 30px;
+            line-height: 1.4;
+        }
+        
+        .product-item {
+            margin-bottom: 3px;
+        }
+        
+        /* הבחנה לזיכויים בפירוט */
+        .product-item.credit {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .quantity-cell {
+            font-size: 20px;
+            font-weight: bold;
+            color: #E67E22;
+            text-align: center;
+        }
+        
+        .percentage-cell {
+            color: #6c757d;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .revenue-cell {
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+            text-align: center;
+        }
+        
+        /* מצבי טעינה ושגיאה */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+            font-size: 18px;
+        }
+        
+        .loading::before {
+            content: '';
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top-color: #E67E22;
+            border-radius: 50%;
+            animation: spin 1s ease infinite;
+            margin-left: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 60px;
+            color: #6c757d;
+            font-size: 18px;
+        }
+        
+        .error-message {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 30px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        /* הסתרת שדות */
+        .hidden {
+            display: none;
+        }
+        
+        /* רספונסיביות */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                max-width: none;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px;
+            }
+            
+            .mode-btn {
+                padding: 10px 8px;
+                font-size: 12px;
+            }
+            
+            .date-controls {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            
+            .chart-container {
+                height: 400px;
+            }
+            
+            .products-table {
+                font-size: 14px;
+            }
+            
+            .products-table th,
+            .products-table td {
+                padding: 10px 12px;
+            }
+            
+            .product-main {
+                font-size: 14px;
+            }
+            
+            .quantity-cell {
+                font-size: 16px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .mode-btn {
+                padding: 8px 4px;
+                font-size: 11px;
+            }
+            
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <a href="admin.html">
+                    <img src="logo.png" alt="לוגו הפרתיה" class="logo">
+                </a>
+                <div class="header-text">
+                    <h1>📦 סיכום מוצרים ואירועים</h1>
+                </div>
+            </div>
+            <a href="admin.html" class="back-btn">← חזור לעמוד הראשי</a>
+        </div>
+        
+        <div class="content">
+            <!-- בקרות -->
+            <div class="controls-section">
+                <div class="mode-selector">
+                    <button class="mode-btn active" id="singleEventBtn">🎯 אירוע יחיד</button>
+                    <button class="mode-btn" id="dateRangeBtn">📅 טווח תאריכים</button>
+                    <button class="mode-btn" id="productAnalysisBtn">📈 ניתוח מוצר</button>
+                </div>
+                
+                <div class="date-controls">
+                    <!-- אירוע יחיד -->
+                    <div class="input-group" id="singleDateGroup">
+                        <label for="eventDate">תאריך האירוע:</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    
+                    <!-- טווח תאריכים -->
+                    <div class="input-group hidden" id="fromDateGroup">
+                        <label for="fromDate">מתאריך:</label>
+                        <input type="date" id="fromDate">
+                    </div>
+                    
+                    <div class="input-group hidden" id="toDateGroup">
+                        <label for="toDate">עד תאריך:</label>
+                        <input type="date" id="toDate">
+                    </div>
+                    
+                    <!-- ניתוח מוצר -->
+                    <div class="input-group hidden" id="productSelectGroup">
+                        <label for="productSelect">בחר מוצר:</label>
+                        <select id="productSelect">
+                            <option value="">טוען מוצרים...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group hidden" id="analysisFromDateGroup">
+                        <label for="analysisFromDate">מתאריך:</label>
+                        <input type="date" id="analysisFromDate">
+                    </div>
+                    
+                    <div class="input-group hidden" id="analysisToDateGroup">
+                        <label for="analysisToDate">עד תאריך:</label>
+                        <input type="date" id="analysisToDate">
+                    </div>
+                    
+                    <!-- כפתור -->
+                    <div class="input-group">
+                        <label>&nbsp;</label>
+                        <button id="generateBtn" class="generate-btn">🔍 צור דוח</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- תוצאות -->
+            <div class="results-section" id="resultsSection">
+                <!-- סטטיסטיקות -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalProducts">0</span>
+                        <div class="stat-label">סוגי מוצרים</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalQuantity">0</span>
+                        <div class="stat-label">יחידות שנמכרו (נטו)</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="theoreticalRevenue">₪0</span>
+                        <div class="stat-label">הכנסה תיאורטית</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number positive" id="actualRevenue">₪0</span>
+                        <div class="stat-label">הכנסות בפועל</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number negative" id="totalDiscounts">₪0</span>
+                        <div class="stat-label">הנחות ומבצעים</div>
+                    </div>
+                    <div class="stat-card credits-card">
+                        <span class="stat-number" id="totalCredits">₪0</span>
+                        <div class="stat-label">סה"כ זיכויים</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalEvents">0</span>
+                        <div class="stat-label">אירועים</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="topProduct">-</span>
+                        <div class="stat-label">המוצר הנמכר ביותר</div>
+                    </div>
+                </div>
+                
+                <!-- גרף -->
+                <div class="chart-section">
+                    <div class="chart-title" id="chartTitle">התפלגות מכירות</div>
+                    <div class="chart-container">
+                        <canvas id="salesChart" class="chart-canvas"></canvas>
+                    </div>
+                </div>
+                
+                <!-- טבלה -->
+                <div class="table-section" id="tableSection">
+                    <div class="table-header">
+                        <div class="table-title">פירוט מוצרים</div>
+                        <button id="exportBtn" class="export-btn">📊 יצא לאקסל</button>
+                    </div>
+                    <table class="products-table">
+                        <thead id="tableHead">
+                            <tr>
+                                <th style="width: 300px;">קטגוריית מוצר</th>
+                                <th style="width: 100px;">כמות נטו</th>
+                                <th style="width: 100px;">אחוז</th>
+                                <th style="width: 120px;">הכנסות תיאורטיות</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <!-- הנתונים ייטענו כאן -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="loadingIndicator" class="loading" style="display: none;">
+                טוען ומעבד נתונים...
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js עם תוספות -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="config.js"></script>
+    <script>
+        
+        // משתנים גלובליים
+        let currentData = [];
+        let productsData = {}; // מידע על מוצרים מהשרת
+        let allProductsList = []; // רשימת כל המוצרים לבחירה
+        let salesChart = null;
+        let actualTotalRevenue = 0; // הכנסות ממשיות מהגליון הראשי
+        let totalCreditsAmount = 0; // סכום הזיכויים - חדש!
+        let currentMode = 'single'; // מצב נוכחי: single, range, analysis
+        
+        // הגדרות צבעים
+        const COLORS = [
+            '#E67E22', '#3498DB', '#2ECC71', '#E74C3C', '#9B59B6',
+            '#F1C40F', '#1ABC9C', '#34495E', '#FF6B6B', '#4ECDC4'
+        ];
+        
+        // הגדרות קיבוץ מוצרים
+        const PRODUCT_GROUPS = {
+            'יין': {
+                keywords: ['יין'],
+                name: 'יין (כל הסוגים)',
+                emoji: '🍷',
+                price: 25
+            },
+            'ויסקי': {
+                keywords: ['ויסקי סאוור'],
+                name: 'ויסקי סאוור (כל הסוגים)',
+                emoji: '🥃',
+                price: 30
+            }
+        };
+        
+        // אתחול הדף
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 מתחיל אתחול הדף');
+            
+            // הגדרת תאריך היום
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('eventDate').value = today;
+            document.getElementById('fromDate').value = today;
+            document.getElementById('toDate').value = today;
+            document.getElementById('analysisFromDate').value = today;
+            document.getElementById('analysisToDate').value = today;
+            
+            // הגדרת Event Listeners
+            setupEventListeners();
+            
+            // טעינת מידע מוצרים
+            loadProductsInfo();
+        });
+        
+        // הגדרת Event Listeners
+        function setupEventListeners() {
+            console.log('🔧 מגדיר Event Listeners');
+            
+            document.getElementById('singleEventBtn').addEventListener('click', () => setMode('single'));
+            document.getElementById('dateRangeBtn').addEventListener('click', () => setMode('range'));
+            document.getElementById('productAnalysisBtn').addEventListener('click', () => setMode('analysis'));
+            document.getElementById('generateBtn').addEventListener('click', generateReport);
+            document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+        }
+        
+        // החלפת מצב (אירוע יחיד / טווח / ניתוח מוצר)
+        function setMode(mode) {
+            console.log('📊 מחליף למצב:', mode);
+            currentMode = mode;
+            
+            const singleBtn = document.getElementById('singleEventBtn');
+            const rangeBtn = document.getElementById('dateRangeBtn');
+            const analysisBtn = document.getElementById('productAnalysisBtn');
+            
+            const singleGroup = document.getElementById('singleDateGroup');
+            const fromGroup = document.getElementById('fromDateGroup');
+            const toGroup = document.getElementById('toDateGroup');
+            const productGroup = document.getElementById('productSelectGroup');
+            const analysisFromGroup = document.getElementById('analysisFromDateGroup');
+            const analysisToGroup = document.getElementById('analysisToDateGroup');
+            
+            // איפוס כפתורים
+            [singleBtn, rangeBtn, analysisBtn].forEach(btn => btn.classList.remove('active'));
+            [singleGroup, fromGroup, toGroup, productGroup, analysisFromGroup, analysisToGroup].forEach(group => group.classList.add('hidden'));
+            
+            if (mode === 'single') {
+                singleBtn.classList.add('active');
+                singleGroup.classList.remove('hidden');
+            } else if (mode === 'range') {
+                rangeBtn.classList.add('active');
+                fromGroup.classList.remove('hidden');
+                toGroup.classList.remove('hidden');
+            } else if (mode === 'analysis') {
+                analysisBtn.classList.add('active');
+                productGroup.classList.remove('hidden');
+                analysisFromGroup.classList.remove('hidden');
+                analysisToGroup.classList.remove('hidden');
+            }
+        }
+        
+        // טעינת מידע מוצרים - כולל לא פעילים
+        async function loadProductsInfo() {
+            console.log('📦 מנסה לטעון מידע מוצרים מהשרת (כולל לא פעילים)...');
+            
+            try {
+                const params = new URLSearchParams({ action: 'getAllProductsForReports' });
+                
+                console.log('🔄 שולח בקשה לgetAllProductsForReports...');
+                const response = await fetch(CONFIG.SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params
+                });
+                
+                console.log('📡 תגובת שרת:', response.status, response.ok);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('📋 תוצאה מהשרת:', result);
+                    
+                    if (result.success) {
+                        console.log('✅ התקבלו', result.products.length, 'מוצרים מהשרת');
+                        
+                        allProductsList = [];
+                        result.products.forEach(product => {
+                            productsData[product.name] = {
+                                emoji: product.emoji,
+                                price: product.price,
+                                category: product.category
+                            };
+                            allProductsList.push(product.name);
+                            console.log(`  📝 נטען: ${product.name} - ₪${product.price} (${product.active})`);
+                        });
+                        
+                        // מיון רשימת המוצרים
+                        allProductsList.sort((a, b) => a.localeCompare(b, 'he'));
+                        
+                        // עדכון dropdown המוצרים
+                        updateProductSelect();
+                        
+                        console.log('✅ נטען מידע על', Object.keys(productsData).length, 'מוצרים (כולל לא פעילים)');
+                    } else {
+                        console.error('❌ שרת החזיר שגיאה:', result.message);
+                    }
+                } else {
+                    console.error('❌ שגיאת HTTP:', response.status);
+                }
+            } catch (error) {
+                console.error('❌ שגיאה בטעינת מידע מוצרים:', error);
+            }
+        }
+        
+        // עדכון dropdown בחירת מוצרים
+        function updateProductSelect() {
+            const select = document.getElementById('productSelect');
+            select.innerHTML = '<option value="">בחר מוצר...</option>';
+            
+            allProductsList.forEach(productName => {
+                const option = document.createElement('option');
+                option.value = productName;
+                option.textContent = `${productsData[productName]?.emoji || '🍽️'} ${productName}`;
+                select.appendChild(option);
+            });
+        }
+        
+        // יצירת דוח
+        async function generateReport() {
+            console.log('🔍 מתחיל יצירת דוח...');
+            
+            if (currentMode === 'single') {
+                const eventDate = document.getElementById('eventDate').value;
+                if (!eventDate) {
+                    alert('אנא בחר תאריך אירוע');
+                    return;
+                }
+                await generateSingleEventReport(eventDate);
+            } else if (currentMode === 'range') {
+                const fromDate = document.getElementById('fromDate').value;
+                const toDate = document.getElementById('toDate').value;
+                if (!fromDate || !toDate) {
+                    alert('אנא בחר טווח תאריכים');
+                    return;
+                }
+                if (new Date(fromDate) > new Date(toDate)) {
+                    alert('תאריך ההתחלה צריך להיות לפני תאריך הסיום');
+                    return;
+                }
+                await generateDateRangeReport(fromDate, toDate);
+            } else if (currentMode === 'analysis') {
+                const productName = document.getElementById('productSelect').value;
+                const fromDate = document.getElementById('analysisFromDate').value;
+                const toDate = document.getElementById('analysisToDate').value;
+                if (!productName) {
+                    alert('אנא בחר מוצר לניתוח');
+                    return;
+                }
+                if (!fromDate || !toDate) {
+                    alert('אנא בחר טווח תאריכים');
+                    return;
+                }
+                if (new Date(fromDate) > new Date(toDate)) {
+                    alert('תאריך ההתחלה צריך להיות לפני תאריך הסיום');
+                    return;
+                }
+                await generateProductAnalysisReport(productName, fromDate, toDate);
+            }
+        }
+        
+        // דוח אירוע יחיד
+        async function generateSingleEventReport(eventDate) {
+            showLoading(true);
+            
+            try {
+                const orders = await fetchOrdersData(true, eventDate, null, null);
+                currentData = processProductsData(orders);
+                displayResults(orders, true);
+            } catch (error) {
+                console.error('❌ שגיאה ביצירת הדוח:', error);
+                showError('שגיאה בטעינת הנתונים: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // דוח טווח תאריכים
+        async function generateDateRangeReport(fromDate, toDate) {
+            showLoading(true);
+            
+            try {
+                const orders = await fetchOrdersData(false, null, fromDate, toDate);
+                currentData = processProductsData(orders);
+                displayResults(orders, false);
+            } catch (error) {
+                console.error('❌ שגיאה ביצירת הדוח:', error);
+                showError('שגיאה בטעינת הנתונים: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // דוח ניתוח מוצר לאורך זמן
+        async function generateProductAnalysisReport(productName, fromDate, toDate) {
+            showLoading(true);
+            
+            try {
+                const orders = await fetchOrdersData(false, null, fromDate, toDate);
+                
+                // סינון הזמנות שמכילות את המוצר
+                const relevantOrders = orders.filter(order => {
+                    const products = (order.products || '').toLowerCase();
+                    return products.includes(productName.toLowerCase());
+                });
+                
+                console.log(`🔍 נמצאו ${relevantOrders.length} הזמנות עם המוצר ${productName}`);
+                
+                // עיבוד נתונים לפי תאריכים
+                const dateData = processProductByDates(relevantOrders, productName, fromDate, toDate);
+                currentData = dateData;
+                
+                displayProductAnalysisResults(productName, dateData, fromDate, toDate);
+                
+            } catch (error) {
+                console.error('❌ שגיאה ביצירת דוח ניתוח מוצר:', error);
+                showError('שגיאה בטעינת הנתונים: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // עיבוד נתוני מוצר לפי תאריכים
+        function processProductByDates(orders, productName, fromDate, toDate) {
+            const dateMap = {};
+            const productInfo = productsData[productName];
+            
+            // יצירת כל התאריכים בטווח
+            const start = new Date(fromDate);
+            const end = new Date(toDate);
+            const current = new Date(start);
+            
+            while (current <= end) {
+                const dateStr = current.toISOString().split('T')[0];
+                dateMap[dateStr] = {
+                    date: dateStr,
+                    dateFormatted: current.toLocaleDateString('he-IL', { 
+                        day: 'numeric', 
+                        month: 'short',
+                        weekday: 'short' 
+                    }),
+                    quantity: 0,
+                    revenue: 0
+                };
+                current.setDate(current.getDate() + 1);
+            }
+            
+            // מילוי הנתונים מההזמנות
+            orders.forEach(order => {
+                const orderDate = getOrderDateForAnalysis(order.date, order.time);
+                if (!orderDate || !dateMap[orderDate]) return;
+                
+                const products = (order.products || '').split(', ');
+                const isCredit = order.orderType === 'זיכוי';
+                
+                products.forEach(productStr => {
+                    const product = productStr.trim();
+                    
+                    if (product.toLowerCase().includes(productName.toLowerCase())) {
+                        // חילוץ כמות
+                        const quantityMatch = product.match(/^(?:זיכוי:\s*)?(.+?)\s*\((-?\d+)\)$/);
+                        let quantity = 1;
+                        
+                        if (quantityMatch) {
+                            quantity = parseInt(quantityMatch[2]);
+                        }
+                        
+                        // אם זה זיכוי, הופכים לשלילי
+                        if (isCredit) {
+                            quantity = -Math.abs(quantity);
+                        }
+                        
+                        dateMap[orderDate].quantity += quantity;
+                        dateMap[orderDate].revenue += quantity * (productInfo?.price || 0);
+                    }
+                });
+            });
+            
+            // המרה למערך מסודר
+            return Object.values(dateMap).sort((a, b) => a.date.localeCompare(b.date));
+        }
+        
+        // קבלת תאריך הזמנה לניתוח
+        function getOrderDateForAnalysis(dateStr, timeStr) {
+            try {
+                let orderDate;
+                
+                if (dateStr.includes('GMT') || dateStr.includes('00:00:00')) {
+                    orderDate = new Date(dateStr);
+                } else if (dateStr.includes('/')) {
+                    const [day, month, year] = dateStr.split('/').map(Number);
+                    orderDate = new Date(year, month - 1, day);
+                } else {
+                    return null;
+                }
+                
+                // טיפול בהזמנות לילה (עד 6:00)
+                if (timeStr) {
+                    const timeMatch = timeStr.toString().match(/(\d{1,2}):(\d{2})/);
+                    if (timeMatch) {
+                        const hour = parseInt(timeMatch[1]);
+                        if (hour >= 0 && hour < 6) {
+                            orderDate.setDate(orderDate.getDate() - 1);
+                        }
+                    }
+                }
+                
+                return orderDate.toISOString().split('T')[0];
+            } catch (error) {
+                console.error('שגיאה בפרסור תאריך:', error);
+                return null;
+            }
+        }
+        
+        // שליפת נתוני הזמנות - תמיד מהגיליון הראשי עם סינון בדיקות
+        async function fetchOrdersData(isSingleMode, eventDate, fromDate, toDate) {
+            console.log('🌐 שואב את כל הנתונים מהשרת (עם סינון בדיקות)...');
+            
+            const params = new URLSearchParams({
+                action: 'getRecentOrdersFromMain',
+                limit: 10000
+            });
+            
+            const response = await fetch(CONFIG.SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params
+            });
+            
+            if (!response.ok) {
+                throw new Error(`שגיאת שרת ${response.status}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.message || 'שגיאה לא ידועה');
+            }
+            
+            let orders = result.orders || [];
+            console.log('📦 התקבלו', orders.length, 'הזמנות גולמיות');
+            
+            // סינון 1: הזמנות בדיקה
+            orders = orders.filter(order => {
+                const customerName = (order.customerName || '').trim().toLowerCase();
+                const isTestOrder = customerName.includes('בדיק');
+                if (isTestOrder) {
+                    console.log('🚫 מסנן הזמנת בדיקה:', customerName);
+                }
+                return !isTestOrder;
+            });
+            console.log('✅ אחרי סינון בדיקות:', orders.length, 'הזמנות');
+            
+            // סינון 2: תאריכים
+            if (isSingleMode && eventDate) {
+                orders = filterByEventDate(orders, eventDate);
+            } else if (!isSingleMode && fromDate && toDate) {
+                orders = filterByDateRange(orders, fromDate, toDate);
+            }
+            
+            console.log('🎉 הזמנות סופיות:', orders.length);
+            return orders;
+        }
+        
+        // פילטור לפי אירוע יחיד (כולל הזמנות לילה)
+        function filterByEventDate(orders, targetDate) {
+            const [targetYear, targetMonth, targetDay] = targetDate.split('-').map(Number);
+            const targetDateObj = new Date(targetYear, targetMonth - 1, targetDay);
+            
+            const nextDay = new Date(targetDateObj);
+            nextDay.setDate(nextDay.getDate() + 1);
+            
+            const targetDateStr = `${targetDay.toString().padStart(2, '0')}/${targetMonth.toString().padStart(2, '0')}/${targetYear}`;
+            const nextDayStr = `${nextDay.getDate().toString().padStart(2, '0')}/${(nextDay.getMonth() + 1).toString().padStart(2, '0')}/${nextDay.getFullYear()}`;
+            
+            return orders.filter(order => {
+                const orderDateStr = order.date;
+                const orderTime = order.time;
+                
+                if (!orderDateStr || !orderTime) return false;
+                
+                let orderDateFormatted;
+                
+                if (orderDateStr.includes('GMT') || orderDateStr.includes('00:00:00')) {
+                    const orderDate = new Date(orderDateStr);
+                    const day = orderDate.getDate().toString().padStart(2, '0');
+                    const month = (orderDate.getMonth() + 1).toString().padStart(2, '0');
+                    const year = orderDate.getFullYear();
+                    orderDateFormatted = `${day}/${month}/${year}`;
+                } else if (orderDateStr.includes('/')) {
+                    orderDateFormatted = orderDateStr;
+                } else {
+                    return false;
+                }
+                
+                // הזמנות מהתאריך הראשי
+                if (orderDateFormatted === targetDateStr) {
+                    return true;
+                }
+                
+                // הזמנות לילה מהיום שאחרי
+                if (orderDateFormatted === nextDayStr) {
+                    const timeMatch = orderTime.toString().match(/(\d{1,2}):(\d{2})/);
+                    if (timeMatch) {
+                        const hour = parseInt(timeMatch[1]);
+                        if (hour >= 0 && hour < 6) {
+                            return true;
+                        }
+                    }
+                }
+                
+                return false;
+            });
+        }
+        
+        // פילטור לפי טווח תאריכים
+        function filterByDateRange(orders, fromDate, toDate) {
+            const fromDateObj = new Date(fromDate);
+            const toDateObj = new Date(toDate);
+            
+            return orders.filter(order => {
+                try {
+                    const orderDateStr = order.date || '';
+                    if (!orderDateStr) return false;
+                    
+                    let orderDate;
+                    
+                    if (orderDateStr.includes('GMT') || orderDateStr.includes('00:00:00')) {
+                        orderDate = new Date(orderDateStr);
+                    } else if (orderDateStr.includes('/')) {
+                        const dateParts = orderDateStr.split('/');
+                        if (dateParts.length !== 3) return false;
+                        const [day, month, year] = dateParts.map(Number);
+                        orderDate = new Date(year, month - 1, day);
+                    } else {
+                        return false;
+                    }
+                    
+                    if (isNaN(orderDate.getTime())) return false;
+                    
+                    return orderDate >= fromDateObj && orderDate <= toDateObj;
+                } catch (e) {
+                    return false;
+                }
+            });
+        }
+        
+        // עיבוד נתוני מוצרים - עם חישוב נכון של הכנסות ממשיות והנחות + זיכויים
+        function processProductsData(orders) {
+            console.log('⚙️ מתחיל עיבוד נתוני מוצרים עם טיפול בזיכויים...');
+            
+            const productCounts = {};
+            const productDetails = {};
+            const creditDetails = {}; // פירוט זיכויים לכל מוצר - חדש!
+            
+            // חישוב הכנסות ממשיות וזיכויים
+            actualTotalRevenue = 0;
+            totalCreditsAmount = 0;
+            
+            orders.forEach(order => {
+                const total = parseInt(order.total) || 0;
+                const isCredit = order.orderType === 'זיכוי';
+                
+                if (isCredit) {
+                    totalCreditsAmount += Math.abs(total);
+                } else {
+                    actualTotalRevenue += total;
+                }
+            });
+            
+            console.log('💰 סה"כ הכנסות ממשיות:', actualTotalRevenue, '₪');
+            console.log('💳 סה"כ זיכויים:', totalCreditsAmount, '₪');
+            
+            orders.forEach(order => {
+                const products = (order.products || '').split(', ');
+                const isCredit = order.orderType === 'זיכוי';
+                
+                products.forEach(productStr => {
+                    const product = productStr.trim();
+                    
+                    // דילוג על פריטים שאינם מוצרים פיזיים
+                    if (!product || product.includes('₪') || product.includes('טיפ') || 
+                        product.toLowerCase().includes('הנחה') || product.toLowerCase().includes('סכום חופשי')) {
+                        return;
+                    }
+                    
+                    // ניקוי "זיכוי:" מתחילת השם
+                    let cleanProduct = product.replace(/^זיכוי:\s*/i, '');
+                    
+                    // חילוץ כמות
+                    const quantityMatch = cleanProduct.match(/^(.+?)\s*\((-?\d+)\)$/);
+                    let productName, quantity;
+                    
+                    if (quantityMatch) {
+                        productName = quantityMatch[1].trim();
+                        quantity = parseInt(quantityMatch[2]);
+                    } else {
+                        productName = cleanProduct;
+                        quantity = 1;
+                    }
+                    
+                    // קיבוץ מוצרים
+                    const groupInfo = getProductGroup(productName);
+                    const groupName = groupInfo.name;
+                    
+                    // אם זה זיכוי - כמות שלילית
+                    if (isCredit) {
+                        quantity = -Math.abs(quantity);
+                        
+                        // שמירת פירוט זיכויים
+                        if (!creditDetails[groupName]) {
+                            creditDetails[groupName] = {};
+                        }
+                        creditDetails[groupName][productName] = (creditDetails[groupName][productName] || 0) + Math.abs(quantity);
+                    }
+                    
+                    // עדכון כמויות כלליות (חיובי או שלילי)
+                    productCounts[groupName] = (productCounts[groupName] || 0) + quantity;
+                    
+                    // עדכון פירוט (רק מכירות רגילות)
+                    if (!isCredit) {
+                        if (!productDetails[groupName]) {
+                            productDetails[groupName] = {};
+                        }
+                        productDetails[groupName][productName] = (productDetails[groupName][productName] || 0) + quantity;
+                    }
+                });
+            });
+            
+            // המרה למערך מסודר עם הכנסות תיאורטיות
+            const productsArray = Object.entries(productCounts)
+                .filter(([groupName, totalCount]) => totalCount !== 0) // מסנן מוצרים עם כמות 0
+                .map(([groupName, totalCount]) => {
+                    const groupInfo = getProductGroupByName(groupName);
+                    const theoreticalRevenue = Math.max(0, totalCount * groupInfo.price); // רק על כמות חיובית
+                    
+                    return {
+                        name: groupName,
+                        quantity: totalCount, // יכול להיות שלילי אם יותר זיכויים ממכירות
+                        theoreticalRevenue: theoreticalRevenue,
+                        emoji: groupInfo.emoji,
+                        price: groupInfo.price,
+                        details: productDetails[groupName] || {},
+                        creditDetails: creditDetails[groupName] || {} // פירוט זיכויים - חדש!
+                    };
+                });
+            
+            // מיון לפי כמות (יורד) - כמות נטו
+            return productsArray.sort((a, b) => b.quantity - a.quantity);
+        }
+        
+        // קביעת קבוצת מוצר
+        function getProductGroup(productName) {
+            const nameLower = productName.toLowerCase();
+            
+            // חיפוש בקבוצות מוגדרות
+            for (const [key, group] of Object.entries(PRODUCT_GROUPS)) {
+                for (const keyword of group.keywords) {
+                    if (nameLower.includes(keyword.toLowerCase())) {
+                        return group;
+                    }
+                }
+            }
+            
+            // מוצר יחיד
+            const productInfo = productsData[productName];
+            
+            return {
+                name: productName,
+                emoji: productInfo?.emoji || '🍽️',
+                price: productInfo?.price || 0
+            };
+        }
+        
+        // קבלת מידע קבוצה לפי שם
+        function getProductGroupByName(groupName) {
+            // חיפוש בקבוצות מוגדרות
+            for (const group of Object.values(PRODUCT_GROUPS)) {
+                if (group.name === groupName) {
+                    return group;
+                }
+            }
+            
+            // מוצר יחיד
+            const productInfo = productsData[groupName];
+            return {
+                name: groupName,
+                emoji: productInfo?.emoji || '🍽️',
+                price: productInfo?.price || 0
+            };
+        }
+        
+        // ספירת אירועים ייחודיים
+        function countUniqueEvents(orders) {
+            const uniqueEventDates = new Set();
+            
+            orders.forEach(order => {
+                if (!order.date || !order.time) return;
+                
+                const eventDate = getCorrectEventDate(order.date, order.time);
+                uniqueEventDates.add(eventDate);
+            });
+            
+            return uniqueEventDates.size;
+        }
+        
+        // קביעת התאריך הנכון של האירוע
+        function getCorrectEventDate(dateStr, timeStr) {
+            try {
+                let orderDate;
+                let orderDateFormatted;
+                
+                if (dateStr.includes('GMT') || dateStr.includes('00:00:00')) {
+                    orderDate = new Date(dateStr);
+                    const day = orderDate.getDate().toString().padStart(2, '0');
+                    const month = (orderDate.getMonth() + 1).toString().padStart(2, '0');
+                    const year = orderDate.getFullYear();
+                    orderDateFormatted = `${day}/${month}/${year}`;
+                } else if (dateStr.includes('/')) {
+                    orderDateFormatted = dateStr;
+                    const [day, month, year] = dateStr.split('/').map(Number);
+                    orderDate = new Date(year, month - 1, day);
+                } else {
+                    return dateStr;
+                }
+                
+                const timeMatch = timeStr.toString().match(/(\d{1,2}):(\d{2})/);
+                if (!timeMatch) {
+                    return orderDateFormatted;
+                }
+                
+                const hour = parseInt(timeMatch[1]);
+                
+                if (hour >= 0 && hour < 6) {
+                    orderDate.setDate(orderDate.getDate() - 1);
+                    const correctedDate = `${orderDate.getDate().toString().padStart(2, '0')}/${(orderDate.getMonth() + 1).toString().padStart(2, '0')}/${orderDate.getFullYear()}`;
+                    return correctedDate;
+                }
+                
+                return orderDateFormatted;
+                
+            } catch (error) {
+                console.error('שגיאה בקביעת תאריך אירוע:', error);
+                return dateStr;
+            }
+        }
+        
+        // הצגת תוצאות רגילות (אירוע/טווח)
+        function displayResults(orders, isSingleMode) {
+            console.log('📊 מציג תוצאות...');
+            
+            // הצגת סטטיסטיקות רגילות
+            document.getElementById('statsGrid').style.display = 'grid';
+            updateStatistics(orders, isSingleMode);
+            updateChart();
+            updateTable();
+            
+            // עדכון כותרות
+            document.getElementById('chartTitle').textContent = 'התפלגות מכירות (נטו)';
+            document.getElementById('tableSection').style.display = 'block';
+            
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+        
+        // הצגת תוצאות ניתוח מוצר
+        function displayProductAnalysisResults(productName, dateData, fromDate, toDate) {
+            console.log('📈 מציג תוצאות ניתוח מוצר...');
+            
+            // הסתרת סטטיסטיקות רגילות
+            document.getElementById('statsGrid').style.display = 'none';
+            document.getElementById('tableSection').style.display = 'none';
+            
+            // עדכון כותרת גרף
+            const productInfo = productsData[productName];
+            const emoji = productInfo?.emoji || '🍽️';
+            document.getElementById('chartTitle').textContent = `${emoji} ניתוח מכירות: ${productName}`;
+            
+            // יצירת גרף קו
+            updateProductAnalysisChart(dateData);
+            
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+        
+        // עדכון סטטיסטיקות - עם תמיכה בזיכויים
+        function updateStatistics(orders, isSingleMode) {
+            const totalProducts = currentData.length;
+            const totalQuantity = currentData.reduce((sum, item) => sum + item.quantity, 0); // יכול להיות שלילי!
+            const theoreticalRevenue = currentData.reduce((sum, item) => sum + item.theoreticalRevenue, 0);
+            const totalDiscounts = Math.max(0, theoreticalRevenue - actualTotalRevenue - totalCreditsAmount);
+            const topProduct = currentData.length > 0 && currentData[0].quantity > 0 ? currentData[0].name : '-';
+            const totalEvents = isSingleMode ? 1 : countUniqueEvents(orders);
+            
+            document.getElementById('totalProducts').textContent = totalProducts;
+            document.getElementById('totalQuantity').textContent = totalQuantity;
+            document.getElementById('theoreticalRevenue').textContent = `₪${theoreticalRevenue.toLocaleString()}`;
+            document.getElementById('actualRevenue').textContent = `₪${actualTotalRevenue.toLocaleString()}`;
+            document.getElementById('totalDiscounts').textContent = `₪${totalDiscounts.toLocaleString()}`;
+            document.getElementById('totalCredits').textContent = `₪${totalCreditsAmount.toLocaleString()}`; // חדש!
+            document.getElementById('topProduct').textContent = topProduct;
+            document.getElementById('totalEvents').textContent = totalEvents;
+        }
+        
+        // עדכון גרף עוגה עם תוויות חיצוניות
+        function updateChart() {
+            console.log('🍰 מעדכן גרף עוגה עם תוויות חיצוניות...');
+            
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            
+            if (salesChart) {
+                salesChart.destroy();
+            }
+            
+            if (currentData.length === 0) {
+                return;
+            }
+            
+            // מסנן רק מוצרים עם כמות חיובית לגרף
+            const positiveData = currentData.filter(item => item.quantity > 0);
+            
+            if (positiveData.length === 0) {
+                // אין מכירות חיוביות להציג
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#666';
+                ctx.fillText('אין מכירות להצגה (רק זיכויים)', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            const totalQuantity = positiveData.reduce((sum, item) => sum + item.quantity, 0);
+            
+            salesChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: positiveData.map(item => item.name),
+                    datasets: [{
+                        data: positiveData.map(item => item.quantity),
+                        backgroundColor: COLORS.slice(0, positiveData.length),
+                        borderWidth: 3,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        return data.labels.map((label, i) => {
+                                            const value = data.datasets[0].data[i];
+                                            const percentage = ((value / totalQuantity) * 100).toFixed(1);
+                                            return {
+                                                text: `${label}: ${value} (${percentage}%)`,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                strokeStyle: data.datasets[0].backgroundColor[i],
+                                                lineWidth: 2,
+                                                hidden: false,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const quantity = context.parsed;
+                                    const percentage = ((quantity / totalQuantity) * 100).toFixed(1);
+                                    return `${context.label}: ${quantity} יחידות (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: 40
+                    }
+                }
+            });
+            
+            console.log('✅ גרף עוגה עם תוויות חיצוניות נוצר');
+        }
+        
+        // עדכון גרף ניתוח מוצר (גרף קו)
+        function updateProductAnalysisChart(dateData) {
+            console.log('📈 מעדכן גרף ניתוח מוצר...');
+            
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            
+            if (salesChart) {
+                salesChart.destroy();
+            }
+            
+            if (dateData.length === 0) {
+                return;
+            }
+            
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dateData.map(item => item.dateFormatted),
+                    datasets: [{
+                        label: 'כמות נמכרה (נטו)',
+                        data: dateData.map(item => item.quantity),
+                        borderColor: '#E67E22',
+                        backgroundColor: 'rgba(230, 126, 34, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#E67E22',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    const index = context[0].dataIndex;
+                                    return dateData[index].dateFormatted;
+                                },
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    const quantity = dateData[index].quantity;
+                                    const revenue = dateData[index].revenue;
+                                    return [
+                                        `כמות: ${quantity} יחידות`,
+                                        `הכנסה: ₪${revenue}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'כמות נמכרה (נטו)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'תאריך'
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: 20
+                    }
+                }
+            });
+            
+            console.log('✅ גרף ניתוח מוצר נוצר');
+        }
+        
+        // עדכון טבלה עם פירוט וזיכויים
+        function updateTable() {
+            console.log('📋 מעדכן טבלה...');
+            
+            const tbody = document.getElementById('productsTableBody');
+            
+            if (currentData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="no-data">
+                            אין נתונים להצגה
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const totalPositiveQuantity = currentData.reduce((sum, item) => sum + Math.max(0, item.quantity), 0);
+            
+            tbody.innerHTML = currentData.map(item => {
+                const percentage = totalPositiveQuantity > 0 && item.quantity > 0 ? 
+                    ((item.quantity / totalPositiveQuantity) * 100).toFixed(1) : 0;
+                
+                // יצירת פירוט מכירות
+                const salesDetailsHtml = Object.entries(item.details)
+                    .map(([productName, count]) => `<div class="product-item">• ${productName}: ${count} יחידות</div>`)
+                    .join('');
+                
+                // יצירת פירוט זיכויים
+                const creditDetailsHtml = Object.entries(item.creditDetails)
+                    .map(([productName, count]) => `<div class="product-item credit">• זיכוי: ${productName}: -${count} יחידות</div>`)
+                    .join('');
+                
+                const allDetailsHtml = salesDetailsHtml + creditDetailsHtml;
+                
+                // צביעת כמות שלילית
+                const quantityClass = item.quantity < 0 ? 'negative' : '';
+                const quantityDisplay = item.quantity < 0 ? 
+                    `<span style="color: #dc3545;">${item.quantity}</span>` :
+                    item.quantity;
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="product-main">
+                                <span class="product-emoji">${item.emoji}</span>
+                                ${item.name}
+                            </div>
+                            ${allDetailsHtml ? `<div class="product-details">${allDetailsHtml}</div>` : ''}
+                        </td>
+                        <td class="quantity-cell ${quantityClass}">${quantityDisplay}</td>
+                        <td class="percentage-cell">${percentage}%</td>
+                        <td class="revenue-cell">₪${item.theoreticalRevenue.toLocaleString()}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // יצוא לאקסל
+        function exportToExcel() {
+            if (currentData.length === 0) {
+                alert('אין נתונים ליצוא');
+                return;
+            }
+            
+            // יצירת נתוני יצוא בהתאם למצב
+            let exportData, fileName;
+            
+            if (currentMode === 'analysis') {
+                // יצוא נתוני ניתוח מוצר
+                const productName = document.getElementById('productSelect').value;
+                const fromDate = document.getElementById('analysisFromDate').value;
+                const toDate = document.getElementById('analysisToDate').value;
+                
+                exportData = currentData.map(item => ({
+                    'תאריך': item.dateFormatted,
+                    'כמות נמכרה': item.quantity,
+                    'הכנסות': item.revenue
+                }));
+                
+                fileName = `פרתיה_ניתוח_${productName}_${fromDate}_עד_${toDate}.xlsx`;
+            } else {
+                // יצוא נתוני מוצרים רגיל
+                const totalPositiveQuantity = currentData.reduce((sum, item) => sum + Math.max(0, item.quantity), 0);
+                const theoreticalRevenue = currentData.reduce((sum, item) => sum + item.theoreticalRevenue, 0);
+                const totalDiscounts = Math.max(0, theoreticalRevenue - actualTotalRevenue - totalCreditsAmount);
+                
+                const summaryData = [
+                    { 'סטטיסטיקה': 'הכנסה תיאורטית', 'ערך': `₪${theoreticalRevenue.toLocaleString()}` },
+                    { 'סטטיסטיקה': 'הכנסות בפועל', 'ערך': `₪${actualTotalRevenue.toLocaleString()}` },
+                    { 'סטטיסטיקה': 'סה"כ זיכויים', 'ערך': `₪${totalCreditsAmount.toLocaleString()}` },
+                    { 'סטטיסטיקה': 'הנחות ומבצעים', 'ערך': `₪${totalDiscounts.toLocaleString()}` },
+                    { 'סטטיסטיקה': 'יחידות שנמכרו (נטו)', 'ערך': totalPositiveQuantity.toLocaleString() }
+                ];
+                
+                exportData = currentData.map(item => {
+                    const percentage = totalPositiveQuantity > 0 && item.quantity > 0 ? 
+                        ((item.quantity / totalPositiveQuantity) * 100).toFixed(1) : 0;
+                    
+                    const salesDetails = Object.entries(item.details)
+                        .map(([name, count]) => `${name}: ${count}`)
+                        .join('; ');
+                    
+                    const creditDetails = Object.entries(item.creditDetails)
+                        .map(([name, count]) => `זיכוי ${name}: -${count}`)
+                        .join('; ');
+                    
+                    const allDetails = [salesDetails, creditDetails].filter(d => d).join('; ');
+                    
+                    return {
+                        'קטגוריה': item.name,
+                        'פירוט': allDetails || item.name,
+                        'כמות נטו': item.quantity,
+                        'אחוז': `${percentage}%`,
+                        'הכנסות תיאורטיות': item.theoreticalRevenue,
+                        'מחיר ממוצע': item.price
+                    };
+                });
+                
+                const wb = XLSX.utils.book_new();
+                const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+                XLSX.utils.book_append_sheet(wb, wsSummary, 'סיכום');
+                
+                const wsProducts = XLSX.utils.json_to_sheet(exportData);
+                XLSX.utils.book_append_sheet(wb, wsProducts, 'מוצרים');
+                
+                [wsSummary, wsProducts].forEach(ws => {
+                    if (!ws['!worksheetOptions']) ws['!worksheetOptions'] = {};
+                    ws['!worksheetOptions']['rightToLeft'] = true;
+                });
+                
+                if (currentMode === 'single') {
+                    const eventDate = document.getElementById('eventDate').value;
+                    fileName = `פרתיה_מוצרים_אירוע_${eventDate}.xlsx`;
+                } else {
+                    const fromDate = document.getElementById('fromDate').value;
+                    const toDate = document.getElementById('toDate').value;
+                    fileName = `פרתיה_מוצרים_${fromDate}_עד_${toDate}.xlsx`;
+                }
+                
+                XLSX.writeFile(wb, fileName);
+                return;
+            }
+            
+            // יצוא פשוט לניתוח מוצר
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            if (!ws['!worksheetOptions']) ws['!worksheetOptions'] = {};
+            ws['!worksheetOptions']['rightToLeft'] = true;
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'ניתוח מוצר');
+            XLSX.writeFile(wb, fileName);
+        }
+        
+        // פונקציות עזר
+        function showLoading(show) {
+            const loading = document.getElementById('loadingIndicator');
+            const results = document.getElementById('resultsSection');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            if (show) {
+                loading.style.display = 'block';
+                results.style.display = 'none';
+                generateBtn.disabled = true;
+            } else {
+                loading.style.display = 'none';
+                generateBtn.disabled = false;
+            }
+        }
+        
+        function showError(message) {
+            const results = document.getElementById('resultsSection');
+            results.innerHTML = `<div class="error-message">${message}</div>`;
+            results.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

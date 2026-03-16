@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סיכום הוצאות לתושב - הפרתיה</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+        }
+
+        .header-text h1 {
+            font-size: 22px;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .content {
+            padding: 30px 40px;
+        }
+        
+        .controls {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .mode-selector {
+            display: flex;
+            gap: 0;
+            margin-bottom: 25px;
+            background: white;
+            border-radius: 15px;
+            padding: 6px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            justify-content: center;
+            max-width: 400px;
+            margin: 0 auto 25px auto;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #6c757d;
+        }
+        
+        .mode-btn.active {
+            background: linear-gradient(135deg, #E67E22, #D35400);
+            color: white;
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .controls-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+        
+        .date-range-group {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        
+        .form-group label {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #E67E22;
+        }
+        
+        .generate-btn {
+            background: linear-gradient(135deg, #E67E22, #D35400);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            height: fit-content;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(230, 126, 34, 0.3);
+        }
+        
+        .generate-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .toggle-detail {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s;
+        }
+        
+        .toggle-detail:hover {
+            background: #138496;
+        }
+        
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s;
+        }
+        
+        .export-btn:hover {
+            background: #218838;
+        }
+        
+        .export-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .results-section {
+            display: none;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #dee2e6;
+        }
+        
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #E67E22;
+            margin-bottom: 5px;
+        }
+        
+        /* סטטיסטיקת זיכויים חדשה */
+        .stat-card.credits-card {
+            background: linear-gradient(135deg, #fff5f5, #ffe0e0);
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+        
+        .stat-card.credits-card .stat-number {
+            color: #dc3545;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 1px solid #e9ecef;
+        }
+        
+        .expenses-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .expenses-table th {
+            background: linear-gradient(135deg, #E67E22, #D35400);
+            color: white;
+            padding: 15px 12px;
+            text-align: right;
+            font-weight: bold;
+            font-size: 14px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .expenses-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: top;
+        }
+        
+        .expenses-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .resident-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .residence-type {
+            font-size: 12px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .event-date {
+            font-weight: bold;
+            color: #E67E22;
+            font-size: 14px;
+        }
+        
+        .order-details {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #555;
+        }
+        
+        .order-details.hidden {
+            display: none;
+        }
+        
+        /* עיצוב לזיכויים */
+        .order-type-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .order-type-badge.credit {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+        
+        .order-type-badge.regular {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+        
+        .total-amount {
+            font-weight: bold;
+            color: #E67E22;
+            font-size: 16px;
+        }
+        
+        .total-amount.negative {
+            color: #dc3545;
+        }
+        
+        .total-amount.positive {
+            color: #28a745;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top-color: #E67E22;
+            border-radius: 50%;
+            animation: spin 1s ease infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                max-width: none;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px;
+            }
+            
+            .header-content {
+                order: 2;
+            }
+            
+            .back-btn {
+                order: 1;
+                align-self: flex-start;
+            }
+            
+            .controls-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .date-range-group {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                justify-content: space-between;
+            }
+            
+            .summary-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .expenses-table {
+                font-size: 12px;
+            }
+            
+            .expenses-table th,
+            .expenses-table td {
+                padding: 8px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+             <a href="admin.html">
+    <img src="logo.png" alt="לוגו הפרתיה" class="logo">
+</a>
+                <div class="header-text">
+                    <h1>💰 סיכום הוצאות לתושב</h1>
+                </div>
+            </div>
+            <a href="admin.html" class="back-btn">← חזור לעמוד הראשי</a>
+        </div>
+        
+        <div class="content">
+            <!-- בקרות -->
+            <div class="controls">
+                <!-- בוחר מצב -->
+                <div class="mode-selector">
+                    <button class="mode-btn active" id="singleEventBtn">🎯 אירוע יחיד</button>
+                    <button class="mode-btn" id="dateRangeBtn">📅 טווח תאריכים</button>
+                </div>
+                
+                <div class="controls-row">
+                    <!-- אירוע יחיד -->
+                    <div class="form-group" id="singleDateGroup">
+                        <label for="eventDate">תאריך האירוע:</label>
+                        <input type="date" id="eventDate" required>
+                    </div>
+                    
+                    <!-- טווח תאריכים -->
+                    <div class="date-range-group hidden" id="dateRangeGroup">
+                        <div class="form-group">
+                            <label for="fromDate">מתאריך:</label>
+                            <input type="date" id="fromDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="toDate">עד תאריך:</label>
+                            <input type="date" id="toDate">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="residenceFilter">סוג תושב:</label>
+                        <select id="residenceFilter">
+                            <option value="all">הכל</option>
+                            <option value="nofi_list">תושבי נופי פרת (ברשימה)</option>
+                            <option value="נופי פרת לא ברשימה">תושבי נופי פרת (לא ברשימה)</option>
+                            <option value="כפר אדומים">תושבי כפר אדומים</option>
+                            <option value="אלון">תושבי אלון</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="generateBtn" class="generate-btn">צור דוח</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- תוצאות -->
+            <div class="results-section" id="resultsSection">
+                <!-- סטטיסטיקות -->
+                <div class="summary-stats" id="summaryStats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalResidents">0</div>
+                        <div class="stat-label">תושבים</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalOrders">0</div>
+                        <div class="stat-label">הזמנות</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalRevenue">₪0</div>
+                        <div class="stat-label">סה"כ חיובים</div>
+                    </div>
+                    <div class="stat-card credits-card">
+                        <div class="stat-number" id="totalCredits">₪0</div>
+                        <div class="stat-label">סה"כ זיכויים</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="netTotal">₪0</div>
+                        <div class="stat-label">סה"כ נטו</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="averageSpending">₪0</div>
+                        <div class="stat-label">ממוצע לתושב</div>
+                    </div>
+                </div>
+                
+                <!-- פילטרים וכפתורים -->
+                <div class="filters">
+                    <div class="filter-group">
+                        <button id="toggleDetailBtn" class="toggle-detail">הצג פירוט הזמנות</button>
+                    </div>
+                    <div class="filter-group">
+                        <button id="exportBtn" class="export-btn">📊 יצא לאקסל</button>
+                    </div>
+                </div>
+                
+                <!-- טבלה -->
+                <div class="table-container">
+                    <table class="expenses-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 180px;">שם התושב</th>
+                                <th style="width: 120px;">תאריך אירוע</th>
+                                <th style="width: 250px;">פירוט הזמנות</th>
+                                <th style="width: 100px;">סוג</th>
+                                <th style="width: 100px;">סכום</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expensesTableBody">
+                            <!-- הנתונים ייטענו כאן -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="loadingIndicator" class="loading" style="display: none;">
+                טוען נתונים...
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="config.js"></script>
+    <script>
+        
+        let currentData = [];
+        let showDetails = false;
+        
+        // פונקציה לניקוי תאריך (מועתקת מorders.html)
+        function cleanDate(dateStr) {
+            if (!dateStr) return 'לא צוין';
+            
+            const str = dateStr.toString();
+            
+            // אם יש GMT, זה Date object שהומר למחרוזת
+            if (str.includes('GMT')) {
+                // נחפש דפוס של תאריך בסגנון "Mon Jun 30 2025"
+                const dateMatch = str.match(/(\w{3})\s+(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+                if (dateMatch) {
+                    const [, dayName, month, day, year] = dateMatch;
+                    
+                    // המרת חודש לספרות
+                    const months = {
+                        'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+                        'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+                        'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                    };
+                    
+                    const monthNum = months[month] || month;
+                    return `${day.padStart(2, '0')}/${monthNum}/${year}`;
+                }
+            }
+            
+            // אם זה כבר נראה כמו תאריך רגיל, נחזיר כמו שזה
+            return str;
+        }
+        
+        // פונקציה לניקוי שעה (מועתקת מorders.html)
+        function cleanTime(timeStr) {
+            if (!timeStr) return 'לא צוין';
+            
+            const str = timeStr.toString();
+            
+            // נחפש דפוס של שעה:דקה:שניה
+            const timeMatch = str.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+            if (timeMatch) {
+                return `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+            }
+            
+            // אם זה כבר נראה כמו שעה רגילה, נחזיר כמו שזה
+            return str;
+        }
+        
+        // פונקציה להמרת תאריך לפורמט יפה
+        function formatDateNice(dateStr) {
+            try {
+                const [day, month, year] = dateStr.split('/');
+                const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                return date.toLocaleDateString('he-IL', { 
+                    day: 'numeric', 
+                    month: 'short',
+                    weekday: 'short'
+                });
+            } catch (error) {
+                return dateStr;
+            }
+        }
+        
+        // פונקציה לקביעת התאריך הנכון של האירוע (עם טיפול בהזמנות לילה)
+        function getCorrectEventDate(dateStr, timeStr) {
+            const cleanedDate = cleanDate(dateStr);
+            const cleanedTime = cleanTime(timeStr);
+            
+            console.log('קובע תאריך נכון עבור:', cleanedDate, cleanedTime);
+            
+            try {
+                // פרסור התאריך והשעה
+                const dateMatch = cleanedDate.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+                const timeMatch = cleanedTime.match(/(\d{1,2}):(\d{2})/);
+                
+                if (!dateMatch || !timeMatch) {
+                    console.log('לא הצלחתי לפרסר תאריך/שעה:', cleanedDate, cleanedTime);
+                    return cleanedDate; // מחזיר את התאריך המקורי אם לא הצליח לפרסר
+                }
+                
+                const [, day, month, year] = dateMatch;
+                const [, hour, minute] = timeMatch;
+                
+                const orderHour = parseInt(hour);
+                
+                // אם ההזמנה בין חצות ל-6:00 - נקצה אותה ליום הקודם
+                if (orderHour >= 0 && orderHour < 6) {
+                    console.log('הזמנת לילה - מקצה ליום הקודם');
+                    
+                    // יצירת תאריך וחיסור יום אחד
+                    const orderDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    orderDate.setDate(orderDate.getDate() - 1); // יום אחורה
+                    
+                    // פורמט החזרה
+                    const correctedDate = `${orderDate.getDate().toString().padStart(2, '0')}/${(orderDate.getMonth() + 1).toString().padStart(2, '0')}/${orderDate.getFullYear()}`;
+                    console.log('תאריך מתוקן:', correctedDate);
+                    return correctedDate;
+                }
+                
+                console.log('הזמנה רגילה - משאיר תאריך מקורי:', cleanedDate);
+                return cleanedDate; // הזמנה רגילה - משאיר את התאריך המקורי
+                
+            } catch (error) {
+                console.error('שגיאה בקביעת תאריך נכון:', error);
+                return cleanedDate; // במקרה של שגיאה, מחזיר את התאריך המקורי
+            }
+        }
+        
+        // שליפת נתוני הזמנות - תמיד מהגיליון הראשי עם סינון בדיקות
+        async function fetchOrdersData(isSingleMode, eventDate, fromDate, toDate) {
+            console.log('=== מתחיל fetchOrdersData עם סינון בדיקות וסינון בצד הלקוח ===');
+            if (isSingleMode) {
+                console.log('מצב אירוע יחיד:', eventDate);
+            } else {
+                console.log('טווח תאריכים:', fromDate, 'עד', toDate);
+            }
+            
+            const params = new URLSearchParams({
+                action: 'getRecentOrdersFromMain',
+                limit: 1000  // מביאים יותר הזמנות כי אנחנו מחפשים בטווח רחב יותר
+            });
+            
+            console.log('פרמטרים שנשלחים:', params.toString());
+            
+            try {
+                console.log('שולח בקשת POST לשרת עבור הזמנות מהגיליון הראשי...');
+                const response = await fetch(CONFIG.SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params
+                });
+                
+                console.log('סטטוס תשובה:', response.status);
+                console.log('תשובה OK?', response.ok);
+                
+                if (!response.ok) {
+                    console.error('שגיאה בתשובת השרת:', response.status, response.statusText);
+                    throw new Error(`שגיאה ${response.status}`);
+                }
+                
+                console.log('מקבל תוכן מהשרת...');
+                const resultText = await response.text();
+                console.log('תוכן גולמי מהשרת (אורך):', resultText.length);
+                
+                console.log('מנסה לפרסר JSON...');
+                const jsonResult = JSON.parse(resultText);
+                console.log('JSON מפורסר בהצלחה');
+                
+                if (!jsonResult.success) {
+                    console.error('השרת החזיר שגיאה:', jsonResult.message);
+                    throw new Error(jsonResult.message || 'שגיאה לא ידועה');
+                }
+                
+                const allOrders = jsonResult.orders || [];
+                console.log('מספר הזמנות שהתקבלו מהשרת:', allOrders.length);
+                
+                // סינון 1: הזמנות בדיקה - חדש!
+                console.log('=== מתחיל סינון הזמנות בדיקה ===');
+                const ordersWithoutTests = allOrders.filter(order => {
+                    const customerName = (order.customerName || '').toLowerCase();
+                    const isTestOrder = customerName.includes('בדיק');
+                    if (isTestOrder) {
+                        console.log('🚫 מסנן הזמנת בדיקה:', order.customerName);
+                    }
+                    return !isTestOrder;
+                });
+                console.log('מספר הזמנות אחרי סינון בדיקות:', ordersWithoutTests.length);
+                
+                // סינון 2: הזמנות רלוונטיות לתאריך/טווח
+                console.log('=== מתחיל סינון הזמנות לתאריך/טווח ===');
+                let relevantOrders;
+                if (isSingleMode) {
+                    relevantOrders = filterByEventDate(ordersWithoutTests, eventDate);
+                } else {
+                    relevantOrders = filterByDateRange(ordersWithoutTests, fromDate, toDate);
+                }
+                
+                console.log('מספר הזמנות אחרי סינון תאריך/טווח:', relevantOrders.length);
+                console.log('דוגמה להזמנה רלוונטית:', relevantOrders[0]);
+                
+                return relevantOrders;
+                
+            } catch (error) {
+                console.error('=== שגיאה ב-fetchOrdersData ===');
+                console.error('סוג השגיאה:', error.name);
+                console.error('הודעת השגיאה:', error.message);
+                console.error('מקום השגיאה:', error.stack);
+                throw error;
+            }
+        }
+        
+        // פילטור לפי אירוע יחיד (כולל הזמנות לילה)
+        function filterByEventDate(orders, targetDate) {
+            const [targetYear, targetMonth, targetDay] = targetDate.split('-').map(Number);
+            const targetDateObj = new Date(targetYear, targetMonth - 1, targetDay);
+            
+            // חישוב התאריך שאחרי (לבדיקת הזמנות לילה)
+            const nextDay = new Date(targetDateObj);
+            nextDay.setDate(nextDay.getDate() + 1);
+            
+            const targetDateStr = `${targetDay.toString().padStart(2, '0')}/${targetMonth.toString().padStart(2, '0')}/${targetYear}`;
+            const nextDayStr = `${nextDay.getDate().toString().padStart(2, '0')}/${(nextDay.getMonth() + 1).toString().padStart(2, '0')}/${nextDay.getFullYear()}`;
+            
+            console.log('מחפש הזמנות עבור אירוע:', targetDateStr);
+            console.log('כולל הזמנות לילה מ:', nextDayStr, '(עד 06:00)');
+            
+            return orders.filter(order => {
+                const orderDateStr = order.date;
+                const orderTime = order.time;
+                
+                if (!orderDateStr || !orderTime) return false;
+                
+                let orderDate;
+                let orderDateFormatted;
+                
+                // זיהוי פורמט התאריך
+                if (orderDateStr.includes('GMT') || orderDateStr.includes('00:00:00')) {
+                    // פורמט Date object
+                    orderDate = new Date(orderDateStr);
+                    const day = orderDate.getDate().toString().padStart(2, '0');
+                    const month = (orderDate.getMonth() + 1).toString().padStart(2, '0');
+                    const year = orderDate.getFullYear();
+                    orderDateFormatted = `${day}/${month}/${year}`;
+                } else if (orderDateStr.includes('/')) {
+                    // פורמט DD/MM/YYYY
+                    orderDateFormatted = orderDateStr;
+                    const [day, month, year] = orderDateStr.split('/').map(Number);
+                    orderDate = new Date(year, month - 1, day);
+                } else {
+                    return false;
+                }
+                
+                // הזמנות מהתאריך הראשי
+                if (orderDateFormatted === targetDateStr) {
+                    console.log('הזמנה מהתאריך הרגיל:', order.customerName, orderTime);
+                    return true;
+                }
+                
+                // הזמנות לילה מהיום שאחרי
+                if (orderDateFormatted === nextDayStr) {
+                    const timeMatch = orderTime.toString().match(/(\d{1,2}):(\d{2})/);
+                    if (timeMatch) {
+                        const hour = parseInt(timeMatch[1]);
+                        if (hour >= 0 && hour < 6) {
+                            console.log('הזמנת לילה מהיום שאחרי:', order.customerName, orderTime);
+                            return true;
+                        }
+                    }
+                }
+                
+                return false;
+            });
+        }
+        
+        // פילטור לפי טווח תאריכים - עם טיפול בפורמטים שונים
+        function filterByDateRange(orders, fromDate, toDate) {
+            const fromDateObj = new Date(fromDate);
+            const toDateObj = new Date(toDate);
+            
+            console.log('🔍 מפלטר לטווח:');
+            console.log('   מתאריך:', fromDateObj.toDateString());
+            console.log('   עד תאריך:', toDateObj.toDateString());
+            
+            let matchCount = 0;
+            
+            const filtered = orders.filter(order => {
+                try {
+                    const orderDateStr = order.date || '';
+                    
+                    if (!orderDateStr) {
+                        console.log('⚠️  הזמנה ללא תאריך:', order.customerName);
+                        return false;
+                    }
+                    
+                    let orderDate;
+                    
+                    // זיהוי פורמט התאריך
+                    if (orderDateStr.includes('GMT') || orderDateStr.includes('00:00:00')) {
+                        // פורמט Date object: "Thu Jul 03 2025 00:00:00 GMT+0300"
+                        orderDate = new Date(orderDateStr);
+                        console.log('📅 Date object:', orderDateStr, '→', orderDate.toDateString());
+                    } else if (orderDateStr.includes('/')) {
+                        // פורמט DD/MM/YYYY: "03/07/2025"
+                        const dateParts = orderDateStr.split('/');
+                        if (dateParts.length !== 3) {
+                            console.log('⚠️  פורמט DD/MM/YYYY לא תקין:', orderDateStr);
+                            return false;
+                        }
+                        const [day, month, year] = dateParts.map(Number);
+                        orderDate = new Date(year, month - 1, day);
+                        console.log('📅 DD/MM/YYYY:', orderDateStr, '→', orderDate.toDateString());
+                    } else {
+                        console.log('⚠️  פורמט תאריך לא מוכר:', orderDateStr);
+                        return false;
+                    }
+                    
+                    // בדיקת תקינות התאריך
+                    if (isNaN(orderDate.getTime())) {
+                        console.log('⚠️  תאריך לא תקין:', orderDateStr);
+                        return false;
+                    }
+                    
+                    const isInRange = orderDate >= fromDateObj && orderDate <= toDateObj;
+                    
+                    // דיבוג מפורט
+                    if (matchCount < 10) { // מציג רק 10 הראשונים כדי לא להציף
+                        console.log(`   ${isInRange ? '✅' : '❌'} ${order.customerName}: ${orderDate.toDateString()}`);
+                    }
+                    
+                    if (isInRange) {
+                        matchCount++;
+                    }
+                    
+                    return isInRange;
+                } catch (e) {
+                    console.log('❌ שגיאה בעיבוד תאריך:', e.message, 'עבור הזמנה:', order.customerName);
+                    return false;
+                }
+            });
+            
+            console.log('📊 נמצאו', matchCount, 'הזמנות בטווח');
+            return filtered;
+        }
+        
+        // עיבוד נתוני ההזמנות לפי תאריך - עם תמיכה בזיכויים
+        function processOrdersDataByDate(orders) {
+            const residentsDataByDate = {};
+            
+            orders.forEach(order => {
+                const name = order.customerName || 'לא צוין';
+                const residenceType = order.residenceType || '';
+                const products = order.products || '';
+                const total = parseInt(order.total) || 0;
+                const orderType = order.orderType || 'רגילה'; // חדש!
+                
+                // קביעת התאריך הנכון (עם טיפול בהזמנות לילה)
+                const correctDate = getCorrectEventDate(order.date, order.time);
+                
+                // מפתח ייחודי לכל תושב+תאריך+סוג
+                const key = `${name}|${correctDate}|${orderType}`;
+                
+                if (!residentsDataByDate[key]) {
+                    residentsDataByDate[key] = {
+                        name: name,
+                        residenceType: residenceType,
+                        eventDate: correctDate,
+                        eventDateFormatted: formatDateNice(correctDate),
+                        orderType: orderType, // חדש!
+                        orders: [],
+                        totalAmount: 0
+                    };
+                }
+                
+                residentsDataByDate[key].orders.push({
+                    products: products,
+                    total: total
+                });
+                residentsDataByDate[key].totalAmount += total;
+            });
+            
+            // המרה למערך וסדר לפי שם ואז לפי תאריך
+            return Object.values(residentsDataByDate).sort((a, b) => {
+                if (a.name !== b.name) {
+                    return a.name.localeCompare(b.name, 'he');
+                }
+                if (a.eventDate !== b.eventDate) {
+                    return a.eventDate.localeCompare(b.eventDate);
+                }
+                // מיון זיכויים אחרי הזמנות רגילות
+                if (a.orderType !== b.orderType) {
+                    return a.orderType === 'זיכוי' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        
+        // אתחול הדף
+        document.addEventListener('DOMContentLoaded', function() {
+            // הגדרת תאריך היום כברירת מחדל
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            document.getElementById('eventDate').value = todayStr;
+            document.getElementById('fromDate').value = todayStr;
+            document.getElementById('toDate').value = todayStr;
+            
+            // Event listeners
+            document.getElementById('singleEventBtn').addEventListener('click', () => setMode('single'));
+            document.getElementById('dateRangeBtn').addEventListener('click', () => setMode('range'));
+            document.getElementById('generateBtn').addEventListener('click', generateReport);
+            document.getElementById('toggleDetailBtn').addEventListener('click', toggleDetails);
+            document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+            document.getElementById('residenceFilter').addEventListener('change', filterTable);
+        });
+        
+        // החלפת מצב (אירוע יחיד / טווח)
+        function setMode(mode) {
+            console.log('📊 מחליף למצב:', mode);
+            
+            const singleBtn = document.getElementById('singleEventBtn');
+            const rangeBtn = document.getElementById('dateRangeBtn');
+            const singleGroup = document.getElementById('singleDateGroup');
+            const rangeGroup = document.getElementById('dateRangeGroup');
+            
+            if (mode === 'single') {
+                singleBtn.classList.add('active');
+                rangeBtn.classList.remove('active');
+                singleGroup.classList.remove('hidden');
+                rangeGroup.classList.add('hidden');
+            } else {
+                singleBtn.classList.remove('active');
+                rangeBtn.classList.add('active');
+                singleGroup.classList.add('hidden');
+                rangeGroup.classList.remove('hidden');
+            }
+        }
+        
+        // יצירת דוח
+        async function generateReport() {
+            const isSingleMode = document.getElementById('singleEventBtn').classList.contains('active');
+            const eventDate = document.getElementById('eventDate').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            // בדיקות תקינות
+            if (isSingleMode && !eventDate) {
+                alert('אנא בחר תאריך אירוע');
+                return;
+            }
+            
+            if (!isSingleMode && (!fromDate || !toDate)) {
+                alert('אנא בחר טווח תאריכים');
+                return;
+            }
+            
+            if (!isSingleMode && new Date(fromDate) > new Date(toDate)) {
+                alert('תאריך ההתחלה צריך להיות לפני תאריך הסיום');
+                return;
+            }
+            
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultsSection = document.getElementById('resultsSection');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            // הצגת loading
+            loadingIndicator.style.display = 'block';
+            resultsSection.style.display = 'none';
+            generateBtn.disabled = true;
+            
+            try {
+                // שליפת נתונים מהשרת
+                const orders = await fetchOrdersData(isSingleMode, eventDate, fromDate, toDate);
+                
+                // עיבוד הנתונים
+                currentData = processOrdersDataByDate(orders);
+                
+                // הצגת התוצאות
+                displayResults(currentData);
+                
+            } catch (error) {
+                console.error('שגיאה ביצירת הדוח:', error);
+                showError('שגיאה בטעינת הנתונים: ' + error.message);
+            } finally {
+                loadingIndicator.style.display = 'none';
+                generateBtn.disabled = false;
+            }
+        }
+        
+        // הצגת התוצאות - מתוקן
+        function displayResults(data) {
+            updateStatistics(data);
+            updateTable(data);
+            
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+        
+        // עדכון סטטיסטיקות - עם תמיכה בזיכויים
+        function updateStatistics(filteredData) {
+            const uniqueResidents = new Set(filteredData.map(item => item.name)).size;
+            const totalOrders = filteredData.reduce((sum, item) => sum + item.orders.length, 0);
+            
+            // חישוב נפרד לחיובים וזיכויים
+            const totalCharges = filteredData
+                .filter(item => item.orderType !== 'זיכוי')
+                .reduce((sum, item) => sum + item.totalAmount, 0);
+            
+            const totalCredits = Math.abs(filteredData
+                .filter(item => item.orderType === 'זיכוי')
+                .reduce((sum, item) => sum + item.totalAmount, 0));
+            
+            const netTotal = totalCharges - totalCredits;
+            const averageSpending = uniqueResidents > 0 ? Math.round(netTotal / uniqueResidents) : 0;
+            
+            document.getElementById('totalResidents').textContent = uniqueResidents;
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('totalRevenue').textContent = `₪${totalCharges}`;
+            document.getElementById('totalCredits').textContent = `₪${totalCredits}`;
+            document.getElementById('netTotal').textContent = `₪${netTotal}`;
+            document.getElementById('averageSpending').textContent = `₪${averageSpending}`;
+        }
+        
+        // עדכון טבלה - עם תמיכה בזיכויים
+        function updateTable(data) {
+            const tbody = document.getElementById('expensesTableBody');
+            const residenceFilter = document.getElementById('residenceFilter').value;
+            
+            // סינון לפי סוג תושב - לוגיקה מתוקנת
+            const filteredData = data.filter(item => {
+                if (residenceFilter === 'all') return true;
+                if (residenceFilter === 'nofi_list') return !item.residenceType; // ריק = נופי פרת ברשימה
+                return item.residenceType === residenceFilter;
+            });
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="no-data">
+                            אין נתונים להצגה עבור הפילטרים שנבחרו
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filteredData.map(item => {
+                const ordersSummary = createOrdersSummary(item.orders);
+                const residenceDisplay = item.residenceType ? 
+                    `<div class="residence-type">(${item.residenceType})</div>` : '';
+                
+                // עיצוב סוג ההזמנה
+                const orderTypeBadge = item.orderType === 'זיכוי' ? 
+                    '<span class="order-type-badge credit">זיכוי</span>' :
+                    '<span class="order-type-badge regular">רגילה</span>';
+                
+                // עיצוב הסכום לפי סוג
+                let amountClass = 'total-amount';
+                if (item.orderType === 'זיכוי') {
+                    amountClass += ' negative';
+                } else if (item.totalAmount > 0) {
+                    amountClass += ' positive';
+                }
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="resident-name">${item.name}</div>
+                            ${residenceDisplay}
+                        </td>
+                        <td>
+                            <div class="event-date">${item.eventDateFormatted}</div>
+                        </td>
+                        <td>
+                            <div class="order-details ${showDetails ? '' : 'hidden'}">
+                                ${ordersSummary}
+                            </div>
+                        </td>
+                        <td>${orderTypeBadge}</td>
+                        <td class="${amountClass}">₪${item.totalAmount}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // יצירת סיכום הזמנות
+        function createOrdersSummary(orders) {
+            const productCounts = {};
+            
+            orders.forEach(order => {
+                const products = order.products.split(', ');
+                products.forEach(product => {
+                    const cleanProduct = product.trim();
+                    if (cleanProduct && !cleanProduct.includes('₪') && !cleanProduct.startsWith('הנחה')) {
+                        productCounts[cleanProduct] = (productCounts[cleanProduct] || 0) + 1;
+                    }
+                });
+            });
+            
+            return Object.entries(productCounts)
+                .map(([product, count]) => count > 1 ? `${product} x${count}` : product)
+                .join(', ') || 'אין פריטים';
+        }
+        
+        // הצגה/הסתרה של פירוט
+        function toggleDetails() {
+            showDetails = !showDetails;
+            const button = document.getElementById('toggleDetailBtn');
+            const details = document.querySelectorAll('.order-details');
+            
+            if (showDetails) {
+                button.textContent = 'הסתר פירוט הזמנות';
+                details.forEach(detail => detail.classList.remove('hidden'));
+            } else {
+                button.textContent = 'הצג פירוט הזמנות';
+                details.forEach(detail => detail.classList.add('hidden'));
+            }
+        }
+        
+        // סינון טבלה לפי סוג תושב - מתוקן
+        function filterTable() {
+            if (currentData.length > 0) {
+                const residenceFilter = document.getElementById('residenceFilter').value;
+                
+                // סינון הנתונים
+                const filteredData = currentData.filter(item => {
+                    if (residenceFilter === 'all') return true;
+                    if (residenceFilter === 'nofi_list') return !item.residenceType; // ריק = נופי פרת ברשימה
+                    return item.residenceType === residenceFilter;
+                });
+                
+                // עדכון טבלה וסטטיסטיקות עם הנתונים המסוננים
+                updateTable(currentData); // הטבלה מסננת בעצמה
+                updateStatistics(filteredData); // הסטטיסטיקות לפי המסונן
+            }
+        }
+        
+        // יצוא לאקסל - עם תמיכה בזיכויים
+        function exportToExcel() {
+            if (currentData.length === 0) {
+                alert('אין נתונים ליצוא');
+                return;
+            }
+            
+            const isSingleMode = document.getElementById('singleEventBtn').classList.contains('active');
+            const eventDate = document.getElementById('eventDate').value;
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            const residenceFilter = document.getElementById('residenceFilter').value;
+            
+            // הכנת הנתונים ליצוא עם סדר חדש ותיקון סוג התושב
+            const exportData = currentData
+                .filter(item => {
+                    if (residenceFilter === 'all') return true;
+                    if (residenceFilter === 'nofi_list') return !item.residenceType; // ריק = נופי פרת ברשימה
+                    return item.residenceType === residenceFilter;
+                })
+                .map(item => {
+                    // תיקון סוג התושב - אם ריק זה אומר תושב נופי פרת מהרשימה
+                    let residenceTypeDisplay = item.residenceType || 'תושב נופי פרת (ברשימה)';
+                    
+                    return {
+                        'שם התושב': item.name,
+                        'תאריך': item.eventDateFormatted,
+                        'סוג הזמנה': item.orderType,
+                        'סכום לחיוב': `₪${item.totalAmount}`,
+                        'פירוט הזמנות': createOrdersSummary(item.orders),
+                        'סוג תושב': residenceTypeDisplay
+                    };
+                });
+            
+            // יצירת קובץ Excel עם פורמט משופר ו-RTL
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // הגדרת כיוון RTL לגליון
+            if (!ws['!worksheetOptions']) ws['!worksheetOptions'] = {};
+            ws['!worksheetOptions']['rightToLeft'] = true;
+            
+            // הגדרת רוחבי עמודות לפורמט יפה יותר
+            ws['!cols'] = [
+                { width: 25 }, // שם התושב
+                { width: 15 }, // תאריך
+                { width: 12 }, // סוג הזמנה
+                { width: 12 }, // סכום לחיוב
+                { width: 40 }, // פירוט הזמנות
+                { width: 30 }  // סוג תושב
+            ];
+            
+            // יצירת workbook ושמירת הגיליון
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'סיכום הוצאות');
+            
+            // יצירת שם קובץ לפי המצב
+            let fileName;
+            if (isSingleMode) {
+                fileName = `פרתיה_סיכום_הוצאות_אירוע_${eventDate}.xlsx`;
+            } else {
+                fileName = `פרתיה_סיכום_הוצאות_${fromDate}_עד_${toDate}.xlsx`;
+            }
+            
+            XLSX.writeFile(wb, fileName);
+        }
+        
+        // הצגת שגיאה
+        function showError(message) {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.innerHTML = `<div class="error-message">${message}</div>`;
+            resultsSection.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הזמנות פעילות - הפרתיה</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        .logo {
+            width: 70px;
+            height: 70px;
+        }
+
+        .header-text h1 {
+            font-size: 26px;
+        }
+        
+        .header-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .control-btn-small {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .control-btn-small:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(220, 53, 69, 0.3);
+        }
+        
+        .control-btn-small.stopped {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+        
+        .control-btn-small.stopped:hover {
+            box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+        }
+        
+        .status-info-small {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .status-info-small.active {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .status-info-small.paused {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .content {
+            padding: 30px 40px;
+        }
+        
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .orders-table th {
+            background: linear-gradient(135deg, #E67E22, #D35400);
+            color: white;
+            padding: 15px;
+            text-align: right;
+            font-weight: bold;
+            font-size: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .orders-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+        
+        .orders-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .date-cell {
+            font-weight: normal;
+            color: #666;
+            width: 100px;
+            font-size: 14px;
+        }
+        
+        .time-cell {
+            font-weight: bold;
+            color: #E67E22;
+            width: 80px;
+            font-size: 16px;
+        }
+        
+        .name-cell {
+            font-weight: bold;
+            color: #2c3e50;
+            width: 150px;
+        }
+        
+        .products-cell {
+            color: #555;
+            line-height: 1.4;
+            width: 120px;
+        }
+        
+        .status-cell {
+            width: 280px;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        /* עיצוב חדש לדסקטופ - Switch Mode */
+        .status-switch {
+            display: inline-flex;
+            background: #f0f0f0;
+            border-radius: 25px;
+            padding: 4px;
+            position: relative;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .status-option {
+            flex: 1;
+            padding: 10px 16px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+            z-index: 2;
+            min-width: 65px;
+        }
+        
+        .status-option.pending {
+            color: #dc3545;
+        }
+        
+        .status-option.preparing {
+            color: #fd7e14;
+        }
+        
+        .status-option.ready {
+            color: #28a745;
+        }
+        
+        .status-option.active {
+            color: white;
+            font-weight: bold;
+        }
+        
+        .status-option.active.pending {
+            background: #dc3545;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+        
+        .status-option.active.preparing {
+            background: #fd7e14;
+            box-shadow: 0 2px 8px rgba(253, 126, 20, 0.3);
+        }
+        
+        .status-option.active.ready {
+            background: #28a745;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .status-option:hover:not(.active) {
+            background: rgba(0,0,0,0.05);
+        }
+        
+        /* עיצוב חדש לנייד - כפתור יחיד */
+        .status-single-btn {
+            display: none;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            min-width: 120px;
+            position: relative;
+        }
+        
+        .status-single-btn.pending {
+            background: #dc3545;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+        
+        .status-single-btn.preparing {
+            background: #fd7e14;
+            box-shadow: 0 2px 8px rgba(253, 126, 20, 0.3);
+        }
+        
+        .status-single-btn.ready {
+            background: #28a745;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .status-single-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .status-single-btn::after {
+            content: ' ◄';
+            margin-left: 8px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: #999;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top-color: #E67E22;
+            border-radius: 50%;
+            animation: spin 1s ease infinite;
+            margin-right: 10px;
+        }
+        
+        /* רספונסיביות */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 10px;
+            }
+            
+            .container {
+                margin: 0;
+                max-width: none;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 20px;
+            }
+            
+            .header-left {
+                order: 1;
+            }
+            
+            .header-control {
+                order: 2;
+                align-self: center;
+            }
+            
+            .header-left {
+                gap: 15px;
+            }
+            
+            .logo {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .header-text h1 {
+                font-size: 24px;
+            }
+            
+            .loading-logo {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .loading-title {
+                font-size: 24px;
+            }
+            
+            .orders-table {
+                font-size: 14px;
+            }
+            
+            .orders-table th,
+            .orders-table td {
+                padding: 10px 8px;
+            }
+            
+            .date-cell {
+                width: 50px;
+            }
+            
+            .time-cell {
+                width: 50px;
+            }
+            
+            .name-cell {
+                width: 90px;
+                font-size: 13px;
+            }
+            
+            .products-cell {
+                font-size: 12px;
+                line-height: 1.3;
+            }
+            
+            .status-cell {
+                width: 140px;
+            }
+            
+            /* החלפה לכפתור יחיד בנייד */
+            .status-switch {
+                display: none;
+            }
+            
+            .status-single-btn {
+                display: inline-block;
+                min-width: 120px;
+                font-size: 13px;
+                padding: 10px 16px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .orders-table {
+                font-size: 12px;
+            }
+            
+            .orders-table th,
+            .orders-table td {
+                padding: 8px 4px;
+            }
+            
+            .date-cell {
+                width: 40px;
+                font-size: 11px;
+            }
+            
+            .time-cell {
+                width: 45px;
+                font-size: 13px;
+            }
+            
+            .name-cell {
+                width: 80px;
+                font-size: 12px;
+            }
+            
+            .products-cell {
+                font-size: 11px;
+                line-height: 1.2;
+            }
+            
+            .status-cell {
+                width: 130px;
+            }
+            
+            .status-single-btn {
+                min-width: 110px;
+                font-size: 12px;
+                padding: 8px 14px;
+            }
+            
+            .control-btn-small {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- מסך טעינה -->
+    <div class="loading-screen" id="loadingScreen">
+        <img src="logo.png" alt="לוגו הפרתיה" class="loading-logo">
+        <h1 class="loading-title">הזמנות פעילות</h1>
+        <p class="loading-subtitle">טוען מערכת בר...</p>
+        <div class="loading-progress" id="loadingProgress">מתחבר לשרת...</div>
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- תוכן ראשי -->
+    <div class="main-content" id="mainContent">
+        <div class="container">
+            <div class="header">
+                <div class="header-left">
+                    <a href="admin.html">
+                        <img src="logo.png" alt="לוגו הפרתיה" class="logo">
+                    </a>
+                    <div class="header-text">
+                        <h1>הזמנות פעילות</h1>
+                    </div>
+                </div>
+                <div class="header-control">
+                    <div>
+                        <button id="toggleBtn" class="control-btn-small">
+                            עצור מערכת
+                        </button>
+                        <div id="statusInfo" class="status-info-small active">
+                            המערכת פעילה
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="content">
+                <div id="ordersContainer">
+                    <!-- התוכן ייטען אוטומטי אחרי מסך הטעינה -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script>
+        // משתנים גלובליים
+        let orders = [];
+        let ordersStatus = {}; // שמירת סטטוס הזמנות
+        let pendingChanges = {}; // הגנה על שינויים מקומיים
+        let isSystemActive = false;
+        let refreshInterval = null;
+        let autoStopTimeout = null;
+        
+        // פונקציה לטעינת הזמנות מהשרת - עם הגנת Race Conditions
+        async function loadOrders() {
+            if (!isSystemActive) return;
+            
+            try {
+                console.log('טוען הזמנות...');
+                
+                const params = new URLSearchParams({
+                    action: 'getRecentOrders',
+                    limit: 100
+                });
+                
+                const response = await fetch(CONFIG.SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params
+                });
+                
+                console.log('תגובה:', response.status);
+                
+                if (response.ok) {
+                    const result = await response.text();
+                    console.log('תוכן גולמי:', result);
+                    
+                    try {
+                        const jsonResult = JSON.parse(result);
+                        console.log('JSON מפורסר:', jsonResult);
+                        
+                        if (jsonResult.success) {
+                            orders = jsonResult.orders || [];
+                            console.log('=== נטענו נתונים מהשרת ===');
+                            console.log('מספר פריטים:', orders.length);
+                            
+                            // עדכון הסטטוסים מהגיליון הפעיל - עם הגנת Race Conditions
+                            const now = Date.now();
+                            orders.forEach(item => {
+                                if (item.orderId && item.status) {
+                                    const pendingChange = pendingChanges[item.orderId];
+                                    
+                                    // אם יש שינוי pending ועדיין לא עברו 5 שניות - לא דורס!
+                                    if (pendingChange && (now - pendingChange.timestamp < 5000)) {
+                                        console.log(`מגן על ${item.orderId}: pending ${pendingChange.status} vs server ${item.status}`);
+                                        return; // דילוג - לא מעדכן
+                                    }
+                                    
+                                    // ניקוי pending שעבר זמנו
+                                    if (pendingChange && (now - pendingChange.timestamp >= 5000)) {
+                                        delete pendingChanges[item.orderId];
+                                        console.log(`ניקוי pending ישן עבור ${item.orderId}`);
+                                    }
+                                    
+                                    // עדכון רגיל
+                                    ordersStatus[item.orderId] = item.status;
+                                }
+                            });
+                            
+                            renderOrders();
+                        } else {
+                            console.error('שגיאה מהשרת:', jsonResult.message);
+                        }
+                    } catch (e) {
+                        console.error('שגיאה בפרסור JSON:', e);
+                        console.log('תוכן שלא ניתן לפרסר:', result);
+                    }
+                } else {
+                    console.error('שגיאה בבקשה:', response.status);
+                }
+            } catch (error) {
+                console.error('שגיאה בטעינת הזמנות:', error);
+            }
+        }
+        
+        // הגדרת Page Visibility API - חדש!
+        function setupPageVisibility() {
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && isSystemActive) {
+                    console.log('🙈 דף מוסתר - עוצר רענון');
+                    if (refreshInterval) {
+                        clearInterval(refreshInterval);
+                        refreshInterval = null;
+                    }
+                } else if (!document.hidden && isSystemActive) {
+                    console.log('👁️ דף חוזר - מתחיל רענון');
+                    startRefreshing();
+                }
+            });
+        }
+        
+        // התחלת רענון
+        function startRefreshing() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            // רענון מהיר! כל 5 שניות במקום 20
+            refreshInterval = setInterval(loadOrders, 5000);
+        }
+        
+        // פונקציה להפעלת המערכת - התחלה מיידית
+        function startSystem() {
+            isSystemActive = true;
+            const toggleBtn = document.getElementById('toggleBtn');
+            const statusInfo = document.getElementById('statusInfo');
+            
+            toggleBtn.textContent = 'עצור מערכת';
+            toggleBtn.classList.remove('stopped');
+            statusInfo.textContent = 'המערכת פעילה';
+            statusInfo.classList.add('active');
+            statusInfo.classList.remove('paused');
+            
+            // טעינה מיידית
+            loadOrders();
+            
+            // רענון אוטומטי כל 5 שניות - מהיר!
+            startRefreshing();
+            
+            // עצירה אוטומטית אחרי 5 שעות
+            autoStopTimeout = setTimeout(() => {
+                stopSystem();
+                alert('המערכת נעצרה אוטומטית אחרי 5 שעות');
+            }, 5 * 60 * 60 * 1000);
+        }
+        
+        // פונקציה לעצירת המערכת
+        function stopSystem() {
+            isSystemActive = false;
+            const toggleBtn = document.getElementById('toggleBtn');
+            const statusInfo = document.getElementById('statusInfo');
+            
+            toggleBtn.textContent = 'טען הזמנות חדשות';
+            toggleBtn.classList.add('stopped');
+            statusInfo.textContent = 'המערכת לא פעילה';
+            statusInfo.classList.remove('active');
+            statusInfo.classList.add('paused');
+            
+            // עצירת הרענון
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+            
+            // עצירת הטיימר האוטומטי
+            if (autoStopTimeout) {
+                clearTimeout(autoStopTimeout);
+                autoStopTimeout = null;
+            }
+            
+            // הצגת מסך לא פעיל
+            const container = document.getElementById('ordersContainer');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>המערכת לא פעילה</h3>
+                    <p>לחץ על "טען הזמנות חדשות" כדי להמשיך</p>
+                </div>
+            `;
+        }
+        
+        // פונקציה לבדיקה אם הזמנה רלוונטית (מהיום או מהשעה הקודמת)
+        function isRelevantTime(dateStr, timeStr) {
+            if (!dateStr || !timeStr) return false;
+            
+            const now = new Date();
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            
+            const cleanedDate = cleanDate(dateStr);
+            const cleanedTime = cleanTime(timeStr);
+            
+            console.log('בודק רלוונטיות:', cleanedDate, cleanedTime);
+            
+            try {
+                const dateMatch = cleanedDate.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+                const timeMatch = cleanedTime.match(/(\d{1,2}):(\d{2})/);
+                
+                if (!dateMatch || !timeMatch) {
+                    console.log('לא הצלחתי לפרסר:', cleanedDate, cleanedTime);
+                    return false;
+                }
+                
+                const [, day, month, year] = dateMatch;
+                const [, hour, minute] = timeMatch;
+                
+                const orderDate = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day),
+                    parseInt(hour),
+                    parseInt(minute)
+                );
+                
+                const isToday = orderDate.toDateString() === now.toDateString();
+                const isFromLastHour = orderDate >= oneHourAgo && orderDate <= now;
+                
+                const isRelevant = isToday || isFromLastHour;
+                console.log('האם רלוונטי:', isRelevant, '(היום:', isToday, ', שעה קודמת:', isFromLastHour, ')');
+                
+                return isRelevant;
+                
+            } catch (error) {
+                console.error('שגיאה בבדיקת זמן:', error);
+                return false;
+            }
+        }
+        
+        // פונקציה לניקוי תאריך
+        function cleanDate(dateStr) {
+            if (!dateStr) return 'לא צוין';
+            
+            const str = dateStr.toString();
+            
+            if (str.includes('GMT')) {
+                const dateMatch = str.match(/(\w{3})\s+(\w{3})\s+(\d{1,2})\s+(\d{4})/);
+                if (dateMatch) {
+                    const [, dayName, month, day, year] = dateMatch;
+                    
+                    const months = {
+                        'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+                        'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+                        'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+                    };
+                    
+                    const monthNum = months[month] || month;
+                    return `${day.padStart(2, '0')}/${monthNum}/${year}`;
+                }
+            }
+            
+            return str;
+        }
+        
+        // פונקציה לניקוי שעה
+        function cleanTime(timeStr) {
+            if (!timeStr) return 'לא צוין';
+            
+            const str = timeStr.toString();
+            
+            const timeMatch = str.match(/(\d{1,2}):(\d{2}):(\d{2})/);
+            if (timeMatch) {
+                return `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+            }
+            
+            return str;
+        }
+        
+        // פונקציה להצגת ההזמנות
+        function renderOrders() {
+            if (!isSystemActive) return;
+            
+            const container = document.getElementById('ordersContainer');
+            
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>אין הזמנות</h3>
+                        <p>הזמנות חדשות יופיעו כאן אוטומטית</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            console.log('=== מתחיל פילטור זמנים ===');
+            console.log('סה"כ פריטים לפני פילטור:', orders.length);
+            
+            const relevantItems = orders.filter(item => {
+                const result = isRelevantTime(item.date, item.time);
+                if (!result) {
+                    console.log('מסנן פריט:', item.customerName, item.date, item.time);
+                }
+                return result;
+            });
+            
+            console.log('פריטים אחרי פילטור:', relevantItems.length);
+            
+            if (relevantItems.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>אין הזמנות רלוונטיות</h3>
+                        <p>הזמנות מהיום או מהשעה הקודמת יופיעו כאן אוטומטית</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const tableHTML = `
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th class="date-cell">תאריך</th>
+                            <th class="time-cell">שעה</th>
+                            <th class="name-cell">מזמין</th>
+                            <th class="products-cell">הזמנה</th>
+                            <th class="status-cell">סטטוס</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${relevantItems.map(item => createOrderRow(item)).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+            
+            setupStatusEventListeners();
+        }
+        
+        // פונקציה ליצירת שורת הזמנה
+        function createOrderRow(item) {
+            const itemId = item.orderId;
+            const currentStatus = ordersStatus[itemId] || item.status || 'pending';
+            
+            const statusLabels = { pending: 'ממתין', preparing: 'בהכנה', ready: 'מוכן' };
+            const statusOptions = ['pending', 'preparing', 'ready'];
+            
+            const switchHTML = `
+                <div class="status-switch" data-order-id="${itemId}">
+                    ${statusOptions.map(status => `
+                        <div class="status-option ${status} ${status === currentStatus ? 'active' : ''}" 
+                             data-status="${status}">
+                            ${statusLabels[status]}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            const nextStatus = getNextStatus(currentStatus);
+            const singleBtnHTML = `
+                <button class="status-single-btn ${currentStatus}" data-order-id="${itemId}" data-next-status="${nextStatus}">
+                    ${statusLabels[currentStatus]}
+                </button>
+            `;
+            
+            const cleanedDate = cleanDate(item.date);
+            const cleanedTime = cleanTime(item.time);
+            
+            return `
+                <tr>
+                    <td class="date-cell">${cleanedDate}</td>
+                    <td class="time-cell">${cleanedTime}</td>
+                    <td class="name-cell">${item.customerName}</td>
+                    <td class="products-cell">${item.products}</td>
+                    <td class="status-cell">
+                        ${switchHTML}
+                        ${singleBtnHTML}
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // פונקציה לקבלת הסטטוס הבא
+        function getNextStatus(currentStatus) {
+            const statusFlow = {
+                'pending': 'preparing',
+                'preparing': 'ready',
+                'ready': 'pending'
+            };
+            return statusFlow[currentStatus] || 'pending';
+        }
+        
+        // פונקציה להוספת Event Listeners
+        function setupStatusEventListeners() {
+            document.querySelectorAll('.status-switch').forEach(switchElement => {
+                switchElement.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('status-option')) {
+                        const itemId = switchElement.dataset.orderId;
+                        const newStatus = e.target.dataset.status;
+                        window.changeOrderStatus(itemId, newStatus);
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.status-single-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const itemId = btn.dataset.orderId;
+                    const nextStatus = btn.dataset.nextStatus;
+                    window.changeOrderStatus(itemId, nextStatus);
+                });
+            });
+        }
+        
+        // עדכון סטטוס בגיליון
+        async function updateStatusInSheet(itemId, newStatus) {
+            try {
+                const params = new URLSearchParams({
+                    action: 'updateStatus',
+                    orderId: itemId,
+                    newStatus: newStatus
+                });
+                
+                console.log('URL שנשלח:', params.toString());
+                
+                const response = await fetch(CONFIG.SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (response.ok) {
+                    const result = await response.text();
+                    console.log('תוכן תשובה גולמי:', result);
+                    
+                    try {
+                        const jsonResult = JSON.parse(result);
+                        console.log('תוכן תשובה מפורסר:', jsonResult);
+                        return jsonResult.success;
+                    } catch (parseError) {
+                        console.error('שגיאה בפרסור JSON:', parseError);
+                        console.log('התוכן שלא ניתן לפרסר:', result);
+                        return false;
+                    }
+                } else {
+                    console.error('שגיאה בבקשה HTTP:', response.status);
+                    return false;
+                }
+            } catch (error) {
+                console.error('שגיאה כללית בעדכון סטטוס:', error);
+                return false;
+            }
+        }
+        
+        // עדכון תצוגה מקומית
+        function updateLocalDisplay(itemId, newStatus) {
+            const switchElement = document.querySelector(`.status-switch[data-order-id="${itemId}"]`);
+            if (switchElement) {
+                const options = switchElement.querySelectorAll('.status-option');
+                options.forEach(option => {
+                    if (option.dataset.status === newStatus) {
+                        option.classList.add('active');
+                    } else {
+                        option.classList.remove('active');
+                    }
+                });
+            }
+            
+            const singleBtn = document.querySelector(`.status-single-btn[data-order-id="${itemId}"]`);
+            if (singleBtn) {
+                const statusLabels = { pending: 'ממתין', preparing: 'בהכנה', ready: 'מוכן' };
+                const nextStatus = getNextStatus(newStatus);
+                
+                singleBtn.classList.remove('pending', 'preparing', 'ready');
+                singleBtn.classList.add(newStatus);
+                singleBtn.textContent = statusLabels[newStatus];
+                singleBtn.dataset.nextStatus = nextStatus;
+            }
+        }
+        
+        // שינוי סטטוס הזמנה - עם הגנת Race Conditions
+        window.changeOrderStatus = async function(itemId, targetStatus) {
+            try {
+                const currentStatus = ordersStatus[itemId] || 'pending';
+                
+                if (currentStatus === targetStatus) {
+                    return;
+                }
+                
+                console.log('=== מתחיל שינוי סטטוס עם הגנת Race ===');
+                console.log('מזהה פריט:', itemId);
+                console.log('סטטוס נוכחי:', currentStatus);
+                console.log('סטטוס יעד:', targetStatus);
+                
+                // הגנת Race Conditions - שמירת השינוי הפנימי
+                pendingChanges[itemId] = {
+                    status: targetStatus,
+                    timestamp: Date.now()
+                };
+                console.log('נשמר בpending changes:', pendingChanges[itemId]);
+                
+                // עדכון מיידי בזיכרון ובתצוגה
+                ordersStatus[itemId] = targetStatus;
+                updateLocalDisplay(itemId, targetStatus);
+                console.log('עדכון מקומי מיידי בוצע');
+                
+                // עדכון בגיליון ברקע
+                console.log('שולח עדכון לשרת...');
+                const success = await updateStatusInSheet(itemId, targetStatus);
+                console.log('תוצאת עדכון בשרת:', success);
+                
+                if (success) {
+                    // הצליח - מסיר מpending
+                    delete pendingChanges[itemId];
+                    console.log('הושלם בהצלחה, הוסר מpending');
+                } else {
+                    // נכשל - מחזיר לסטטוס הקודם
+                    console.error('כישלון בעדכון - מחזיר לסטטוס קודם');
+                    delete pendingChanges[itemId];
+                    ordersStatus[itemId] = currentStatus;
+                    updateLocalDisplay(itemId, currentStatus);
+                }
+                
+            } catch (error) {
+                console.error('שגיאה בפונקציית changeOrderStatus:', error);
+                // במקרה של שגיאה, מחזיר לסטטוס הקודם
+                delete pendingChanges[itemId];
+                ordersStatus[itemId] = currentStatus;
+                updateLocalDisplay(itemId, currentStatus);
+            }
+        }
+        
+        // טעינת סטטוסים שמורים
+        function loadStoredStatuses() {
+            const stored = localStorage.getItem('ordersStatus');
+            if (stored) {
+                try {
+                    ordersStatus = JSON.parse(stored);
+                } catch (e) {
+                    ordersStatus = {};
+                }
+            }
+        }
+        
+        // אתחול ראשוני עם טעינה מיידית
+        async function initializeSystem() {
+            updateLoadingProgress('מכין את המערכת...');
+            
+            // הגדרת Page Visibility
+            setupPageVisibility();
+            
+            // טעינת נתונים שמורים
+            loadStoredStatuses();
+            
+            updateLoadingProgress('מתחבר לשרת...');
+            
+            // התחלה מיידית אוטומטית!
+            isSystemActive = true;
+            const toggleBtn = document.getElementById('toggleBtn');
+            const statusInfo = document.getElementById('statusInfo');
+            
+            toggleBtn.textContent = 'עצור מערכת';
+            toggleBtn.classList.remove('stopped');
+            statusInfo.textContent = 'המערכת פעילה';
+            statusInfo.classList.add('active');
+            statusInfo.classList.remove('paused');
+            
+            // טעינה ראשונה
+            await loadOrders();
+            
+            // התחלת רענון
+            startRefreshing();
+            
+            // עצירה אוטומטית אחרי 5 שעות
+            autoStopTimeout = setTimeout(() => {
+                stopSystem();
+                alert('המערכת נעצרה אוטומטית אחרי 5 שעות');
+            }, 5 * 60 * 60 * 1000);
+            
+            updateLoadingProgress('המערכת מוכנה!');
+            
+            // הסתרת מסך הטעינה
+            hideLoadingScreen(800);
+        }
+        
+        // אתחול הדף
+        function init() {
+            // הוספת event listener לכפתור ההפעלה/עצירה
+            document.getElementById('toggleBtn').addEventListener('click', () => {
+                if (isSystemActive) {
+                    stopSystem();
+                } else {
+                    startSystem();
+                }
+            });
+            
+            // התחלה מיידית עם מסך טעינה
+            initializeSystem();
+        }
+        
+        // התחלה כשהדף נטען
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
