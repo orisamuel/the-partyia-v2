@@ -8,7 +8,7 @@ const CONFIG = {
 
     // ── Google Apps Script ──────────────────────────────────
     // העתק כאן את ה-URL של ה-Deployment החדש שלך ב-Apps Script
-    SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxffpyixPtnfRSgrA7eSb_1eTZ_-k4Cm4kz1Me6XeyAsouEVXyE8zmmEQWZH2gDEoZg/exec',
+    SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbx6UmKhHKW2mgxoo3FJaKYMS4Men3xN9tTIqKhS3uGwEy5GTL_LJoLBYz5SjK6Mms6U-Q/exec',
 
     // ── Google Sheets ────────────────────────────────────────
     // קישור ישיר לגיליון הנתונים (לכפתור "פתח Sheets" בממשק)
