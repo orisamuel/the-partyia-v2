@@ -28,9 +28,20 @@
     background: var(--danger-bg); color: var(--danger);
     border-color: rgba(239,68,68,0.4);
   }
-  .custom-row { display: flex; gap: 8px; align-items: flex-end; }
+  .custom-row { display: flex; gap: 8px; align-items: center; }
   .custom-row .form-input { flex: 1; }
-  .custom-row input[type="number"] { width: 90px; }
+  .custom-row input[type="number"] { width: 80px; flex: none; }
+  .custom-label {
+    font-size: 0.72rem; font-weight: 700; color: var(--text-muted);
+    letter-spacing: 0.03em; margin-bottom: 3px;
+  }
+  /* Compact customer info bar */
+  .customer-bar {
+    display: flex; gap: 10px; align-items: flex-start;
+    flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .customer-bar .segment-control { flex-shrink: 0; }
+  .customer-bar .autocomplete-wrapper { flex: 1; min-width: 180px; }
 
   .edit-order-products { display: flex; flex-direction: column; gap: 6px; }
   .edit-product-row { display: flex; gap: 8px; align-items: center; }
@@ -75,31 +86,22 @@
     <!-- ── LEFT: Order form ────────────────────────── -->
     <div class="index-main">
 
-      <!-- Customer name -->
-      <div class="card mb-16">
-        <div class="section-title">👤 פרטי לקוח</div>
-
-        <!-- Residence type -->
-        <div class="form-group">
-          <label class="form-label">סוג תושב</label>
+      <!-- Customer info — compact bar -->
+      <div class="card mb-12" style="padding:12px 16px;">
+        <div class="customer-bar">
           <div class="segment-control" id="residenceControl">
             <button class="segment-btn active" onclick="setResidenceType('נופי פרת', this)">🏡 נופי פרת</button>
-            <button class="segment-btn" onclick="setResidenceType('כפר עדום', this)">🌳 כפר עדום</button>
+            <button class="segment-btn" onclick="setResidenceType('כפר אדומים', this)">🌳 כפר אדומים</button>
             <button class="segment-btn" onclick="setResidenceType('אלון', this)">🍃 אלון</button>
           </div>
-        </div>
-
-        <!-- Name autocomplete -->
-        <div class="form-group">
-          <label class="form-label" for="customerNameInput">שם לקוח</label>
-          <div class="autocomplete-wrapper">
+          <div class="autocomplete-wrapper" style="flex:1;min-width:180px;">
             <input type="text" id="customerNameInput" class="form-input"
               placeholder="התחל להקליד שם..." autocomplete="off"
               oninput="onNameInput(this.value)" onblur="onNameBlur()">
             <div id="autocompleteList" class="autocomplete-list" style="display:none;"></div>
           </div>
-          <div id="nameValidation" class="text-xs mt-8" style="min-height:1.2em;"></div>
         </div>
+        <div id="nameValidation" class="text-xs mt-4" style="min-height:1.1em;padding-right:2px;"></div>
       </div>
 
       <!-- Products -->
@@ -120,15 +122,19 @@
 
         <!-- Custom amount + discount -->
         <div class="mb-8">
-          <div class="custom-row">
-            <input type="text" id="customDescription" class="form-input" placeholder="תיאור (אופציונלי)">
-            <input type="number" id="customAmount" class="form-input" placeholder="₪ עוד" min="0"
-              style="width:80px;" oninput="updateTotal()">
+          <div class="custom-label">➕ תוספת (מוצר שאינו ברשימה)</div>
+          <div class="custom-row mb-8">
+            <input type="text" id="customDescription" class="form-input" placeholder="לדוג׳: מוצר שאינו ברשימה">
+            <input type="number" id="customAmount" class="form-input" placeholder="₪" min="0"
+              oninput="updateTotal()">
           </div>
-          <div id="discountRow" class="custom-row mt-8">
-            <input type="text" id="discountDescription" class="form-input" placeholder="תיאור הנחה">
-            <input type="number" id="discountAmount" class="form-input" placeholder="₪ הנחה" min="0"
-              style="width:80px;" oninput="updateTotal()">
+          <div id="discountRow">
+            <div class="custom-label">➖ הנחה</div>
+            <div class="custom-row">
+              <input type="text" id="discountDescription" class="form-input" placeholder="לדוג׳ הנחה עבור שת״פ">
+              <input type="number" id="discountAmount" class="form-input" placeholder="₪" min="0"
+                oninput="updateTotal()">
+            </div>
           </div>
         </div>
 
@@ -393,7 +399,7 @@ function toggleCreditMode() {
   body.classList.toggle('credit-mode', isCreditMode);
   document.getElementById('totalLabel').textContent = isCreditMode ? 'סכום זיכוי' : 'סכום כולל';
   document.getElementById('submitBtn').textContent  = isCreditMode ? '💳 אישור זיכוי' : '📝 שלח הזמנה';
-  document.getElementById('discountRow').style.display = isCreditMode ? 'none' : 'flex';
+  document.getElementById('discountRow').style.display = isCreditMode ? 'none' : 'block';
   updateTotal();
 }
 
