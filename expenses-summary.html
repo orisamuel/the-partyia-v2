@@ -96,7 +96,7 @@
     <a href="admin.html"><img src="logo.png" alt="לוגו" class="header-logo"></a>
     <div class="header-title">
       <h1>💰 סיכום הוצאות</h1>
-      <p>הוצאות לפי דייר ותאריך</p>
+      <p>הוצאות לפי תושב ותאריך</p>
     </div>
     <div class="header-actions">
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
@@ -332,38 +332,8 @@
                 console.log('טווח תאריכים:', fromDate, 'עד', toDate);
             }
             
-            const params = new URLSearchParams({
-                action: 'getRecentOrdersFromMain',
-                limit: 1000  // מביאים יותר הזמנות כי אנחנו מחפשים בטווח רחב יותר
-            });
-            
-            console.log('פרמטרים שנשלחים:', params.toString());
-            
             try {
-                console.log('שולח בקשת POST לשרת עבור הזמנות מהגיליון הראשי...');
-                const response = await fetch(CONFIG.SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: params
-                });
-                
-                console.log('סטטוס תשובה:', response.status);
-                console.log('תשובה OK?', response.ok);
-                
-                if (!response.ok) {
-                    console.error('שגיאה בתשובת השרת:', response.status, response.statusText);
-                    throw new Error(`שגיאה ${response.status}`);
-                }
-                
-                console.log('מקבל תוכן מהשרת...');
-                const resultText = await response.text();
-                console.log('תוכן גולמי מהשרת (אורך):', resultText.length);
-                
-                console.log('מנסה לפרסר JSON...');
-                const jsonResult = JSON.parse(resultText);
-                console.log('JSON מפורסר בהצלחה');
+                const jsonResult = await apiCall('getRecentOrdersFromMain', { limit: 1000 });
                 
                 if (!jsonResult.success) {
                     console.error('השרת החזיר שגיאה:', jsonResult.message);

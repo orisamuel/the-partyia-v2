@@ -139,7 +139,7 @@
           <option value="false">✗ לא פעיל (מוסתר מהחיפוש)</option>
         </select>
         <div class="text-xs text-muted mt-8">
-          דיירים לא פעילים לא מופיעים בטופס ההזמנה אבל ההיסטוריה שלהם נשמרת
+          תושבים לא פעילים לא מופיעים בטופס ההזמנה אבל ההיסטוריה שלהם נשמרת
         </div>
       </div>
     </div>
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadResidents() {
   try {
     const res = await apiCall('getAllResidents');
-    if (!res.success) { showToast('שגיאה בטעינת דיירים', 'error'); hideLoadingScreen(300); return; }
+    if (!res.success) { showToast('שגיאה בטעינת תושבים', 'error'); hideLoadingScreen(300); return; }
     allResidents = res.residents || [];
     filterResidents();
     hideLoadingScreen(300);
@@ -225,7 +225,7 @@ function filterResidents() {
 function renderResidents(list) {
   const el = document.getElementById('residentsList');
   if (!list.length) {
-    el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">👥</span><p class="empty-state-text">לא נמצאו דיירים</p></div>';
+    el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">👥</span><p class="empty-state-text">לא נמצאו תושבים</p></div>';
     return;
   }
 
@@ -303,7 +303,7 @@ async function saveResident() {
     const action = editingName ? 'updateResident' : 'addResident';
     const res = await apiCall(action, data);
     if (res.success) {
-      showToast(editingName ? '✓ דייר עודכן' : '✓ דייר נוסף', 'success');
+      showToast(editingName ? '✓ תושב עודכן' : '✓ תושב נוסף', 'success');
       closeModal(null, 'residentModal');
       loadResidents();
     } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
@@ -345,7 +345,7 @@ async function importResidents() {
   if (!toAdd.length) { showToast('כל השמות כבר קיימים', 'warning'); return; }
 
   closeModal(null, 'importModal');
-  showToast('מייבא ' + toAdd.length + ' דיירים...', 'info', 2000);
+  showToast('מייבא ' + toAdd.length + ' תושבים...', 'info', 2000);
 
   let success = 0;
   for (const fullName of toAdd) {
@@ -354,7 +354,7 @@ async function importResidents() {
       if (res.success) success++;
     } catch (_) {}
   }
-  showToast(`✓ יובאו ${success} דיירים בהצלחה`, 'success', 4000);
+  showToast(`✓ יובאו ${success} תושבים בהצלחה`, 'success', 4000);
   loadResidents();
 }
 
