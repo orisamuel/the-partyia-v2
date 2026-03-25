@@ -174,6 +174,12 @@ function deleteProduct(name) {
 // Schema: שם מלא(0), כינוי(1), פעיל(2), סוג מגורים(3), הערות(4)
 // ============================================================
 
+// נרמול שם ישוב — מאפשר שמירה לאחור עם "כפר עדום"
+function normalizeSettlement(s) {
+  if (!s) return s;
+  return s === 'כפר עדום' ? 'כפר אדומים' : s;
+}
+
 function getResidents() {
   try {
     const HEADERS = ['שם מלא', 'כינוי', 'פעיל', 'סוג מגורים', 'הערות'];
@@ -195,7 +201,7 @@ function getResidents() {
         residents.push({
           fullName: r[0] || '',
           nickname: r[1] || '',
-          residenceType: r[3] || 'נופי פרת',
+          residenceType: normalizeSettlement(r[3] || 'נופי פרת'),
           notes: r[4] || ''
         });
       }
@@ -216,7 +222,7 @@ function getAllResidents() {
       fullName: r[0] || '',
       nickname: r[1] || '',
       active: r[2] || 'לא',
-      residenceType: r[3] || 'נופי פרת',
+      residenceType: normalizeSettlement(r[3] || 'נופי פרת'),
       notes: r[4] || ''
     }));
     return { success: true, residents };
