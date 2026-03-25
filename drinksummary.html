@@ -361,24 +361,9 @@
             console.log('📦 מנסה לטעון מידע מוצרים מהשרת (כולל לא פעילים)...');
             
             try {
-                const params = new URLSearchParams({ action: 'getAllProductsForReports' });
-                
                 console.log('🔄 שולח בקשה לgetAllProductsForReports...');
-                const response = await fetch(CONFIG.SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: params
-                });
-                
-                console.log('📡 תגובת שרת:', response.status, response.ok);
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    console.log('📋 תוצאה מהשרת:', result);
-                    
-                    if (result.success) {
-                        console.log('✅ התקבלו', result.products.length, 'מוצרים מהשרת');
-                        
+                const result = await apiCall('getAllProductsForReports');
+                if (result.success) {
                         allProductsList = [];
                         result.products.forEach(product => {
                             productsData[product.name] = {
@@ -387,21 +372,11 @@
                                 category: product.category
                             };
                             allProductsList.push(product.name);
-                            console.log(`  📝 נטען: ${product.name} - ₪${product.price} (${product.active})`);
                         });
-                        
-                        // מיון רשימת המוצרים
                         allProductsList.sort((a, b) => a.localeCompare(b, 'he'));
-                        
-                        // עדכון dropdown המוצרים
                         updateProductSelect();
-                        
-                        console.log('✅ נטען מידע על', Object.keys(productsData).length, 'מוצרים (כולל לא פעילים)');
-                    } else {
-                        console.error('❌ שרת החזיר שגיאה:', result.message);
-                    }
                 } else {
-                    console.error('❌ שגיאת HTTP:', response.status);
+                    console.error('❌ שרת החזיר שגיאה:', result.message);
                 }
             } catch (error) {
                 console.error('❌ שגיאה בטעינת מידע מוצרים:', error);
@@ -621,26 +596,11 @@
         async function fetchOrdersData(isSingleMode, eventDate, fromDate, toDate) {
             console.log('🌐 שואב את כל הנתונים מהשרת (עם סינון בדיקות)...');
             
-            const params = new URLSearchParams({
-                action: 'getRecentOrdersFromMain',
-                limit: 10000
-            });
-            
-            const response = await fetch(CONFIG.SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params
-            });
-            
-            if (!response.ok) {
-                throw new Error(`שגיאת שרת ${response.status}`);
-            }
-            
-            const result = await response.json();
+            const result = await apiCall('getRecentOrdersFromMain', { limit: 10000 });
             if (!result.success) {
                 throw new Error(result.message || 'שגיאה לא ידועה');
             }
-            
+
             let orders = result.orders || [];
             console.log('📦 התקבלו', orders.length, 'הזמנות גולמיות');
             
