@@ -2,7 +2,7 @@
 // הפרתיה v3 — Google Apps Script Backend
 // ============================================================
 // הגדר כאן את ה-ID של ה-Spreadsheet החדש שלך:
-const SHEET_ID = '1b7i4Nn0ajOVKwZSWUpDVanezscA50Jdh1harmJqiSZY';
+const SHEET_ID = '1ANaiZRPldIIK_hTZiw3m0fULzaEbwUbwC3OtCFzaJmM';
 
 // ============================================================
 // HELPERS
