@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d0f14">
 <title>הפרתיה — הזמנה</title>
+<link rel="icon" href="logo.png" type="image/png">
 <link rel="stylesheet" href="styles.css">
 <script src="config.js"></script>
 <script src="utils.js"></script>
@@ -85,7 +86,6 @@
             <button class="segment-btn active" onclick="setResidenceType('נופי פרת', this)">🏡 נופי פרת</button>
             <button class="segment-btn" onclick="setResidenceType('כפר עדום', this)">🌳 כפר עדום</button>
             <button class="segment-btn" onclick="setResidenceType('אלון', this)">🍃 אלון</button>
-            <button class="segment-btn" onclick="setResidenceType('אורח', this)">👤 אורח</button>
           </div>
         </div>
 
@@ -112,26 +112,25 @@
         </div>
       </div>
 
-      <!-- Custom amount -->
-      <div class="card mb-16">
-        <div class="section-title">✏️ סכום מותאם אישית</div>
-        <div class="custom-row">
-          <input type="text" id="customDescription" class="form-input" placeholder="תיאור (אופציונלי)">
-          <input type="number" id="customAmount" class="form-input" placeholder="₪" min="0"
-            oninput="updateTotal()">
-        </div>
-        <div id="discountRow" class="custom-row mt-8">
-          <input type="text" id="discountDescription" class="form-input" placeholder="תיאור הנחה">
-          <input type="number" id="discountAmount" class="form-input" placeholder="₪ הנחה" min="0"
-            oninput="updateTotal()">
-        </div>
-      </div>
-
     </div>
 
     <!-- ── RIGHT: Sidebar ──────────────────────────── -->
     <aside>
       <div class="order-sidebar" id="orderSidebar">
+
+        <!-- Custom amount + discount -->
+        <div class="mb-8">
+          <div class="custom-row">
+            <input type="text" id="customDescription" class="form-input" placeholder="תיאור (אופציונלי)">
+            <input type="number" id="customAmount" class="form-input" placeholder="₪ עוד" min="0"
+              style="width:80px;" oninput="updateTotal()">
+          </div>
+          <div id="discountRow" class="custom-row mt-8">
+            <input type="text" id="discountDescription" class="form-input" placeholder="תיאור הנחה">
+            <input type="number" id="discountAmount" class="form-input" placeholder="₪ הנחה" min="0"
+              style="width:80px;" oninput="updateTotal()">
+          </div>
+        </div>
 
         <!-- Total -->
         <div class="order-total-box">
@@ -228,6 +227,9 @@ async function loadData() {
 // ─────────────────────────────────────────────
 // Products
 // ─────────────────────────────────────────────
+const CATEGORY_ORDER = ['קוקטיילים', 'אלכוהול', 'משקאות', 'אוכל', 'כללי'];
+let PRODUCT_NAMES = []; // idx → product name (avoids apostrophe issues in onclick)
+
 function renderProducts() {
   const grid = document.getElementById('productsGrid');
   if (!PRODUCTS.length) {
@@ -243,21 +245,32 @@ function renderProducts() {
     categories[cat].push(p);
   });
 
+  // Sort categories (cocktails first)
+  const sortedEntries = Object.entries(categories).sort(([a], [b]) => {
+    const ai = CATEGORY_ORDER.indexOf(a);
+    const bi = CATEGORY_ORDER.indexOf(b);
+    return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+  });
+
+  PRODUCT_NAMES = [];
+  let pIdx = 0;
   let html = '';
-  for (const [cat, products] of Object.entries(categories)) {
-    if (Object.keys(categories).length > 1) {
+  for (const [cat, products] of sortedEntries) {
+    if (sortedEntries.length > 1) {
       html += `<div class="category-label" style="grid-column:1/-1">${cat}</div>`;
     }
     products.forEach(p => {
+      const idx = pIdx++;
+      PRODUCT_NAMES[idx] = p.name;
       html += `
-        <div class="product-card" id="pc-${esc(p.name)}" onclick="toggleProduct('${esc(p.name)}')">
+        <div class="product-card" id="pc-${idx}" onclick="toggleProduct(${idx})">
           <span class="product-emoji">${p.emoji || '🍽️'}</span>
           <div class="product-name">${esc(p.name)}</div>
           <div class="product-price">₪${p.price}</div>
           <div class="product-qty">
-            <button class="qty-btn" onclick="event.stopPropagation();changeQty('${esc(p.name)}',-1)">−</button>
-            <span class="qty-num" id="qty-${esc(p.name)}">1</span>
-            <button class="qty-btn" onclick="event.stopPropagation();changeQty('${esc(p.name)}',1)">+</button>
+            <button class="qty-btn" onclick="event.stopPropagation();changeQty(${idx},-1)">−</button>
+            <span class="qty-num" id="qty-${idx}">1</span>
+            <button class="qty-btn" onclick="event.stopPropagation();changeQty(${idx},1)">+</button>
           </div>
         </div>`;
     });
@@ -265,28 +278,30 @@ function renderProducts() {
   grid.innerHTML = html;
 }
 
-function toggleProduct(name) {
+function toggleProduct(idx) {
+  const name = PRODUCT_NAMES[idx];
   if (selectedItems[name]) {
     delete selectedItems[name];
-    document.getElementById('pc-' + name)?.classList.remove('selected');
+    document.getElementById('pc-' + idx)?.classList.remove('selected');
+    const qEl = document.getElementById('qty-' + idx);
+    if (qEl) qEl.textContent = '1';
   } else {
     selectedItems[name] = 1;
-    document.getElementById('pc-' + name)?.classList.add('selected');
-    const qEl = document.getElementById('qty-' + name);
-    if (qEl) qEl.textContent = '1';
+    document.getElementById('pc-' + idx)?.classList.add('selected');
   }
   updateTotal();
 }
 
-function changeQty(name, delta) {
+function changeQty(idx, delta) {
+  const name = PRODUCT_NAMES[idx];
   if (!selectedItems[name]) return;
   const newQty = (selectedItems[name] || 1) + delta;
   if (newQty <= 0) {
     delete selectedItems[name];
-    document.getElementById('pc-' + name)?.classList.remove('selected');
+    document.getElementById('pc-' + idx)?.classList.remove('selected');
   } else {
     selectedItems[name] = newQty;
-    const qEl = document.getElementById('qty-' + name);
+    const qEl = document.getElementById('qty-' + idx);
     if (qEl) qEl.textContent = newQty;
   }
   updateTotal();
@@ -300,14 +315,15 @@ function setResidenceType(type, btn) {
   document.querySelectorAll('#residenceControl .segment-btn')
     .forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  // If switching to guest types, clear validation
-  if (type !== 'נופי פרת') {
-    isNameValid = true;
-    showNameStatus('✓ אורח — ' + type, 'var(--success)');
-    document.getElementById('submitBtn').disabled = false;
-    document.getElementById('customerNameInput').placeholder = 'שם האורח';
+  const nameInput = document.getElementById('customerNameInput');
+  if (type === 'נופי פרת') {
+    nameInput.placeholder = 'התחל להקליד שם...';
+    validateName(nameInput.value);
   } else {
-    validateName(document.getElementById('customerNameInput').value);
+    nameInput.placeholder = 'שם...';
+    showNameStatus('', '');
+    isNameValid = !!nameInput.value.trim();
+    document.getElementById('submitBtn').disabled = !isNameValid;
   }
 }
 
@@ -475,9 +491,6 @@ async function submitOrder() {
 function resetForm() {
   selectedItems = {};
   document.querySelectorAll('.product-card.selected').forEach(el => el.classList.remove('selected'));
-  document.querySelectorAll('.product-qty').forEach(el => {
-    el.style.opacity = '0'; el.style.height = '0'; el.style.transform = 'scaleY(0)';
-  });
   document.querySelectorAll('.qty-num').forEach(el => el.textContent = '1');
   document.getElementById('customerNameInput').value = '';
   document.getElementById('customAmount').value = '';
@@ -518,7 +531,7 @@ function renderRecentOrders() {
         <div class="recent-order-name">${esc(order.customerName)}</div>
         <div class="recent-order-items">${esc(order.products)}</div>
         <div class="recent-order-meta">
-          <span>${order.time || ''}</span>
+          <span>${fmtTimeStr(order.time)}</span>
           <span class="recent-order-total">${isCancelled ? '❌ בוטל' : '₪' + Math.abs(order.total || 0)}</span>
         </div>
         ${!isCancelled ? `
@@ -603,6 +616,18 @@ async function doCancelOrder(orderId) {
 // ─────────────────────────────────────────────
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtTimeStr(t) {
+  if (!t) return '';
+  // Already HH:mm
+  if (/^\d{1,2}:\d{2}$/.test(String(t))) return String(t);
+  // Try parsing as Date
+  const d = new Date(t);
+  if (!isNaN(d.getTime())) return d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  // Regex extract HH:mm from a longer string
+  const m = String(t).match(/(\d{1,2}:\d{2})/);
+  return m ? m[1] : String(t);
 }
 </script>
 </body>
