@@ -265,15 +265,16 @@ function renderInventory() {
     return;
   }
 
-  // Beer split: "בירות" = general/uncategorized bucket, "בירה X" = named sub-types
-  const beerMain = inventoryData.find(i => i.name === 'בירות');
-  const beerSubs = inventoryData.filter(i => i.name.startsWith('בירה '));
-  const others   = inventoryData.filter(i => i.name !== 'בירות' && !i.name.startsWith('בירה '));
+  // Beer split: "בירות" = authoritative total, "בירה X" = named sub-types
+  const beerMain  = inventoryData.find(i => i.name === 'בירות');
+  const beerSubs  = inventoryData.filter(i => i.name.startsWith('בירה '));
+  const others    = inventoryData.filter(i => i.name !== 'בירות' && !i.name.startsWith('בירה '));
 
-  const subsTotal  = beerSubs.reduce((s, i) => s + i.stock, 0);
-  const mainStock  = (beerMain ? beerMain.stock : 0) + subsTotal;
-  const required   = beerMain ? (beerMain.requiredStock || 0) : 0;
-  const toBuyBeer  = required > 0 ? Math.max(0, required - mainStock) : 0;
+  const subsTotal = beerSubs.reduce((s, i) => s + i.stock, 0);
+  const mainStock = beerMain ? beerMain.stock : subsTotal;   // total = "בירות".stock
+  const unknown   = Math.max(0, mainStock - subsTotal);       // unaccounted beers
+  const required  = beerMain ? (beerMain.requiredStock || 0) : 0;
+  const toBuyBeer = required > 0 ? Math.max(0, required - mainStock) : 0;
 
   const headerHtml = `
     <div class="inv-header-row">
@@ -289,23 +290,39 @@ function renderInventory() {
   // Beer group FIRST
   const hasBeerData = beerMain || beerSubs.length > 0;
   if (hasBeerData) {
+    // Group header includes +/- controls for the total ("בירות" row)
+    const beerName = 'בירות';
     html += `
-      <div class="inv-group-header" onclick="toggleBeerGroup(this)">
-        <span style="font-size:1.1rem;">🍺</span>
-        <span class="inv-group-title">בירות</span>
+      <div class="inv-group-header">
+        <span style="font-size:1.1rem;" onclick="toggleBeerGroup(this.parentElement)">🍺</span>
+        <span class="inv-group-title" onclick="toggleBeerGroup(this.parentElement)" style="cursor:pointer;">בירות</span>
         <span class="inv-group-badge">${mainStock} יח׳</span>
         ${required > 0 ? `<span class="inv-group-badge" style="color:var(--text-muted);">נדרש: ${required}</span>` : ''}
         ${toBuyBeer > 0 ? `<span class="badge badge-danger">${toBuyBeer} לקנות</span>` : (required > 0 ? `<span class="badge badge-success">✓ מספיק</span>` : '')}
-        <span class="inv-group-chevron" style="color:var(--text-muted);font-size:0.8rem;margin-right:auto;transition:transform 0.2s;display:inline-block;">▼</span>
+        <div style="margin-right:auto;display:flex;align-items:center;gap:4px;">
+          <button class="inv-adj-btn" data-name="${beerName}" onclick="quickAdj(this.dataset.name,-1)">−</button>
+          <button class="inv-adj-btn" data-name="${beerName}" onclick="quickAdj(this.dataset.name,1)">+</button>
+          <button class="inv-edit-btn" data-name="${beerName}" onclick="openStockModal(this.dataset.name)">✏️</button>
+          <span class="inv-group-chevron" onclick="toggleBeerGroup(this.parentElement.parentElement)" style="color:var(--text-muted);font-size:0.8rem;cursor:pointer;transition:transform 0.2s;display:inline-block;padding:4px;">▼</span>
+        </div>
       </div>
       <div class="inv-group-body" id="beerGroup">`;
 
     // Named sub-types
-    html += beerSubs.map(makeInvRow).join('');
+    html += beerSubs.map(i => makeInvRow(i)).join('');
 
-    // "בירות" general row (uncategorized bucket) — always shown with controls
-    if (beerMain) {
-      html += makeInvRow(beerMain, 'כללי / לא ידוע');
+    // "לא ידוע" row — read-only, shows unaccounted beers
+    if (unknown > 0) {
+      html += `
+        <div class="inv-row" style="opacity:0.7;">
+          <div class="inv-col-name" style="color:var(--text-muted);font-style:italic;">
+            <span class="inv-emoji">❓</span><span>לא ידוע</span>
+          </div>
+          <div class="inv-col-num inv-col-cur inv-stock-ok">${unknown}</div>
+          <div class="inv-col-num inv-col-req">—</div>
+          <div class="inv-col-num inv-col-buy">—</div>
+          <div class="inv-controls"></div>
+        </div>`;
     }
 
     html += `
