@@ -351,6 +351,18 @@ function cancelOrder(orderId) {
   }
 }
 
+function fmtCellTime(val) {
+  // Google Sheets may return time cells as Date objects — format to HH:mm
+  if (!val && val !== 0) return '';
+  if (val instanceof Date) return Utilities.formatDate(val, 'Asia/Jerusalem', 'HH:mm');
+  const s = String(val);
+  // Already HH:mm
+  if (/^\d{1,2}:\d{2}$/.test(s)) return s;
+  // Extract HH:mm from a longer string
+  const m = s.match(/(\d{1,2}:\d{2})/);
+  return m ? m[1] : s;
+}
+
 function getActiveItems(limit) {
   limit = limit || 100;
   try {
@@ -362,7 +374,7 @@ function getActiveItems(limit) {
       .filter(r => r[6] !== 'cancelled')
       .map((r, idx) => ({
         date: r[0] ? r[0].toString() : '',
-        time: r[1] ? r[1].toString() : '',
+        time: fmtCellTime(r[1]),
         customerName: r[2] || '',
         products: r[3] || '',
         originalOrderId: r[4] || '',
@@ -384,7 +396,7 @@ function getRecentOrdersFromMain(limit) {
     if (data.length <= 1) return { success: true, orders: [] };
     const orders = data.slice(1).slice(-limit).map((r, idx) => ({
       date: r[0] ? r[0].toString() : '',
-      time: r[1] ? r[1].toString() : '',
+      time: fmtCellTime(r[1]),
       customerName: r[2] || '',
       products: r[3] || '',
       total: r[4] || 0,
@@ -502,15 +514,33 @@ function createActiveItems(orderData, orderId) {
 
 function updateItemStatus(itemId, newStatus) {
   try {
-    const sheet = getSheet('פריטים פעילים');
-    if (!sheet) return { success: false, message: 'גיליון פריטים פעילים לא נמצא' };
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][5] === itemId) {
-        sheet.getRange(i+1, 7).setValue(newStatus);
-        return { success: true, message: 'סטטוס עודכן' };
+    // First try active items sheet (item-level ID in column 5, original order ID in column 4)
+    const activeSheet = getSheet('פריטים פעילים');
+    if (activeSheet && activeSheet.getLastRow() > 1) {
+      const data = activeSheet.getDataRange().getValues();
+      let found = false;
+      for (let i = 1; i < data.length; i++) {
+        // Match by item-level ID (col 5) OR original order ID (col 4)
+        if (String(data[i][5]) === String(itemId) || String(data[i][4]) === String(itemId)) {
+          activeSheet.getRange(i + 1, 7).setValue(newStatus);
+          found = true;
+        }
+      }
+      if (found) return { success: true, message: 'סטטוס עודכן' };
+    }
+
+    // Fallback: update in main orders sheet (order-level status)
+    const ordersSheet = getSheet('סיכום הזמנות');
+    if (ordersSheet) {
+      const oData = ordersSheet.getDataRange().getValues();
+      for (let i = 1; i < oData.length; i++) {
+        if (String(oData[i][5]) === String(itemId)) {
+          ordersSheet.getRange(i + 1, 7).setValue(newStatus);
+          return { success: true, message: 'סטטוס עודכן בהזמנה' };
+        }
       }
     }
+
     return { success: false, message: 'פריט לא נמצא: ' + itemId };
   } catch (e) {
     return { success: false, message: e.toString() };

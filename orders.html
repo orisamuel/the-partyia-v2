@@ -5,20 +5,48 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d0f14">
 <title>הפרתיה — בונים</title>
+<link rel="icon" href="logo.png" type="image/png">
 <link rel="stylesheet" href="styles.css">
 <script src="config.js"></script>
 <script src="utils.js"></script>
 <style>
-  .status-select-group { display: flex; gap: 5px; flex-wrap: wrap; }
-  .status-select-btn {
-    padding: 5px 11px; border-radius: var(--radius-pill);
-    font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: var(--t-fast);
-    background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-secondary);
+  /* Segmented slider for status */
+  .status-seg {
+    display: inline-flex;
+    position: relative;
+    background: var(--bg-elevated);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-pill);
+    padding: 2px;
+    gap: 0;
+    user-select: none;
   }
-  .status-select-btn.active-pending   { background: var(--danger-bg);  color: var(--danger);  border-color: rgba(239,68,68,0.4); }
-  .status-select-btn.active-preparing { background: var(--warning-bg); color: var(--warning); border-color: rgba(245,158,11,0.4); }
-  .status-select-btn.active-ready     { background: var(--success-bg); color: var(--success); border-color: rgba(16,185,129,0.4); }
-  .status-select-btn:hover:not([class*="active-"]) { background: var(--glass-hover); color: var(--text-primary); }
+  .seg-thumb {
+    position: absolute;
+    top: 2px; bottom: 2px;
+    border-radius: var(--radius-pill);
+    transition: left 0.22s var(--ease-spring), width 0.18s var(--ease-smooth);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .seg-thumb.status-pending   { background: var(--danger-bg);  border: 1px solid rgba(239,68,68,0.35); }
+  .seg-thumb.status-preparing { background: var(--warning-bg); border: 1px solid rgba(245,158,11,0.35); }
+  .seg-thumb.status-ready     { background: var(--success-bg); border: 1px solid rgba(16,185,129,0.35); }
+  .seg-btn {
+    position: relative; z-index: 1;
+    padding: 5px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 0.76rem; font-weight: 600;
+    cursor: pointer;
+    background: transparent; border: none;
+    color: var(--text-muted);
+    transition: color 0.18s;
+    white-space: nowrap;
+  }
+  .seg-btn.active-pending   { color: var(--danger);  }
+  .seg-btn.active-preparing { color: var(--warning); }
+  .seg-btn.active-ready     { color: var(--success); }
+  .seg-btn:hover:not([class*="active-"]) { color: var(--text-secondary); }
   .orders-list-mobile { display: flex; flex-direction: column; gap: 10px; }
 </style>
 </head>
@@ -242,12 +270,13 @@ function renderDesktop(items) {
   }
   tbody.innerHTML = items.map(item => `
     <tr id="row-${item.orderId}">
-      <td class="text-sm text-muted">${esc(item.time || '')}</td>
+      <td class="text-sm text-muted">${esc(fmtTimeStr(item.time))}</td>
       <td><strong style="color:var(--amber-bright)">${esc(item.customerName)}</strong></td>
       <td class="text-sm">${esc(item.products)}</td>
-      <td><div class="status-select-group" id="sg-${item.orderId}">${statusBtns(item.orderId, item.status)}</div></td>
+      <td>${statusSlider(item.orderId, item.status)}</td>
     </tr>
   `).join('');
+  requestAnimationFrame(() => items.forEach(i => positionThumb(i.orderId, i.status)));
 }
 
 function renderMobile(items) {
@@ -261,23 +290,45 @@ function renderMobile(items) {
       <div class="order-card-name">${esc(item.customerName)}</div>
       <div class="order-card-items">${esc(item.products)}</div>
       <div class="order-card-footer">
-        <span class="order-card-time">${esc(item.time || '')}</span>
-        <div class="status-select-group">${statusBtns(item.orderId, item.status)}</div>
+        <span class="order-card-time">${esc(fmtTimeStr(item.time))}</span>
+        ${statusSlider(item.orderId, item.status)}
       </div>
     </div>
   `).join('');
+  requestAnimationFrame(() => items.forEach(i => positionThumb(i.orderId, i.status)));
 }
 
-function statusBtns(orderId, current) {
+function statusSlider(orderId, current) {
   const opts = [
     { val: 'pending',   label: '⏳ ממתין' },
     { val: 'preparing', label: '🔥 בהכנה' },
     { val: 'ready',     label: '✅ מוכן' },
   ];
-  return opts.map(o => {
+  const btns = opts.map(o => {
     const active = current === o.val ? ' active-' + o.val : '';
-    return `<button class="status-select-btn${active}" onclick="changeStatus('${orderId}','${o.val}')">${o.label}</button>`;
+    return `<button class="seg-btn${active}" data-status="${o.val}" onclick="changeStatus('${orderId}','${o.val}')">${o.label}</button>`;
   }).join('');
+  return `<div class="status-seg" id="sl-${orderId}"><div class="seg-thumb status-${current}" id="thumb-${orderId}"></div>${btns}</div>`;
+}
+
+function positionThumb(orderId, status) {
+  const seg = document.getElementById('sl-' + orderId);
+  if (!seg) return;
+  const thumb = document.getElementById('thumb-' + orderId);
+  const activeBtn = seg.querySelector('.seg-btn.active-' + status);
+  if (!thumb || !activeBtn) return;
+  thumb.style.left = activeBtn.offsetLeft + 'px';
+  thumb.style.width = activeBtn.offsetWidth + 'px';
+  thumb.className = 'seg-thumb status-' + status;
+}
+
+function fmtTimeStr(t) {
+  if (!t) return '';
+  if (/^\d{1,2}:\d{2}$/.test(String(t))) return String(t);
+  const d = new Date(t);
+  if (!isNaN(d.getTime())) return d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const m = String(t).match(/(\d{1,2}:\d{2})/);
+  return m ? m[1] : String(t);
 }
 
 // ─────────────────────────────────────────────
@@ -300,16 +351,17 @@ async function changeStatus(itemId, newStatus) {
 }
 
 function applyOptimistic(itemId, newStatus) {
-  // Desktop
-  const sg = document.getElementById('sg-' + itemId);
-  if (sg) sg.innerHTML = statusBtns(itemId, newStatus);
-  // Mobile
-  const card = document.getElementById('card-' + itemId);
-  if (card) {
-    card.className = 'order-card status-' + newStatus;
-    const sg2 = card.querySelector('.status-select-group');
-    if (sg2) sg2.innerHTML = statusBtns(itemId, newStatus);
+  // Update slider buttons active class
+  const seg = document.getElementById('sl-' + itemId);
+  if (seg) {
+    seg.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.className = 'seg-btn' + (btn.dataset.status === newStatus ? ' active-' + newStatus : '');
+    });
+    requestAnimationFrame(() => positionThumb(itemId, newStatus));
   }
+  // Mobile card border color
+  const card = document.getElementById('card-' + itemId);
+  if (card) card.className = 'order-card status-' + newStatus;
   // Recount
   const now = Date.now();
   const current = ordersData.map(i => {

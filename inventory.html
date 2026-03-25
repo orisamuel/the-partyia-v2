@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d0f14">
 <title>הפרתיה — מלאי</title>
+<link rel="icon" href="logo.png" type="image/png">
 <link rel="stylesheet" href="styles.css">
 <script src="config.js"></script>
 <script src="utils.js"></script>
@@ -117,7 +118,10 @@
       <input type="number" id="newInvQty" class="form-input" value="0" min="0">
     </div>
     <div class="form-group">
-      <label class="form-label">סף התראה (מתי להתריע על מלאי נמוך)</label>
+      <label class="form-label">
+        מינימום להתראה
+        <span class="text-xs text-muted" style="font-weight:400;"> — כמה יחידות לפני שמופיעה אזהרה</span>
+      </label>
       <input type="number" id="newInvThreshold" class="form-input" value="5" min="1">
     </div>
     <div class="modal-footer">
@@ -152,6 +156,43 @@ async function loadInventory() {
   }
 }
 
+function makeInventoryCard(item) {
+  const pct     = item.threshold ? Math.min(100, (item.stock / (item.threshold * 2)) * 100) : 50;
+  const isLow   = item.stock > 0 && item.stock <= item.threshold;
+  const isZero  = item.stock === 0;
+  const cls     = isZero ? 'no-stock' : isLow ? 'low-stock' : '';
+  const numCls  = isZero ? 'stock-zero' : isLow ? 'stock-low' : 'stock-ok';
+  const fillCls = isZero ? 'fill-zero' : isLow ? 'fill-low' : 'fill-ok';
+  const req = item.requiredStock || 0;
+  const needToBuy = req > 0 ? Math.max(0, req - item.stock) : 0;
+  return `
+    <div class="inventory-card ${cls} animate-fadein">
+      <div class="inventory-card-inner">
+        <div class="inventory-emoji">${item.emoji || '📦'}</div>
+        <div class="inventory-name">${esc(item.name)}</div>
+        <div class="inventory-stock ${numCls}">${item.stock}</div>
+        <div class="threshold-bar">
+          <div class="threshold-fill ${fillCls}" style="width:${pct}%"></div>
+        </div>
+        <div class="text-xs text-muted mb-8" style="display:flex;justify-content:space-between;width:100%;">
+          <span title="מינימום להתראה — כמות שמתחתיה תופיע אזהרה">⚠️ מינ׳: ${item.threshold}</span>
+          ${req > 0 ? `<span style="color:var(--text-secondary);">נדרש: <strong style="color:${needToBuy > 0 ? 'var(--warning)' : 'var(--success)'};">${req}</strong></span>` : ''}
+        </div>
+        ${needToBuy > 0 ? `<div class="text-xs mb-8" style="color:var(--warning);font-weight:700;">🛒 לקנות: ×${needToBuy}</div>` : ''}
+        ${item.notes ? `<div class="text-xs text-muted mb-8" style="font-style:italic;">💡 ${esc(item.notes)}</div>` : ''}
+        <div class="inventory-controls">
+          <button class="stock-adj-btn" data-name="${esc(item.name)}" data-delta="-1" onclick="quickAdj(this.dataset.name, parseInt(this.dataset.delta))">−</button>
+          <span class="text-sm fw-bold" style="min-width:20px;text-align:center;">${item.stock}</span>
+          <button class="stock-adj-btn" data-name="${esc(item.name)}" data-delta="1" onclick="quickAdj(this.dataset.name, parseInt(this.dataset.delta))">+</button>
+        </div>
+        <button class="btn btn-secondary btn-sm w-full" data-name="${esc(item.name)}" onclick="openStockModal(this.dataset.name)">
+          ✏️ עדכון מפורט
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 function renderInventory() {
   const grid = document.getElementById('inventoryGrid');
   if (!inventoryData.length) {
@@ -163,44 +204,44 @@ function renderInventory() {
     return;
   }
 
-  grid.innerHTML = inventoryData.map(item => {
-    const pct     = item.threshold ? Math.min(100, (item.stock / (item.threshold * 2)) * 100) : 50;
-    const isLow   = item.stock > 0 && item.stock <= item.threshold;
-    const isZero  = item.stock === 0;
-    const cls     = isZero ? 'no-stock' : isLow ? 'low-stock' : '';
-    const numCls  = isZero ? 'stock-zero' : isLow ? 'stock-low' : 'stock-ok';
-    const fillCls = isZero ? 'fill-zero' : isLow ? 'fill-low' : 'fill-ok';
+  // Separate beers from other items
+  const beers  = inventoryData.filter(i => i.name.startsWith('בירה'));
+  const others = inventoryData.filter(i => !i.name.startsWith('בירה'));
 
-    const req = item.requiredStock || 0;
-    const needToBuy = req > 0 ? Math.max(0, req - item.stock) : 0;
+  let html = '';
+  html += others.map(makeInventoryCard).join('');
 
-    return `
-      <div class="inventory-card ${cls} animate-fadein">
-        <div class="inventory-card-inner">
-          <div class="inventory-emoji">${item.emoji || '📦'}</div>
-          <div class="inventory-name">${esc(item.name)}</div>
-          <div class="inventory-stock ${numCls}">${item.stock}</div>
-          <div class="threshold-bar">
-            <div class="threshold-fill ${fillCls}" style="width:${pct}%"></div>
-          </div>
-          <div class="text-xs text-muted mb-8" style="display:flex;justify-content:space-between;width:100%;">
-            <span>סף: ${item.threshold}</span>
-            ${req > 0 ? `<span style="color:var(--text-secondary);">נדרש: <strong style="color:${needToBuy > 0 ? 'var(--warning)' : 'var(--success)'};">${req}</strong></span>` : ''}
-          </div>
-          ${needToBuy > 0 ? `<div class="text-xs mb-8" style="color:var(--warning);font-weight:700;">🛒 לקנות: ×${needToBuy}</div>` : ''}
-          ${item.notes ? `<div class="text-xs text-muted mb-8" style="font-style:italic;">💡 ${esc(item.notes)}</div>` : ''}
-          <div class="inventory-controls">
-            <button class="stock-adj-btn" onclick="quickAdj('${esc(item.name)}',-1)" title="הפחת 1">−</button>
-            <span class="text-sm fw-bold" style="min-width:20px;text-align:center;">${item.stock}</span>
-            <button class="stock-adj-btn" onclick="quickAdj('${esc(item.name)}',1)" title="הוסף 1">+</button>
-          </div>
-          <button class="btn btn-secondary btn-sm w-full" onclick="openStockModal('${esc(item.name)}')">
-            ✏️ עדכון מפורט
-          </button>
-        </div>
+  // Beer group with expandable sub-list
+  if (beers.length) {
+    const totalBeer = beers.reduce((s, i) => s + i.stock, 0);
+    const lowBeer   = beers.filter(i => i.stock <= i.threshold).length;
+    html += `
+      <div style="grid-column:1/-1;margin-top:16px;">
+        <button onclick="toggleBeerGroup(this)" style="cursor:pointer;display:flex;align-items:center;gap:8px;background:none;border:none;color:var(--text-primary);font:inherit;font-weight:700;font-size:1rem;padding:0;margin-bottom:8px;">
+          🍺 בירות
+          <span style="background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-secondary);font-weight:600;padding:2px 10px;border-radius:999px;font-size:0.78rem;">
+            ${totalBeer} יח׳ כולל
+          </span>
+          ${lowBeer > 0 ? `<span class="badge badge-danger" style="font-size:0.78rem;">${lowBeer} במלאי נמוך</span>` : ''}
+          <span id="beerChevron" style="color:var(--text-muted);font-size:0.8rem;transition:transform 0.2s;display:inline-block;">▼</span>
+        </button>
+      </div>
+      <div id="beerGroup" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
+        ${beers.map(makeInventoryCard).join('')}
       </div>
     `;
-  }).join('');
+  }
+
+  grid.innerHTML = html;
+}
+
+function toggleBeerGroup(btn) {
+  const group   = document.getElementById('beerGroup');
+  const chevron = document.getElementById('beerChevron');
+  if (!group) return;
+  const isOpen = group.style.display !== 'none';
+  group.style.display = isOpen ? 'none' : 'grid';
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(-90deg)' : '';
 }
 
 function renderLowStockAlert() {
