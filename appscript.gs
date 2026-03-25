@@ -714,6 +714,10 @@ function keepWarm() {
 // HTTP HANDLER
 // ============================================================
 
+function doGet(e) {
+  return doPost(e);
+}
+
 function doPost(e) {
   try {
     if (!e || !e.parameter) return jsonResponse({ success: false, message: 'אין פרמטרים' });
