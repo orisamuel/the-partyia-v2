@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f14">
+<title>הפרתיה — ניהול מוצרים</title>
+<link rel="stylesheet" href="styles.css">
+<script src="config.js"></script>
+<script src="utils.js"></script>
+<style>
+  .product-mgmt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+  }
+  .product-mgmt-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: var(--t-med); position: relative;
+  }
+  .product-mgmt-card:hover { border-color: var(--amber-glow); box-shadow: var(--shadow-amber); }
+  .product-mgmt-card.inactive { opacity: 0.45; }
+  .product-mgmt-header { display: flex; align-items: center; gap: 10px; }
+  .product-mgmt-emoji  { font-size: 1.8rem; }
+  .product-mgmt-name   { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+  .product-mgmt-price  { font-size: 0.85rem; color: var(--amber); font-weight: 700; }
+  .product-mgmt-meta   { display: flex; gap: 6px; flex-wrap: wrap; }
+  .product-mgmt-actions { display: flex; gap: 6px; margin-top: 4px; }
+
+  .emoji-grid {
+    display: grid; grid-template-columns: repeat(8, 1fr);
+    gap: 6px; max-height: 180px; overflow-y: auto;
+    border: 1px solid var(--glass-border); border-radius: var(--radius-md); padding: 8px;
+    background: var(--bg-base);
+  }
+  .emoji-btn {
+    font-size: 1.3rem; padding: 4px; border-radius: var(--radius-sm);
+    background: transparent; border: 1px solid transparent; cursor: pointer; text-align: center;
+    transition: var(--t-fast);
+  }
+  .emoji-btn:hover  { background: var(--amber-glow); border-color: var(--amber-dim); }
+  .emoji-btn.chosen { background: var(--amber-glow); border-color: var(--amber); }
+  .req-prep-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">
+  <img src="logo.png" alt="הפרתיה" class="loading-logo">
+  <div class="loading-title">מוצרים</div>
+  <div class="loading-spinner"></div>
+  <div id="loadingProgress" class="loading-progress">טוען מוצרים...</div>
+</div>
+
+<div id="mainContent">
+<div class="container">
+
+  <header class="header">
+    <a href="admin.html"><img src="logo.png" alt="לוגו" class="header-logo"></a>
+    <div class="header-title">
+      <h1>🛍️ ניהול מוצרים</h1>
+      <p>הוסף, ערוך ונהל את תפריט הפאב</p>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+      <a href="admin.html" class="btn-back">← חזרה</a>
+    </div>
+  </header>
+
+  <div class="page-body">
+
+    <div class="flex-between mb-16" style="flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div class="search-bar-wrapper" style="margin:0;min-width:200px;">
+          <span class="search-bar-icon">🔍</span>
+          <input type="text" id="searchInput" class="form-input search-bar" placeholder="חפש מוצר..." oninput="filterProducts()">
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text-secondary);cursor:pointer;">
+          <input type="checkbox" id="showInactive" onchange="filterProducts()"> הצג לא פעילים
+        </label>
+      </div>
+      <button class="btn btn-primary" onclick="openProductModal()">+ מוצר חדש</button>
+    </div>
+
+    <div id="productsGrid" class="product-mgmt-grid">
+      <div class="flex-center" style="grid-column:1/-1;padding:40px;color:var(--text-muted);">
+        <div class="spinner-sm" style="margin-left:8px;"></div> טוען...
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Product modal -->
+<div id="productModal" class="modal-backdrop" onclick="closeProductModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="productModalTitle">+ מוצר חדש</span>
+      <button class="modal-close" onclick="closeProductModal()">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">שם המוצר *</label>
+      <input type="text" id="pName" class="form-input" placeholder="לדוגמה: בירה, לימונערק...">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">מחיר (₪) *</label>
+        <input type="number" id="pPrice" class="form-input" placeholder="30" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">קטגוריה</label>
+        <select id="pCategory" class="form-select">
+          <option value="משקאות">משקאות</option>
+          <option value="אלכוהול">אלכוהול</option>
+          <option value="קוקטיילים">קוקטיילים</option>
+          <option value="אוכל">אוכל</option>
+          <option value="כללי">כללי</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">אייקון</label>
+      <input type="text" id="pEmoji" class="form-input" placeholder="🍺" maxlength="4"
+        oninput="highlightEmoji(this.value)" style="font-size:1.5rem;text-align:center;width:80px;">
+      <div class="emoji-grid mt-8" id="emojiPicker">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <div class="req-prep-row">
+      <div class="toggle-wrapper">
+        <div class="toggle-switch" id="prepToggle" onclick="togglePrep()">
+          <div class="toggle-knob"></div>
+        </div>
+        <span class="toggle-label" id="prepLabel">⚡ יוצא מהקופה מיד (לא מגיע למסך הבונים)</span>
+      </div>
+    </div>
+    <div class="text-xs text-muted mb-8">כבה את זה עבור קוקטיילים ומוצרים שדורשים הכנה</div>
+
+    <div id="editActiveRow" class="form-group" style="display:none;">
+      <label class="form-label">סטטוס</label>
+      <select id="pActive" class="form-select">
+        <option value="true">✓ פעיל</option>
+        <option value="false">✗ לא פעיל</option>
+      </select>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="deleteBtn" style="display:none;" onclick="deleteProduct()">🗑️ הסר</button>
+      <button class="btn btn-secondary" onclick="closeProductModal()">ביטול</button>
+      <button class="btn btn-primary" onclick="saveProduct()">💾 שמור</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const EMOJIS = ['🍺','🍻','🍷','🥂','🌹','🥃','🍸','🍹','🍾','🧃','🥤','🍋','🍊','🍍','🌿','🫐','🍇','🍓','🫧','☕','🫖','🧋','🥛','🍦','🍰','🍕','🌮','🥪','🥗','🍟','🍔','🎉','⭐','✨','🔥','❤️','💎','🎵'];
+
+let allProducts  = [];
+let editingName  = null; // null = new product
+let isRequirePrep = false;
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  warmupServer();
+  buildEmojiPicker();
+  loadProducts();
+});
+
+async function loadProducts() {
+  try {
+    const res = await apiCall('getAllProductsForReports');
+    if (!res.success) { showToast('שגיאה בטעינת מוצרים', 'error'); hideLoadingScreen(300); return; }
+    allProducts = res.products || [];
+    filterProducts();
+    hideLoadingScreen(300);
+  } catch (_) { showToast('שגיאת חיבור', 'error'); hideLoadingScreen(300); }
+}
+
+function filterProducts() {
+  const q           = document.getElementById('searchInput').value.toLowerCase();
+  const showInactive = document.getElementById('showInactive').checked;
+  const filtered = allProducts.filter(p =>
+    (showInactive || p.active === 'כן') &&
+    (!q || p.name.toLowerCase().includes(q) || (p.category||'').toLowerCase().includes(q))
+  );
+  renderProducts(filtered);
+}
+
+function renderProducts(products) {
+  const grid = document.getElementById('productsGrid');
+  if (!products.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span class="empty-state-icon">🛍️</span><p class="empty-state-text">לא נמצאו מוצרים</p></div>';
+    return;
+  }
+  grid.innerHTML = products.map(p => {
+    const inactive = p.active !== 'כן';
+    const prep = p.requiresPreparation;
+    return `
+      <div class="product-mgmt-card animate-fadein ${inactive ? 'inactive' : ''}">
+        <div class="product-mgmt-header">
+          <span class="product-mgmt-emoji">${p.emoji || '🍽️'}</span>
+          <div>
+            <div class="product-mgmt-name">${esc(p.name)}</div>
+            <div class="product-mgmt-price">₪${p.price}</div>
+          </div>
+        </div>
+        <div class="product-mgmt-meta">
+          <span class="badge">${esc(p.category || 'כללי')}</span>
+          ${prep ? '<span class="badge" style="background:var(--warning-bg);color:var(--warning);border-color:rgba(245,158,11,0.3);">👨‍🍳 הכנה</span>'
+                 : '<span class="badge" style="background:var(--success-bg);color:var(--success);border-color:rgba(16,185,129,0.3);">⚡ מהיר</span>'}
+          ${inactive ? '<span class="badge badge-danger">לא פעיל</span>' : ''}
+        </div>
+        <div class="product-mgmt-actions">
+          <button class="btn btn-secondary btn-sm w-full" onclick="openProductModal('${esc(p.name)}')">✏️ ערוך</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Modal ──────────────────────────────────────────────────
+function openProductModal(name) {
+  editingName = name || null;
+  const isEdit = !!name;
+  document.getElementById('productModalTitle').textContent = isEdit ? '✏️ עריכת מוצר' : '+ מוצר חדש';
+  document.getElementById('deleteBtn').style.display      = isEdit ? 'inline-flex' : 'none';
+  document.getElementById('editActiveRow').style.display  = isEdit ? 'block' : 'none';
+  document.getElementById('pName').disabled               = isEdit; // can't rename
+
+  if (isEdit) {
+    const p = allProducts.find(x => x.name === name);
+    if (!p) return;
+    document.getElementById('pName').value    = p.name;
+    document.getElementById('pPrice').value   = p.price;
+    document.getElementById('pEmoji').value   = p.emoji || '';
+    document.getElementById('pCategory').value = p.category || 'כללי';
+    document.getElementById('pActive').value  = p.active === 'כן' ? 'true' : 'false';
+    isRequirePrep = !p.requiresPreparation; // toggle is "fast = OFF prep"
+    // toggle = ON means "requires prep"
+    isRequirePrep = !!p.requiresPreparation;
+  } else {
+    document.getElementById('pName').value    = '';
+    document.getElementById('pPrice').value   = '';
+    document.getElementById('pEmoji').value   = '🍺';
+    document.getElementById('pCategory').value = 'קוקטיילים';
+    document.getElementById('pActive').value  = 'true';
+    isRequirePrep = true;
+  }
+
+  updatePrepToggleUI();
+  highlightEmoji(document.getElementById('pEmoji').value);
+  document.getElementById('productModal').classList.add('open');
+}
+
+function closeProductModal(event) {
+  if (event && event.target !== document.getElementById('productModal')) return;
+  document.getElementById('productModal').classList.remove('open');
+}
+
+function togglePrep() {
+  isRequirePrep = !isRequirePrep;
+  updatePrepToggleUI();
+}
+
+function updatePrepToggleUI() {
+  const tog   = document.getElementById('prepToggle');
+  const label = document.getElementById('prepLabel');
+  tog.classList.toggle('on', isRequirePrep);
+  label.textContent = isRequirePrep
+    ? '👨‍🍳 דורש הכנה (מגיע למסך הבונים)'
+    : '⚡ יוצא מהקופה מיד (לא מגיע למסך הבונים)';
+}
+
+async function saveProduct() {
+  const name  = document.getElementById('pName').value.trim();
+  const price = document.getElementById('pPrice').value;
+  const emoji = document.getElementById('pEmoji').value.trim() || '🍽️';
+  const cat   = document.getElementById('pCategory').value;
+  const active = document.getElementById('pActive').value;
+
+  if (!name)  { showToast('יש להזין שם מוצר', 'error'); return; }
+  if (!price) { showToast('יש להזין מחיר', 'error'); return; }
+
+  const data = { name, price, emoji, category: cat, requiresPreparation: isRequirePrep, active };
+
+  try {
+    const action = editingName ? 'updateProduct' : 'addProduct';
+    const res = await apiCall(action, data);
+    if (res.success) {
+      showToast(editingName ? '✓ מוצר עודכן' : '✓ מוצר נוסף', 'success');
+      document.getElementById('productModal').classList.remove('open');
+      loadProducts();
+    } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
+  } catch (_) { showToast('שגיאת חיבור', 'error'); }
+}
+
+async function deleteProduct() {
+  if (!editingName) return;
+  if (!confirm('להסיר את "' + editingName + '" מהתפריט?')) return;
+  try {
+    const res = await apiCall('deleteProduct', { name: editingName });
+    if (res.success) {
+      showToast('מוצר הוסר', 'warning');
+      document.getElementById('productModal').classList.remove('open');
+      loadProducts();
+    } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
+  } catch (_) { showToast('שגיאת חיבור', 'error'); }
+}
+
+// ── Emoji picker ───────────────────────────────────────────
+function buildEmojiPicker() {
+  document.getElementById('emojiPicker').innerHTML = EMOJIS.map(e =>
+    `<button class="emoji-btn" onclick="pickEmoji('${e}')" title="${e}">${e}</button>`
+  ).join('');
+}
+
+function pickEmoji(emoji) {
+  document.getElementById('pEmoji').value = emoji;
+  highlightEmoji(emoji);
+}
+
+function highlightEmoji(val) {
+  document.querySelectorAll('.emoji-btn').forEach(b => {
+    b.classList.toggle('chosen', b.textContent === val);
+  });
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

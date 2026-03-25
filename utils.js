@@ -1,53 +1,143 @@
 /**
- * utils.js - פונקציות עזר משותפות לכל הדפים
- * הפרתיה - פאב קהילתי נופי פרת
+ * utils.js — פונקציות עזר משותפות לכל הדפים
+ * הפרתיה v3
  */
 
-// עדכון טקסט מסך הטעינה
+// ── Theme ──────────────────────────────────────────────────
+
+function initTheme() {
+    const saved = localStorage.getItem('partyia-theme') || (typeof CONFIG !== 'undefined' ? CONFIG.DEFAULT_THEME : 'dark');
+    document.documentElement.dataset.theme = saved;
+    updateThemeToggleIcon(saved);
+}
+
+function toggleTheme() {
+    const current = document.documentElement.dataset.theme || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('partyia-theme', next);
+    updateThemeToggleIcon(next);
+}
+
+function updateThemeToggleIcon(theme) {
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+
+// ── Loading Screen ─────────────────────────────────────────
+
 function updateLoadingProgress(text) {
     const el = document.getElementById('loadingProgress');
     if (el) el.textContent = text;
 }
 
-// הסתרת מסך טעינה והצגת תוכן ראשי
-function hideLoadingScreen(delay = 500) {
+function hideLoadingScreen(delay = 400) {
     setTimeout(() => {
-        const loadingScreen = document.getElementById('loadingScreen');
-        const mainContent = document.getElementById('mainContent');
-        if (loadingScreen) loadingScreen.classList.add('hidden');
-        if (mainContent) mainContent.classList.add('visible');
+        const screen = document.getElementById('loadingScreen');
+        const content = document.getElementById('mainContent');
+        if (screen) screen.classList.add('hidden');
+        if (content) content.classList.add('visible');
     }, delay);
 }
 
-// קריאה ל-API של גוגל סקריפט
-async function apiCall(action, params = {}) {
-    const urlParams = new URLSearchParams({ action, ...params });
-    const response = await fetch(CONFIG.SCRIPT_URL, {
+// ── API ────────────────────────────────────────────────────
+
+// שולח warm-up ping לפני הקריאה הראשית (מונע cold start)
+function warmupServer() {
+    if (typeof CONFIG === 'undefined') return;
+    fetch(CONFIG.SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: urlParams,
-    });
-    if (!response.ok) {
-        throw new Error(`שגיאת שרת: ${response.status}`);
-    }
-    const text = await response.text();
-    try {
-        return JSON.parse(text);
-    } catch {
-        return { success: true, raw: text };
-    }
+        body: 'action=ping'
+    }).catch(() => {});
 }
 
-// הצגת הודעת סטטוס
-function showStatus(message, type = 'info', duration = 5000) {
-    const statusDiv = document.getElementById('status');
-    if (!statusDiv) return;
-    statusDiv.textContent = message;
-    statusDiv.className = `status ${type}`;
-    if (duration > 0) {
-        setTimeout(() => {
-            statusDiv.textContent = '';
-            statusDiv.className = '';
-        }, duration);
+async function apiCall(action, params = {}) {
+    if (typeof CONFIG === 'undefined') throw new Error('CONFIG לא טעון');
+    const body = new URLSearchParams({ action, ...params });
+    const res = await fetch(CONFIG.SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+    });
+    if (!res.ok) throw new Error('שגיאת שרת: ' + res.status);
+    const text = await res.text();
+    try { return JSON.parse(text); }
+    catch { return { success: true, raw: text }; }
+}
+
+// ── Toast Notifications ────────────────────────────────────
+
+(function initToastContainer() {
+    if (typeof document === 'undefined') return;
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!document.getElementById('toastContainer')) {
+            const el = document.createElement('div');
+            el.id = 'toastContainer';
+            el.className = 'toast-container';
+            document.body.appendChild(el);
+        }
+    });
+})();
+
+function showToast(message, type = 'info', duration = 3500) {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
     }
+    const toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+    toast.innerHTML = `<span class="toast-icon">${icons[type] || 'ℹ'}</span><span class="toast-msg">${message}</span>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('toast-show'));
+    setTimeout(() => {
+        toast.classList.remove('toast-show');
+        toast.classList.add('toast-hide');
+        setTimeout(() => toast.remove(), 350);
+    }, duration);
+}
+
+// backward-compat alias
+function showStatus(message, type = 'info', duration = 5000) {
+    showToast(message, type, duration);
+}
+
+// ── Formatting ─────────────────────────────────────────────
+
+function formatCurrency(amount) {
+    return '₪' + Math.abs(amount).toLocaleString('he-IL');
+}
+
+function formatTime(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    if (isNaN(d)) return ts;
+    return d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Sound (Web Audio API) ──────────────────────────────────
+
+function playNewOrderSound() {
+    if (typeof CONFIG !== 'undefined' && CONFIG.NEW_ORDER_SOUND === false) return;
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const play = (freq, start, dur) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime + start);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+            osc.start(ctx.currentTime + start);
+            osc.stop(ctx.currentTime + start + dur);
+        };
+        play(880, 0, 0.18);
+        play(1100, 0.2, 0.22);
+    } catch (e) {}
 }

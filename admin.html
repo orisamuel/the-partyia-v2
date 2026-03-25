@@ -1,378 +1,179 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת ניהול הפרתיה</title>
-    <link rel="icon" href="logo.png" type="image/png">
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        body {
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-        }
-
-        .header {
-            justify-content: center;
-            text-align: center;
-            gap: 20px;
-        }
-
-        .logo {
-            width: 90px;
-            height: 90px;
-        }
-
-        .header-text h1 {
-            font-size: 32px;
-            font-weight: 800;
-        }
-
-        .header-text p {
-            font-size: 16px;
-            opacity: 0.8;
-        }
-        
-        .content {
-            padding: 40px;
-        }
-        
-        .section {
-            margin-bottom: 50px;
-        }
-        
-        .section-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .section-title::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background: #E67E22;
-            border-radius: 2px;
-        }
-        
-        /* גישה מהירה */
-        .quick-access {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .quick-btn {
-            background: linear-gradient(135deg, #E67E22, #D35400);
-            color: white;
-            border: none;
-            padding: 20px;
-            border-radius: 15px;
-            text-decoration: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(230, 126, 34, 0.3);
-        }
-        
-        .quick-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(230, 126, 34, 0.4);
-        }
-        
-        .quick-btn .icon {
-            font-size: 32px;
-        }
-        
-        /* כרטיסיות אדמיניסטרציה */
-        .admin-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-        }
-        
-        .admin-card {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 15px;
-            padding: 25px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .admin-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, #E67E22, #D35400);
-            transition: left 0.3s;
-        }
-        
-        .admin-card:hover::before {
-            left: 0;
-        }
-        
-        .admin-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            border-color: #E67E22;
-        }
-        
-        .admin-card .icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-            display: block;
-        }
-        
-        .admin-card h3 {
-            color: #2c3e50;
-            font-size: 18px;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        
-        .admin-card p {
-            color: #6c757d;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        
-        /* צבעים מיוחדים לכרטיסיות */
-        .card-expenses .icon { color: #28a745; }
-        .card-products .icon { color: #E67E22; }
-        .card-residents .icon { color: #007bff; }
-        .card-quantities .icon { color: #6f42c1; }
-        .card-timing .icon { color: #fd7e14; }
-        .card-popular .icon { color: #dc3545; }
-        
-        /* רספונסיביות */
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                max-width: none;
-            }
-            
-            .content {
-                padding: 30px 20px;
-            }
-            
-            .header {
-                flex-direction: column;
-                gap: 15px;
-                padding: 25px 20px;
-            }
-            
-            .logo {
-                width: 80px;
-                height: 80px;
-            }
-            
-            .header-text h1 {
-                font-size: 28px;
-            }
-            
-            .header-text p {
-                font-size: 16px;
-            }
-            
-            .section-title {
-                font-size: 20px;
-            }
-            
-            .quick-access {
-                grid-template-columns: 1fr;
-            }
-            
-            .admin-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .admin-card {
-                padding: 20px;
-            }
-            
-            .admin-card .icon {
-                font-size: 40px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .header-text h1 {
-                font-size: 24px;
-            }
-            
-            .admin-card {
-                padding: 15px;
-            }
-            
-            .admin-card .icon {
-                font-size: 36px;
-                margin-bottom: 10px;
-            }
-            
-            .admin-card h3 {
-                font-size: 16px;
-            }
-            
-            .admin-card p {
-                font-size: 13px;
-            }
-        }
-        
-        /* אנימציות - fadeIn מוגדר ב-styles.css */
-        .admin-card, .quick-btn {
-            animation: fadeIn 0.5s ease forwards;
-        }
-        
-        /* עיצוב מיוחד לכפתור גוגל שיטס */
-        .quick-btn.sheets {
-            background: linear-gradient(135deg, #34a853, #137333);
-        }
-        
-        .quick-btn.sheets:hover {
-            box-shadow: 0 8px 25px rgba(52, 168, 83, 0.4);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f14">
+<title>הפרתיה — ניהול</title>
+<link rel="stylesheet" href="styles.css">
+<script src="config.js"></script>
+<script src="utils.js"></script>
+<style>
+  .admin-header-center {
+    text-align: center; padding: 28px 24px 0;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .admin-logo {
+    width: 80px; height: 80px; border-radius: 50%; object-fit: cover;
+    box-shadow: 0 0 0 3px var(--amber-glow), 0 0 40px var(--amber-glow-lg);
+  }
+  .admin-title { font-size: 1.6rem; font-weight: 900; color: var(--amber-bright); }
+  .admin-subtitle { font-size: 0.85rem; color: var(--text-secondary); }
+  .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 20px 24px 0; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-         <a href="admin.html">
-    <img src="logo.png" alt="לוגו הפרתיה" class="logo">
-</a>
-            <div class="header-text">
-                <h1>מערכת ניהול הפרתיה</h1>
-                <p>מרכז בקרה וניהול </p>
-            </div>
-        </div>
-        
-        <div class="content">
-            <!-- גישה מהירה -->
-            <div class="section">
-                <h2 class="section-title">🚀 גישה מהירה</h2>
-                <div class="quick-access">
-                    <a href="index.html" class="quick-btn">
-                        <span class="icon">📝</span>
-                        <span>רישום הזמנות</span>
-                    </a>
-                    <a href="orders.html" class="quick-btn">
-                        <span class="icon">📊</span>
-                        <span>הזמנות פעילות</span>
-                    </a>
-                    <a href="https://docs.google.com/spreadsheets/d/1b7i4Nn0ajOVKwZSWUpDVanezscA50Jdh1harmJqiSZY" target="_blank" class="quick-btn sheets">
-                        <span class="icon">📈</span>
-                        <span>גוגל שיטס</span>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- כלי אדמיניסטרציה -->
-            <div class="section">
-                <h2 class="section-title">🔧 כלי אדמיניסטרציה</h2>
-                <div class="admin-grid">
-                    
-                    <div class="admin-card card-expenses" onclick="openExpensesSummary()">
-                        <span class="icon">💰</span>
-                        <h3>סיכום הוצאות לתושב</h3>
-                        <p>יצירת דוח מפורט של הוצאות כל תושב באירוע או טווח תאריכים</p>
-                    </div>
-                    
-                    <div class="admin-card card-quantities" onclick="openQuantitiesSummary()">
-                        <span class="icon">📦</span>
-                        <h3>סיכום מוצרים ואירועים</h3>
-                        <p>דוח כמות המוצרים שנמכרו, הכנסות והנחות לפי אירוע או טווח</p>
-                    </div>
-                    
-                    <div class="admin-card card-products" onclick="openProductsManagement()">
-                        <span class="icon">🛍️</span>
-                        <h3>ניהול מוצרים</h3>
-                        <p>הוספה, עריכה ומחיקה של מוצרים ומחירים</p>
-                    </div>
-                    
-                    <div class="admin-card card-residents" onclick="openResidentsManagement()">
-                        <span class="icon">👥</span>
-                        <h3>ניהול תושבים</h3>
-                        <p>ניהול רשימת התושבים והמידע הקשור אליהם</p>
-                    </div>
-                    
-                    <div class="admin-card card-timing" onclick="openTimingReport()">
-                        <span class="icon">⏱️</span>
-                        <h3>זמני המתנה ממוצעים</h3>
-                        <p>ניתוח זמני הכנה וביצועי הבר</p>
-                    </div>
-                    
-                    <div class="admin-card card-popular" onclick="openPopularReport()">
-                        <span class="icon">🏆</span>
-                        <h3>מוצרים פופולאריים</h3>
-                        <p>דוח המוצרים הנמכרים ביותר לפי תקופות</p>
-                    </div>
-                    
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <script src="config.js"></script>
-    <script>
-        // פונקציות לפתיחת דפי האדמיניסטרציה
-        function openExpensesSummary() {
-            window.location.href = 'expenses-summary.html';
-        }
-        
-        function openQuantitiesSummary() {
-            window.location.href = 'drinksummary.html';
-        }
-        
-        function openProductsManagement() {
-            // TODO: פתיחת דף ניהול מוצרים
-            alert('ניהול מוצרים - בפיתוח');
-        }
-        
-        function openResidentsManagement() {
-            // TODO: פתיחת דף ניהול תושבים
-            alert('ניהול תושבים - בפיתוח');
-        }
-        
-        function openTimingReport() {
-            // TODO: פתיחת דף זמני המתנה ממוצעים
-            alert('זמני המתנה ממוצעים - בפיתוח');
-        }
-        
-        function openPopularReport() {
-            // TODO: פתיחת דף מוצרים פופולאריים
-            alert('מוצרים פופולאריים - בפיתוח');
-        }
-        
-        // אנימציות כניסה מדורגות
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.admin-card, .quick-btn');
-            cards.forEach((card, index) => {
-                card.style.animationDelay = `${index * 0.1}s`;
-            });
-        });
-    </script>
+<div id="loadingScreen" class="loading-screen">
+  <img src="logo.png" alt="הפרתיה" class="loading-logo">
+  <div class="loading-title">הפרתיה</div>
+  <div class="loading-spinner"></div>
+  <div id="loadingProgress" class="loading-progress">טוען...</div>
+</div>
+
+<div id="mainContent">
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <img src="logo.png" alt="לוגו" class="header-logo">
+    <div class="header-title">
+      <h1>⚙️ מערכת ניהול</h1>
+      <p>הפרתיה — פאב קהילתי נופי פרת</p>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+      <a href="CONFIG.SHEETS_URL" id="sheetsLink" target="_blank" class="header-link">📊 Sheets</a>
+    </div>
+  </header>
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-item">
+      <span class="stat-value" id="statOrdersToday">—</span>
+      <span class="stat-label">הזמנות היום</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="statPending">—</span>
+      <span class="stat-label">ממתינות</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="statRevenue">—</span>
+      <span class="stat-label">הכנסה היום</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="statProducts">—</span>
+      <span class="stat-label">מוצרים פעילים</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-value" id="statResidents">—</span>
+      <span class="stat-label">דיירים פעילים</span>
+    </div>
+  </div>
+
+  <!-- Quick access -->
+  <div class="quick-actions">
+    <a href="index.html"  class="btn btn-primary">📝 רישום הזמנה</a>
+    <a href="orders.html" class="btn btn-secondary">👨‍🍳 מסך הבונים</a>
+    <a href="inventory.html" class="btn btn-secondary">📦 מלאי</a>
+  </div>
+
+  <div class="page-body mt-20">
+
+    <!-- Admin cards grid -->
+    <div class="section-title">כלי ניהול</div>
+    <div class="admin-grid">
+
+      <div class="admin-card animate-fadein stagger-1" onclick="location.href='products.html'">
+        <span class="admin-card-icon">🛍️</span>
+        <div class="admin-card-title">ניהול מוצרים</div>
+        <div class="admin-card-desc">הוסף, ערוך ומחק מוצרים מהתפריט</div>
+      </div>
+
+      <div class="admin-card animate-fadein stagger-2" onclick="location.href='residents.html'">
+        <span class="admin-card-icon">👥</span>
+        <div class="admin-card-title">ניהול דיירים</div>
+        <div class="admin-card-desc">רשימת הדיירים, הוספה ועריכה</div>
+      </div>
+
+      <div class="admin-card animate-fadein stagger-3" onclick="location.href='inventory.html'">
+        <span class="admin-card-icon">📦</span>
+        <div class="admin-card-title">ניהול מלאי</div>
+        <div class="admin-card-desc">עדכון כמויות ומעקב מלאי</div>
+      </div>
+
+      <div class="admin-card animate-fadein stagger-4" onclick="location.href='drinksummary.html'">
+        <span class="admin-card-icon">📈</span>
+        <div class="admin-card-title">סיכום מכירות</div>
+        <div class="admin-card-desc">כמויות ומכירות לפי מוצר</div>
+      </div>
+
+      <div class="admin-card animate-fadein stagger-5" onclick="location.href='expenses-summary.html'">
+        <span class="admin-card-icon">💰</span>
+        <div class="admin-card-title">סיכום הוצאות</div>
+        <div class="admin-card-desc">הוצאות לפי דייר ותאריך</div>
+      </div>
+
+      <div class="admin-card animate-fadein stagger-6" id="sheetsCard">
+        <span class="admin-card-icon">📊</span>
+        <div class="admin-card-title">Google Sheets</div>
+        <div class="admin-card-desc">פתח את גיליון הנתונים ישירות</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  warmupServer();
+  document.getElementById('sheetsLink').href = CONFIG.SHEETS_URL || '#';
+  document.getElementById('sheetsCard').onclick = () => window.open(CONFIG.SHEETS_URL, '_blank');
+  hideLoadingScreen(300);
+  loadStats();
+});
+
+async function loadStats() {
+  try {
+    const [ordersRes, productsRes, residentsRes] = await Promise.all([
+      apiCall('getRecentOrdersFromMain', { limit: 200 }),
+      apiCall('getProducts'),
+      apiCall('getResidents'),
+    ]);
+
+    if (productsRes.success) {
+      document.getElementById('statProducts').textContent = (productsRes.products || []).length;
+    }
+    if (residentsRes.success) {
+      document.getElementById('statResidents').textContent = (residentsRes.residents || []).length;
+    }
+
+    if (ordersRes.success) {
+      const orders  = ordersRes.orders || [];
+      const todayStr = new Date().toLocaleDateString('he-IL', { day:'2-digit', month:'2-digit', year:'numeric' }).replace(/\./g,'/');
+
+      // Try matching today's date — orders store date as dd/MM/yyyy
+      const today = new Date();
+      const dd    = String(today.getDate()).padStart(2,'0');
+      const mm    = String(today.getMonth()+1).padStart(2,'0');
+      const yyyy  = today.getFullYear();
+      const todayFmt = `${dd}/${mm}/${yyyy}`;
+
+      const todayOrders = orders.filter(o => o.date === todayFmt && o.status !== 'cancelled');
+      const pending     = todayOrders.filter(o => o.status === 'pending').length;
+      const revenue     = todayOrders
+        .filter(o => o.orderType !== 'זיכוי')
+        .reduce((s, o) => s + (parseInt(o.total) || 0), 0);
+
+      document.getElementById('statOrdersToday').textContent = todayOrders.length;
+      document.getElementById('statPending').textContent      = pending;
+      document.getElementById('statRevenue').textContent      = '₪' + revenue;
+    }
+  } catch (_) {}
+}
+</script>
 </body>
 </html>

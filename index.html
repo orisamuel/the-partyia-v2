@@ -1,1573 +1,609 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>הפרתיה</title>
-    <link rel="icon" href="logo.png" type="image/png">
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        /* עמוד ראשי - מוסתר בהתחלה */
-        .main-content {
-            padding: 15px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f14">
+<title>הפרתיה — הזמנה</title>
+<link rel="stylesheet" href="styles.css">
+<script src="config.js"></script>
+<script src="utils.js"></script>
+<style>
+  /* Page-specific layout */
+  .index-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+  }
+  .index-main  { min-width: 0; }
+  .credit-toggle-btn {
+    padding: 8px 18px; border-radius: var(--radius-pill);
+    font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    background: var(--glass-bg); border: 1.5px solid var(--glass-border);
+    color: var(--text-secondary); transition: var(--t-fast);
+  }
+  .credit-toggle-btn.active {
+    background: var(--danger-bg); color: var(--danger);
+    border-color: rgba(239,68,68,0.4);
+  }
+  .custom-row { display: flex; gap: 8px; align-items: flex-end; }
+  .custom-row .form-input { flex: 1; }
+  .custom-row input[type="number"] { width: 90px; }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        /* הוספת עיצוב למצב זיכוי */
-        .container.credit-mode {
-            box-shadow: 0 25px 50px rgba(220, 53, 69, 0.2);
-            border: 2px solid rgba(220, 53, 69, 0.3);
-        }
-        
-        /* Header מודרני */
-        .header {
-            padding: 18px 40px;
-        }
+  .edit-order-products { display: flex; flex-direction: column; gap: 6px; }
+  .edit-product-row { display: flex; gap: 8px; align-items: center; }
+  .edit-product-row input { flex: 1; }
 
-        /* הדר במצב זיכוי */
-        .header.credit-mode {
-            background: linear-gradient(135deg, #c0392b, #e74c3c);
-        }
-
-        .header-logo {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-        }
-
-        .admin-link {
-            background: rgba(255,255,255,0.12);
-            color: white;
-            padding: 9px 18px;
-            border-radius: 10px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 600;
-            transition: background 0.25s;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .admin-link:hover {
-            background: rgba(255,255,255,0.22);
-        }
-        
-        .content {
-            padding: 30px 40px;
-        }
-        
-        .form-layout {
-            display: grid;
-            grid-template-columns: 2fr 350px;
-            gap: 40px;
-            align-items: start;
-        }
-        
-        /* עמודה ראשית */
-        .form-main {
-            
-        }
-        
-        .form-group {
-            margin-bottom: 30px;
-        }
-        
-        .section-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .section-title::before {
-            content: '';
-            width: 4px;
-            height: 20px;
-            background: #E67E22;
-            border-radius: 2px;
-        }
-        
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        input[type="text"], input[type="number"] {
-            width: 100%;
-            padding: 16px 20px;
-            border: 2px solid #e8ecef;
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-        
-        input[type="text"]:focus, input[type="number"]:focus {
-            outline: none;
-            border-color: #E67E22;
-            box-shadow: 0 0 0 3px rgba(230, 126, 34, 0.1);
-        }
-        
-        input[type="text"]:disabled {
-            background-color: #f0f0f0;
-            color: #999;
-            cursor: not-allowed;
-        }
-        
-        /* Autocomplete */
-        .name-input-container {
-            position: relative;
-        }
-        
-        .autocomplete-list {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-top: none;
-            border-radius: 0 0 10px 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
-        
-        .autocomplete-item {
-            padding: 12px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background-color 0.2s;
-        }
-        
-        .autocomplete-item:hover {
-            background: #f8f9fa;
-        }
-        
-        .autocomplete-item.selected {
-            background: #E67E22;
-            color: white;
-        }
-        
-        .guest-toggle {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .guest-btn {
-            background: white;
-            color: #6c757d;
-            border: 2px solid #e8ecef;
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-        }
-        
-        .guest-btn:hover {
-            border-color: #E67E22;
-            color: #E67E22;
-        }
-        
-        .guest-btn.active {
-            background: #E67E22;
-            color: white;
-            border-color: #E67E22;
-        }
-        
-        .kfar-btn.active {
-            background: #28a745;
-            border-color: #28a745;
-        }
-        
-        .alon-btn.active {
-            background: #17a2b8;
-            border-color: #17a2b8;
-        }
-        
-        /* עיצוב כפתור זיכוי חדש */
-        .credit-btn {
-            background: white;
-            color: #dc3545;
-            border: 2px solid #dc3545;
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-        }
-        
-        .credit-btn:hover {
-            background: rgba(220, 53, 69, 0.1);
-        }
-        
-        .credit-btn.active {
-            background: #dc3545;
-            color: white;
-            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
-        }
-        
-        /* הודעת מצב זיכוי */
-        .credit-mode-indicator {
-            background: linear-gradient(135deg, #dc3545, #c82333);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 16px;
-            display: none;
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        .credit-mode-indicator.active {
-            display: block;
-        }
-        
-        .name-validation-msg {
-            display: none;
-            color: #dc3545;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        
-        /* גריד מוצרים - קרטים מודרניים */
-        .loading-indicator {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-style: italic;
-        }
-        
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .product-card {
-            background: white;
-            border: 1px solid #e8ecef;
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        }
-        
-        .product-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            border-color: #E67E22;
-        }
-        
-        .product-card.selected {
-            border-color: #E67E22;
-            background: linear-gradient(135deg, #E67E22, #D35400);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(230, 126, 34, 0.25);
-        }
-        
-        /* במצב זיכוי - מוצרים נבחרים בצבע אדום */
-        .credit-mode .product-card.selected {
-            border-color: #dc3545;
-            background: linear-gradient(135deg, #dc3545, #c82333);
-            box-shadow: 0 12px 35px rgba(220, 53, 69, 0.25);
-        }
-        
-        .product-emoji {
-            font-size: 28px;
-            margin-bottom: 6px;
-            display: block;
-        }
-        
-        .product-name {
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            line-height: 1.2;
-        }
-        
-        .product-price {
-            font-size: 14px;
-            font-weight: bold;
-            color: #E67E22;
-            margin-bottom: 8px;
-        }
-        
-        .product-card.selected .product-price {
-            color: white;
-        }
-        
-        .quantity-controls {
-            display: none;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-            margin-top: 6px;
-        }
-        
-        .product-card.selected .quantity-controls {
-            display: flex;
-        }
-        
-        .quantity-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 12px;
-            transition: all 0.2s;
-        }
-        
-        .quantity-btn:hover {
-            background: rgba(255,255,255,0.3);
-        }
-        
-        .quantity-display {
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-            min-width: 18px;
-            text-align: center;
-        }
-        
-        /* עמודה ימנית - סיכום */
-        .form-sidebar {
-            background: #f8f9fa;
-            border-radius: 16px;
-            padding: 25px;
-            height: fit-content;
-            position: sticky;
-            top: 20px;
-        }
-        
-        /* במצב זיכוי - סיידבר עם גוון אדום */
-        .credit-mode .form-sidebar {
-            background: linear-gradient(135deg, #fff5f5, #ffe0e0);
-            border: 2px solid rgba(220, 53, 69, 0.2);
-        }
-        
-        .sidebar-section {
-            margin-bottom: 20px;
-        }
-        
-        .financial-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .financial-card {
-            flex: 1;
-            padding: 16px;
-            border-radius: 12px;
-            border: 2px solid;
-        }
-        
-        .custom-amount {
-            background: linear-gradient(135deg, #e8f5e8, #f0fff0);
-            border-color: #28a745;
-        }
-        
-        .custom-amount .card-icon {
-            color: #28a745;
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
-        
-        .custom-amount label {
-            color: #28a745;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            display: block;
-        }
-        
-        .discount-amount {
-            background: linear-gradient(135deg, #fff3cd, #fef9e7);
-            border-color: #ffc107;
-        }
-        
-        .discount-amount .card-icon {
-            color: #ffc107;
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
-        
-        .discount-amount label {
-            color: #856404;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            display: block;
-        }
-        
-        .financial-card input {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1px solid rgba(0,0,0,0.1);
-            border-radius: 6px;
-            font-size: 13px;
-            margin-bottom: 6px;
-        }
-        
-        .total-section {
-            background: linear-gradient(135deg, #2c3e50, #34495e);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        /* במצב זיכוי - סכום בצבע אדום */
-        .credit-mode .total-section {
-            background: linear-gradient(135deg, #dc3545, #c82333);
-        }
-        
-        .total-amount {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .total-label {
-            font-size: 14px;
-            opacity: 0.8;
-        }
-        
-        .submit-btn {
-            width: 100%;
-            background: linear-gradient(135deg, #E67E22, #D35400);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-bottom: 20px;
-        }
-        
-        .submit-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 25px rgba(230, 126, 34, 0.3);
-        }
-        
-        .submit-btn:disabled {
-            background: #6c757d;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        /* כפתור אישור במצב זיכוי */
-        .submit-btn.credit-mode {
-            background: linear-gradient(135deg, #dc3545, #c82333);
-        }
-        
-        .submit-btn.credit-mode:hover:not(:disabled) {
-            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
-        }
-        
-        .submit-btn.loading {
-            background: #6c757d;
-            cursor: not-allowed;
-            transform: none;
-            position: relative;
-        }
-        
-        .submit-btn.loading::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            margin: auto;
-            border: 2px solid transparent;
-            border-top-color: #ffffff;
-            border-radius: 50%;
-            animation: spin 1s ease infinite;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        .status {
-            text-align: center;
-            padding: 15px;
-            border-radius: 10px;
-            margin-top: 20px;
-            font-weight: bold;
-        }
-        
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .status.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
-        
-        .recent-orders {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #e9ecef;
-        }
-        
-        .recent-orders h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        
-        .order-item {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .desktop-only {
-            display: block;
-        }
-        
-        .mobile-only {
-            display: none;
-        }
-        
-        /* מובייל */
-        @media (max-width: 768px) {
-            .loading-title {
-                font-size: 24px;
-            }
-            
-            .loading-subtitle {
-                font-size: 16px;
-            }
-            
-            .loading-logo {
-                width: 120px;
-                height: 120px;
-            }
-            
-            .main-content {
-                padding: 10px;
-            }
-            
-            .container {
-                max-width: none;
-                margin: 0;
-            }
-            
-            .content {
-                padding: 20px;
-            }
-            
-            .form-layout {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .products-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 12px;
-            }
-            
-            .product-card {
-                padding: 12px;
-            }
-            
-            .guest-toggle {
-                grid-template-columns: 1fr;
-                gap: 8px;
-            }
-            
-            .financial-row {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .desktop-only {
-                display: none;
-            }
-            
-            .mobile-only {
-                display: block;
-            }
-            
-            .header {
-                padding: 15px 20px;
-            }
-            
-            .header-left {
-                gap: 10px;
-            }
-            
-            .header-logo {
-                width: 40px;
-                height: 40px;
-            }
-            
-            .header-text h1 {
-                font-size: 18px;
-            }
-            
-            .header-text p {
-                font-size: 12px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .products-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
-            
-            .product-card {
-                padding: 10px;
-            }
-            
-            .product-emoji {
-                font-size: 28px;
-            }
-            
-            .product-name {
-                font-size: 12px;
-            }
-        }
-    </style>
+  @media (max-width: 900px) {
+    .index-layout { grid-template-columns: 1fr; }
+    .order-sidebar { position: static; }
+  }
+</style>
 </head>
 <body>
-    <!-- מסך טעינה -->
-    <div class="loading-screen" id="loadingScreen">
-        <img src="logo.png" alt="לוגו הפרתיה" class="loading-logo">
-        <h1 class="loading-title">ברוכים הבאים לפרתיה!</h1>
-        <p class="loading-subtitle">מכינים הכל בשבילכם...</p>
-        <div class="loading-progress" id="loadingProgress">בודק חיבור לשרת...</div>
-        <div class="loading-spinner"></div>
-    </div>
 
-    <!-- תוכן ראשי -->
-    <div class="main-content" id="mainContent">
-        <div class="container" id="mainContainer">
-            <div class="header" id="mainHeader">
-                <div class="header-left">
-                    <a href="admin.html">
-                       <img src="logo.png" alt="לוגו הפרתיה" class="header-logo">
-                          </a>
-                    <div class="header-text">
-                        <h1>הפרתיה - רישום הזמנות</h1>
-                        <p>פאב קהילתי נופי פרת</p>
-                    </div>
-                </div>
-                <a href="admin.html" class="admin-link">🔧 כלי ניהול</a>
-            </div>
-            
-            <div class="content" id="mainContentArea">
-                <!-- הוספת אינדיקטור מצב זיכוי -->
-                <div class="credit-mode-indicator" id="creditModeIndicator">
-                    ⚠️ מצב זיכוי פעיל - כל הסכומים יירשמו כזיכוי (מינוס)
-                </div>
-                
-                <form id="orderForm">
-                    <div class="form-layout">
-                        <!-- עמודה ראשית -->
-                        <div class="form-main">
-                            <div class="form-group">
-                                <div class="section-header">
-                                    <div class="section-title">🍻 מי בא לשתות?</div>
-                                    <div class="guest-toggle">
-                                        <button type="button" id="creditBtn" class="credit-btn">💳 זיכוי</button>
-                                        <button type="button" id="guestBtn" class="guest-btn">תושב נופי פרת שאינו ברשימה</button>
-                                        <button type="button" id="kfarAdumimBtn" class="guest-btn kfar-btn">כפר אדומים</button>
-                                        <button type="button" id="alonBtn" class="guest-btn alon-btn">אלון</button>
-                                    </div>
-                                </div>
-                                <div class="name-input-container">
-                                    <input type="text" id="customerName" name="customerName" required 
-                                           placeholder="לדוג' - נופית פרתוש" disabled autocomplete="off" inputmode="text">
-                                    <div class="autocomplete-list" id="autocompleteList"></div>
-                                </div>
-                                <div class="name-validation-msg" id="nameValidationMsg"></div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <div class="loading-indicator" id="productsLoading">
-                                    טוען מוצרים...
-                                </div>
-                                <div class="products-grid" id="productsGrid" style="display: none;">
-                                    <!-- המוצרים ייווצרו דינמית מהדאטה בייס -->
-                                </div>
-                            </div>
-                            
-                            <!-- סכום חופשי - רק במובייל -->
-                            <div class="form-group mobile-only">
-                                <label for="customAmount">סכום חופשי (אופציונלי):</label>
-                                <div style="display: flex; gap: 10px; align-items: center;">
-                                    <input type="number" id="customAmount" placeholder="₪0" style="flex: 1;" min="0">
-                                    <input type="text" id="customDescription" placeholder="לדוג' טיפ" style="flex: 2;">
-                                </div>
-                            </div>
-                            
-                            <!-- הנחה - רק במובייל -->
-                            <div class="form-group mobile-only">
-                                <label for="discountAmount">הנחה (אופציונלי):</label>
-                                <div style="display: flex; gap: 10px; align-items: center;">
-                                    <input type="number" id="discountAmount" placeholder="₪0" style="flex: 1;" min="0">
-                                    <input type="text" id="discountDescription" placeholder="לדוג' שת''פ" style="flex: 2;">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- עמודה ימנית -->
-                        <div class="form-sidebar">
-                            <div class="sidebar-section desktop-only">
-                                <div class="financial-row">
-                                    <div class="financial-card custom-amount">
-                                        <div class="card-icon">💰</div>
-                                        <label>תשלום נוסף</label>
-                                        <input type="number" id="customAmountDesktop" placeholder="₪0" min="0">
-                                        <input type="text" id="customDescriptionDesktop" placeholder="לדוג' טיפ">
-                                    </div>
-                                    
-                                    <div class="financial-card discount-amount">
-                                        <div class="card-icon">🎁</div>
-                                        <label>הנחה</label>
-                                        <input type="number" id="discountAmountDesktop" placeholder="₪0" min="0">
-                                        <input type="text" id="discountDescriptionDesktop" placeholder="לדוג' שת''פ">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="total-section">
-                                <div class="total-amount" id="totalAmount">₪0</div>
-                                <div class="total-label" id="totalLabel">סכום כולל</div>
-                            </div>
-                            
-                            <button type="submit" class="submit-btn" id="submitBtn" disabled>
-                                ✅ אישור הזמנה
-                            </button>
-                            
-                            <div id="status"></div>
-                        </div>
-                    </div>
-                </form>
-                
-                <div class="recent-orders">
-                    <h3>הזמנות אחרונות</h3>
-                    <div id="recentOrdersList">
-                        <div class="order-item">
-                            <span>אין הזמנות עדיין</span>
-                        </div>
-                    </div>
-                    <div style="text-align: center; margin-top: 20px;">
-                        <a href="admin.html" style="color: #E67E22; text-decoration: none; font-weight: bold;">
-                            🔧 מעבר לכלי ניהול
-                        </a>
-                    </div>
-                </div>
-            </div>
+<!-- Loading -->
+<div id="loadingScreen" class="loading-screen">
+  <img src="logo.png" alt="הפרתיה" class="loading-logo">
+  <div class="loading-title">הפרתיה</div>
+  <div class="loading-spinner"></div>
+  <div id="loadingProgress" class="loading-progress">מתחבר לשרת...</div>
+</div>
+
+<div id="mainContent">
+<div class="container">
+
+  <!-- Header -->
+  <header class="header">
+    <a href="admin.html"><img src="logo.png" alt="לוגו" class="header-logo"></a>
+    <div class="header-title">
+      <h1 id="appTitle">הפרתיה</h1>
+      <p id="appSubtitle">פאב קהילתי נופי פרת</p>
+    </div>
+    <div class="header-actions">
+      <button id="creditToggleBtn" class="credit-toggle-btn" onclick="toggleCreditMode()">💳 מצב זיכוי</button>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="החלף ערכת נושא">🌙</button>
+      <a href="admin.html" class="header-link">⚙️ ניהול</a>
+    </div>
+  </header>
+
+  <div class="page-body">
+  <div class="index-layout">
+
+    <!-- ── LEFT: Order form ────────────────────────── -->
+    <div class="index-main">
+
+      <!-- Customer name -->
+      <div class="card mb-16">
+        <div class="section-title">👤 פרטי לקוח</div>
+
+        <!-- Residence type -->
+        <div class="form-group">
+          <label class="form-label">סוג תושב</label>
+          <div class="segment-control" id="residenceControl">
+            <button class="segment-btn active" onclick="setResidenceType('נופי פרת', this)">🏡 נופי פרת</button>
+            <button class="segment-btn" onclick="setResidenceType('כפר עדום', this)">🌳 כפר עדום</button>
+            <button class="segment-btn" onclick="setResidenceType('אלון', this)">🍃 אלון</button>
+            <button class="segment-btn" onclick="setResidenceType('אורח', this)">👤 אורח</button>
+          </div>
         </div>
+
+        <!-- Name autocomplete -->
+        <div class="form-group">
+          <label class="form-label" for="customerNameInput">שם לקוח</label>
+          <div class="autocomplete-wrapper">
+            <input type="text" id="customerNameInput" class="form-input"
+              placeholder="התחל להקליד שם..." autocomplete="off"
+              oninput="onNameInput(this.value)" onblur="onNameBlur()">
+            <div id="autocompleteList" class="autocomplete-list" style="display:none;"></div>
+          </div>
+          <div id="nameValidation" class="text-xs mt-8" style="min-height:1.2em;"></div>
+        </div>
+      </div>
+
+      <!-- Products -->
+      <div class="card mb-16">
+        <div class="section-title">🍺 בחר מוצרים</div>
+        <div id="productsGrid" class="products-grid">
+          <div class="flex-center" style="grid-column:1/-1;padding:24px;color:var(--text-muted);">
+            <div class="spinner-sm" style="margin-left:8px;"></div> טוען מוצרים...
+          </div>
+        </div>
+      </div>
+
+      <!-- Custom amount -->
+      <div class="card mb-16">
+        <div class="section-title">✏️ סכום מותאם אישית</div>
+        <div class="custom-row">
+          <input type="text" id="customDescription" class="form-input" placeholder="תיאור (אופציונלי)">
+          <input type="number" id="customAmount" class="form-input" placeholder="₪" min="0"
+            oninput="updateTotal()">
+        </div>
+        <div id="discountRow" class="custom-row mt-8">
+          <input type="text" id="discountDescription" class="form-input" placeholder="תיאור הנחה">
+          <input type="number" id="discountAmount" class="form-input" placeholder="₪ הנחה" min="0"
+            oninput="updateTotal()">
+        </div>
+      </div>
+
     </div>
 
-    <script src="config.js"></script>
-    <script src="utils.js"></script>
-    <script>
-        // משתנים גלובליים
-        let PRODUCTS = []; // ייטען מהדאטה בייס
-        let RESIDENTS = []; // ייטען מהדאטה בייס
-        let selectedItems = {};
-        let recentOrders = [];
-        let isGuestMode = false;
-        let selectedAutocompleteIndex = -1;
-        let isValidSelection = false; // האם נבחר שם תקין
-        let currentResidenceType = ''; // סוג התושב הנוכחי
-        let isCreditMode = false; // משתנה חדש למצב זיכוי
-        
-        // טעינת נתונים מהדאטה בייס - מתוקן עם POST
-        async function loadData() {
-            try {
-                // טעינת מוצרים
-                updateLoadingProgress('טוען מוצרים...');
-                console.log('מתחיל טעינת מוצרים...');
-                const productsResponse = await fetch(CONFIG.SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        action: 'getProducts'
-                    })
-                });
-                
-                if (productsResponse.ok) {
-                    const productsResult = await productsResponse.json();
-                    if (productsResult.success) {
-                        PRODUCTS = productsResult.products;
-                        console.log('נטענו', PRODUCTS.length, 'מוצרים');
-                        createProductButtons();
-                    } else {
-                        console.error('שגיאה בטעינת מוצרים:', productsResult.message);
-                        showStatus('שגיאה בטעינת המוצרים', 'error');
-                    }
-                } else {
-                    console.error('שגיאה בתשובת השרת למוצרים:', productsResponse.status);
-                    showStatus('שגיאה בחיבור לשרת למוצרים', 'error');
-                }
-                
-                // טעינת תושבים
-                updateLoadingProgress('טוען רשימת תושבים...');
-                console.log('מתחיל טעינת תושבים...');
-                const residentsResponse = await fetch(CONFIG.SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        action: 'getResidents'
-                    })
-                });
-                
-                if (residentsResponse.ok) {
-                    const residentsResult = await residentsResponse.json();
-                    if (residentsResult.success) {
-                        RESIDENTS = residentsResult.residents;
-                        console.log('נטענו', RESIDENTS.length, 'תושbים');
-                    } else {
-                        console.error('שגיאה בטעינת תושבים:', residentsResult.message);
-                        showStatus('שגיאה בטעינת התושבים', 'error');
-                    }
-                } else {
-                    console.error('שגיאה בתשובת השרת לתושבים:', residentsResponse.status);
-                    showStatus('שגיאה בחיבור לשרת לתושבים', 'error');
-                }
-                
-                // הפעלת השדות לאחר טעינה מוצלחת
-                updateLoadingProgress('מסיים הכנות...');
-                setTimeout(() => {
-                    const nameInput = document.getElementById('customerName');
-                    nameInput.disabled = false;
-                    nameInput.placeholder = 'לדוג\' - נופית פרתוש';
-                    
-                    updateLoadingProgress('הכל מוכן! כניסה למערכת...');
-                    hideLoadingScreen(800);
-                }, 300);
-                
-            } catch (error) {
-                console.error('שגיאה בטעינת נתונים:', error);
-                updateLoadingProgress('שגיאה בטעינת נתונים - נסה לרענן את הדף');
-                showStatus('שגיאה בטעינת נתונים מהשרת', 'error');
-            }
-        }
-        
-        // יצירת כפתורי מוצרים מהדאטה בייס
-        function createProductButtons() {
-            const grid = document.getElementById('productsGrid');
-            const loading = document.getElementById('productsLoading');
-            
-            if (PRODUCTS.length === 0) {
-                loading.textContent = 'לא נמצאו מוצרים';
-                return;
-            }
-            
-            grid.innerHTML = '';
-            
-            PRODUCTS.forEach(product => {
-                const productCard = document.createElement('div');
-                productCard.className = 'product-card';
-                productCard.dataset.product = product.name;
-                productCard.dataset.price = product.price;
-                
-                productCard.innerHTML = `
-                    <div class="product-emoji">${product.emoji}</div>
-                    <div class="product-name">${product.name}</div>
-                    <div class="product-price">₪${product.price}</div>
-                    <div class="quantity-controls">
-                        <div class="quantity-btn minus-btn">-</div>
-                        <div class="quantity-display" id="qty-${product.name}">1</div>
-                        <div class="quantity-btn plus-btn">+</div>
-                    </div>
-                `;
-                
-                grid.appendChild(productCard);
-            });
-            
-            // הסתרת הloading והצגת הגריד
-            loading.style.display = 'none';
-            grid.style.display = 'grid';
-            
-            setupEventListeners();
-        }
-        
-        // Event listeners למוצרים
-        function setupEventListeners() {
-            document.querySelectorAll('.product-card').forEach(card => {
-                card.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('quantity-btn')) return;
-                    
-                    const productName = card.dataset.product;
-                    const price = parseInt(card.dataset.price);
-                    toggleProduct(productName, price, card);
-                });
-            });
-            
-            document.querySelectorAll('.plus-btn').forEach((btn, index) => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const productName = PRODUCTS[index].name;
-                    changeQuantity(productName, 1);
-                });
-            });
-            
-            document.querySelectorAll('.minus-btn').forEach((btn, index) => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const productName = PRODUCTS[index].name;
-                    changeQuantity(productName, -1);
-                });
-            });
-        }
-        
-        // הוספת פונקציה לטיפול במצב זיכוי
-        function toggleCreditMode() {
-            const creditBtn = document.getElementById('creditBtn');
-            const container = document.getElementById('mainContainer');
-            const header = document.getElementById('mainHeader');
-            const contentArea = document.getElementById('mainContentArea');
-            const indicator = document.getElementById('creditModeIndicator');
-            const submitBtn = document.getElementById('submitBtn');
-            const totalLabel = document.getElementById('totalLabel');
-            
-            isCreditMode = !isCreditMode;
-            
-            if (isCreditMode) {
-                // הפעלת מצב זיכוי
-                creditBtn.classList.add('active');
-                creditBtn.innerHTML = '✓ מצב זיכוי פעיל';
-                container.classList.add('credit-mode');
-                header.classList.add('credit-mode');
-                contentArea.classList.add('credit-mode');
-                indicator.classList.add('active');
-                submitBtn.classList.add('credit-mode');
-                submitBtn.textContent = '💳 אישור זיכוי';
-                totalLabel.textContent = 'סכום זיכוי';
-            } else {
-                // ביטול מצב זיכוי
-                creditBtn.classList.remove('active');
-                creditBtn.innerHTML = '💳 זיכוי';
-                container.classList.remove('credit-mode');
-                header.classList.remove('credit-mode');
-                contentArea.classList.remove('credit-mode');
-                indicator.classList.remove('active');
-                submitBtn.classList.remove('credit-mode');
-                submitBtn.textContent = '✅ אישור הזמנה';
-                totalLabel.textContent = 'סכום כולל';
-            }
-            
-            // עדכון הסכום
-            updateTotal();
-        }
-        
-        // Autocomplete לשמות תושבים - מתוקן ללא readOnly
-        function setupAutocomplete() {
-            const nameInput = document.getElementById('customerName');
-            const autocompleteList = document.getElementById('autocompleteList');
-            const guestBtn = document.getElementById('guestBtn');
-            const kfarAdumimBtn = document.getElementById('kfarAdumimBtn');
-            const alonBtn = document.getElementById('alonBtn');
-            const creditBtn = document.getElementById('creditBtn');
-            const validationMsg = document.getElementById('nameValidationMsg');
-            
-            // הוספת event listener לכפתור הזיכוי
-            creditBtn.addEventListener('click', toggleCreditMode);
-            
-            // פונקציה לאיפוס כל הכפתורים
-            function resetAllButtons() {
-                [guestBtn, kfarAdumimBtn, alonBtn].forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                // החזרת הטקסטים המקוריים
-                guestBtn.textContent = 'תושב נופי פרת שאינו ברשימה';
-                kfarAdumimBtn.textContent = 'כפר אדומים';
-                alonBtn.textContent = 'אלון';
-            }
-            
-            // פונקציה לעבור למצב הקלדה עם סוג תושב
-            function enterResidenceMode(type, placeholder, btn) {
-                resetAllButtons();
-                btn.classList.add('active');
-                btn.textContent = '✓ נבחר: ' + type;
-                
-                nameInput.placeholder = placeholder;
-                autocompleteList.style.display = 'none';
-                isGuestMode = true;
-                currentResidenceType = type;
-                isValidSelection = true;
-                hideValidationMessage();
-                
-                // הוספת הודעת בחירה
-                const existingMsg = document.getElementById('active-residence-msg');
-                if (existingMsg) existingMsg.remove();
-                
-                const message = document.createElement('div');
-                message.id = 'active-residence-msg';
-                message.style.cssText = `
-                    background: #e7f3ff;
-                    border: 1px solid #007bff;
-                    border-radius: 8px;
-                    padding: 8px 12px;
-                    margin-top: 8px;
-                    font-size: 13px;
-                    color: #004085;
-                    text-align: center;
-                `;
-                message.textContent = `נבחר: ${type} • לחץ שוב כדי לחזור לרשימה`;
-                
-                const guestToggle = document.querySelector('.guest-toggle');
-                guestToggle.appendChild(message);
-                
-                nameInput.focus();
-                updateSubmitButton();
-            }
-            
-            // פונקציה לחזור למצב רשימה
-            function returnToListMode() {
-                resetAllButtons();
-                nameInput.placeholder = 'לדוג\' - נופית פרתוש';
-                nameInput.value = '';
-                isGuestMode = false;
-                currentResidenceType = '';
-                isValidSelection = false;
-                hideValidationMessage();
-                const existingMsg = document.getElementById('active-residence-msg');
-                if (existingMsg) existingMsg.remove();
-                updateSubmitButton();
-            }
-            
-            // כפתור תושב נופי פרת שאינו ברשימה
-            guestBtn.addEventListener('click', () => {
-                if (isGuestMode && currentResidenceType === 'נופי פרת לא ברשימה') {
-                    returnToListMode();
-                } else {
-                    enterResidenceMode('נופי פרת לא ברשימה', 'הקלד שם תושב נופי פרת...', guestBtn);
-                }
-            });
-            
-            // כפתור כפר אדומים
-            kfarAdumimBtn.addEventListener('click', () => {
-                if (isGuestMode && currentResidenceType === 'כפר אדומים') {
-                    returnToListMode();
-                } else {
-                    enterResidenceMode('כפר אדומים', 'הקלד שם תושב כפר אדומים...', kfarAdumimBtn);
-                }
-            });
-            
-            // כפתור אלון
-            alonBtn.addEventListener('click', () => {
-                if (isGuestMode && currentResidenceType === 'אלון') {
-                    returnToListMode();
-                } else {
-                    enterResidenceMode('אלון', 'הקלד שם תושב אלון...', alonBtn);
-                }
-            });
-            
-            // Autocomplete
-            nameInput.addEventListener('input', (e) => {
-                if (isGuestMode) {
-                    isValidSelection = true;
-                    updateSubmitButton();
-                    return;
-                }
-                
-                const query = e.target.value.toLowerCase().trim();
-                isValidSelection = false;
-                
-                if (query.length < 1) {
-                    autocompleteList.style.display = 'none';
-                    selectedAutocompleteIndex = -1;
-                    showValidationMessage('בחר שם מהרשימה או לחץ על אחד מהכפתורים');
-                    updateSubmitButton();
-                    return;
-                }
-                
-                const queryWords = query.split(' ').filter(word => word.length > 0);
-                
-                const matches = RESIDENTS.filter(resident => {
-                    const fullNameLower = resident.fullName.toLowerCase();
-                    const nicknameLower = (resident.nickname || '').toLowerCase();
-                    
-                    const fullNameMatches = queryWords.every(word => fullNameLower.includes(word));
-                    const nicknameMatches = queryWords.every(word => nicknameLower.includes(word));
-                    
-                    return fullNameMatches || nicknameMatches;
-                });
-                
-                if (matches.length === 0) {
-                    autocompleteList.style.display = 'none';
-                    showValidationMessage('לא נמצא שם ברשימה - בחר שם אחר או לחץ על אחד מהכפתורים');
-                    updateSubmitButton();
-                    return;
-                }
-                
-                hideValidationMessage();
-                
-                autocompleteList.innerHTML = matches.map((resident, index) => 
-                    `<div class="autocomplete-item" data-index="${index}">
-                        <strong>${resident.fullName}</strong>
-                        ${resident.nickname && resident.nickname !== resident.fullName ? `(${resident.nickname})` : ''}
-                     </div>`
-                ).join('');
-                
-                autocompleteList.style.display = 'block';
-                selectedAutocompleteIndex = -1;
-                
-                document.querySelectorAll('.autocomplete-item').forEach((item, index) => {
-                    item.addEventListener('click', () => {
-                        selectResident(matches[index]);
-                    });
-                });
-                
-                updateSubmitButton();
-            });
-            
-            function selectResident(resident) {
-                nameInput.value = resident.fullName;
-                nameInput.placeholder = 'לדוג\' - נופית פרתוש';
-                autocompleteList.style.display = 'none';
-                selectedAutocompleteIndex = -1;
-                isValidSelection = true;
-                currentResidenceType = '';
-                hideValidationMessage();
-                updateSubmitButton();
-            }
-            
-            function showValidationMessage(message) {
-                validationMsg.textContent = message;
-                validationMsg.style.display = 'block';
-            }
-            
-            function hideValidationMessage() {
-                validationMsg.style.display = 'none';
-            }
-            
-            nameInput.addEventListener('keydown', (e) => {
-                if (isGuestMode) return;
-                
-                const items = document.querySelectorAll('.autocomplete-item');
-                if (items.length === 0) return;
-                
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, items.length - 1);
-                    updateAutocompleteSelection(items);
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, -1);
-                    updateAutocompleteSelection(items);
-                } else if (e.key === 'Enter' && selectedAutocompleteIndex >= 0) {
-                    e.preventDefault();
-                    items[selectedAutocompleteIndex].click();
-                } else if (e.key === 'Escape') {
-                    autocompleteList.style.display = 'none';
-                    selectedAutocompleteIndex = -1;
-                    nameInput.blur();
-                    nameInput.placeholder = 'לדוג\' - נופית פרתוש';
-                }
-            });
-            
-            document.addEventListener('click', (e) => {
-                if (!nameInput.contains(e.target) && !autocompleteList.contains(e.target)) {
-                    autocompleteList.style.display = 'none';
-                    selectedAutocompleteIndex = -1;
-                    if (!isGuestMode && !isValidSelection) {
-                        nameInput.placeholder = 'לדוג\' - נופית פרתוש';
-                    }
-                }
-            });
-        }
-        
-        function updateAutocompleteSelection(items) {
-            items.forEach((item, index) => {
-                if (index === selectedAutocompleteIndex) {
-                    item.classList.add('selected');
-                } else {
-                    item.classList.remove('selected');
-                }
-            });
-        }
-        
-        function toggleProduct(productName, price, card) {
-            if (selectedItems[productName]) {
-                delete selectedItems[productName];
-                card.classList.remove('selected');
-            } else {
-                selectedItems[productName] = { price: price, quantity: 1 };
-                card.classList.add('selected');
-                document.getElementById(`qty-${productName}`).textContent = '1';
-            }
-            
-            updateTotal();
-            updateSubmitButton();
-        }
-        
-        function changeQuantity(productName, change) {
-            if (!selectedItems[productName]) return;
-            
-            const newQuantity = selectedItems[productName].quantity + change;
-            
-            if (newQuantity <= 0) {
-                delete selectedItems[productName];
-                const card = document.querySelector(`[data-product="${productName}"]`);
-                card.classList.remove('selected');
-            } else {
-                selectedItems[productName].quantity = newQuantity;
-                document.getElementById(`qty-${productName}`).textContent = newQuantity;
-            }
-            
-            updateTotal();
-            updateSubmitButton();
-        }
-        
-        // עדכון פונקציית חישוב הסכום למצב זיכוי
-        function updateTotal() {
-            const productsTotal = Object.values(selectedItems).reduce((sum, item) => 
-                sum + (item.price * item.quantity), 0);
-            
-            const customAmountMobile = parseInt(document.getElementById('customAmount').value) || 0;
-            const customAmountDesktop = parseInt(document.getElementById('customAmountDesktop').value) || 0;
-            const customAmount = customAmountMobile + customAmountDesktop;
-            
-            const discountAmountMobile = parseInt(document.getElementById('discountAmount').value) || 0;
-            const discountAmountDesktop = parseInt(document.getElementById('discountAmountDesktop').value) || 0;
-            const discountAmount = discountAmountMobile + discountAmountDesktop;
-            
-            let total;
-            if (isCreditMode) {
-                // במצב זיכוי - הכל הופך לשלילי (ללא הנחות)
-                total = -(productsTotal + customAmount);
-            } else {
-                // במצב רגיל - חישוב עם הנחות
-                total = Math.max(0, productsTotal + customAmount - discountAmount);
-            }
-            
-            document.getElementById('totalAmount').textContent = `₪${total}`;
-        }
-        
-        function updateSubmitButton() {
-            const submitBtn = document.getElementById('submitBtn');
-            const customerName = document.getElementById('customerName').value.trim();
-            
-            submitBtn.disabled = !(customerName && isValidSelection);
-        }
-        
-        function updateRecentOrders() {
-            const ordersList = document.getElementById('recentOrdersList');
-            if (recentOrders.length === 0) {
-                ordersList.innerHTML = '<div class="order-item"><span>אין הזמנות עדיין</span></div>';
-                return;
-            }
-            
-            ordersList.innerHTML = recentOrders.slice(-5).reverse().map(order => 
-                `<div class="order-item">
-                    <span>${order.name} - ${order.products}</span>
-                    <span>₪${order.total}</span>
-                </div>`
-            ).join('');
-        }
-        
-        async function sendToGoogleSheets(orderData) {
-            try {
-                console.log('שולח הזמנה לשרת:', orderData);
-                
-                const params = new URLSearchParams({
-                    action: 'addOrder',
-                    customerName: orderData.name,
-                    products: orderData.products,
-                    total: orderData.total,
-                    timestamp: orderData.timestamp,
-                    residenceType: orderData.residenceType || '',
-                    isCredit: orderData.isCredit || false // הוספת פרמטר זיכוי
-                });
-                
-                console.log('פרמטרים:', params.toString());
-                
-                const response = await fetch(CONFIG.SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: params
-                });
-                
-                console.log('סטטוס תשובה:', response.status);
-                
-                if (response.ok) {
-                    const result = await response.text();
-                    console.log('תוכן תשובה:', result);
-                    
-                    try {
-                        const jsonResult = JSON.parse(result);
-                        return jsonResult;
-                    } catch (e) {
-                        console.log('לא JSON תקין, אבל תשובה OK - מניחים שהצליח');
-                        return { success: true, message: 'נשלח בהצלחה' };
-                    }
-                } else {
-                    console.error('שגיאה בתשובת השרת:', response.status);
-                    return { success: false, message: `שגיאה ${response.status}` };
-                }
-                
-            } catch (error) {
-                console.error('שגיאה בשליחה:', error);
-                return { success: false, message: error.toString() };
-            }
-        }
-        
-        // שליחת טופס - עדכון לתמיכה במצב זיכוי
-        document.getElementById('orderForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const customerName = document.getElementById('customerName').value.trim();
-            const customAmountMobile = parseInt(document.getElementById('customAmount').value) || 0;
-            const customAmountDesktop = parseInt(document.getElementById('customAmountDesktop').value) || 0;
-            const customAmount = customAmountMobile + customAmountDesktop;
-            const customDescriptionMobile = document.getElementById('customDescription').value.trim();
-            const customDescriptionDesktop = document.getElementById('customDescriptionDesktop').value.trim();
-            const customDescription = customDescriptionMobile || customDescriptionDesktop;
-            
-            const discountAmountMobile = parseInt(document.getElementById('discountAmount').value) || 0;
-            const discountAmountDesktop = parseInt(document.getElementById('discountAmountDesktop').value) || 0;
-            const discountAmount = discountAmountMobile + discountAmountDesktop;
-            const discountDescriptionMobile = document.getElementById('discountDescription').value.trim();
-            const discountDescriptionDesktop = document.getElementById('discountDescriptionDesktop').value.trim();
-            const discountDescription = discountDescriptionMobile || discountDescriptionDesktop;
-            
-            const submitBtn = document.getElementById('submitBtn');
-            
-            if (!customerName) {
-                showStatus('אנא מלא את השם', 'error');
-                return;
-            }
-            
-            // בדיקה: אם הנחה גדולה מסכום המוצרים במצב רגיל
-            const productsTotal = Object.values(selectedItems).reduce((sum, item) => 
-                sum + (item.price * item.quantity), 0);
-            
-            if (!isCreditMode && discountAmount > (productsTotal + customAmount)) {
-                showStatus(`ההנחה (₪${discountAmount}) גדולה מסכום ההזמנה (₪${productsTotal + customAmount}). לזיכוי לקוח - השתמש בכפתור 'זיכוי'`, 'error');
-                return;
-            }
-            
-            // חיווי מיידי
-            submitBtn.disabled = true;
-            submitBtn.classList.add('loading');
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = isCreditMode ? 'מבצע זיכוי...' : 'מאשר...';
-            
-            const productsList = [];
-            
-            if (isCreditMode) {
-                // במצב זיכוי - מוסיפים "זיכוי:" לכל מוצר וכמות שלילית
-                for (const [name, item] of Object.entries(selectedItems)) {
-                    if (item.quantity > 1) {
-                        productsList.push(`זיכוי: ${name} (-${item.quantity})`);
-                    } else {
-                        productsList.push(`זיכוי: ${name}`);
-                    }
-                }
-                
-                if (customAmount > 0) {
-                    const customItem = customDescription ? `זיכוי: ${customDescription} -₪${customAmount}` : `זיכוי: סכום חופשי -₪${customAmount}`;
-                    productsList.push(customItem);
-                }
-            } else {
-                // מצב רגיל
-                for (const [name, item] of Object.entries(selectedItems)) {
-                    if (item.quantity > 1) {
-                        productsList.push(`${name} (${item.quantity})`);
-                    } else {
-                        productsList.push(name);
-                    }
-                }
-                
-                if (customAmount > 0) {
-                    const customItem = customDescription ? `${customDescription} ₪${customAmount}` : `סכום חופשי ₪${customAmount}`;
-                    productsList.push(customItem);
-                }
-                
-                if (discountAmount > 0) {
-                    const discountItem = discountDescription ? `הנחה: ${discountDescription} -₪${discountAmount}` : `הנחה -₪${discountAmount}`;
-                    productsList.push(discountItem);
-                }
-            }
-            
-            let total;
-            if (isCreditMode) {
-                total = -(productsTotal + customAmount);
-            } else {
-                total = Math.max(0, productsTotal + customAmount - discountAmount);
-            }
-            
-            const newOrder = {
-                name: customerName,
-                products: productsList.join(', '),
-                total: total,
-                timestamp: new Date().toLocaleString('he-IL'),
-                residenceType: currentResidenceType,
-                isCredit: isCreditMode // הוספת סימון זיכוי
-            };
-            
-            recentOrders.push(newOrder);
-            localStorage.setItem('recentOrders', JSON.stringify(recentOrders));
-            
-            try {
-                const response = await sendToGoogleSheets(newOrder);
-                
-                submitBtn.classList.remove('loading');
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
-                
-                if (response.success) {
-                    const statusMsg = isCreditMode ? 
-                        `זיכוי נרשם בהצלחה! ${customerName} - ₪${total}` :
-                        `הזמנה נרשמה בהצלחה! ${customerName} - ₪${total}`;
-                    showStatus(statusMsg, 'success');
-                    resetForm();
-                } else {
-                    showStatus('שגיאה בשמירת ההזמנה: ' + response.message, 'error');
-                }
-            } catch (error) {
-                submitBtn.classList.remove('loading');
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
-                
-                showStatus('שגיאה בחיבור לשרת: ' + error.message, 'error');
-            }
-            
-            updateRecentOrders();
-        });
-        
-        // showStatus מוגדרת ב-utils.js
-        
-        function resetForm() {
-            const nameInput = document.getElementById('customerName');
-            const guestBtn = document.getElementById('guestBtn');
-            const kfarAdumimBtn = document.getElementById('kfarAdumimBtn');
-            const alonBtn = document.getElementById('alonBtn');
-            const validationMsg = document.getElementById('nameValidationMsg');
-            
-            nameInput.value = '';
-            document.getElementById('customAmount').value = '';
-            document.getElementById('customDescription').value = '';
-            document.getElementById('customAmountDesktop').value = '';
-            document.getElementById('customDescriptionDesktop').value = '';
-            document.getElementById('discountAmount').value = '';
-            document.getElementById('discountDescription').value = '';
-            document.getElementById('discountAmountDesktop').value = '';
-            document.getElementById('discountDescriptionDesktop').value = '';
-            selectedItems = {};
-            
-            [guestBtn, kfarAdumimBtn, alonBtn].forEach(btn => {
-                btn.classList.remove('active');
-            });
-            guestBtn.textContent = 'תושב נופי פרת שאינו ברשימה';
-            kfarAdumimBtn.textContent = 'כפר אדומים';
-            alonBtn.textContent = 'אלון';
-            
-            const existingMsg = document.getElementById('active-residence-msg');
-            if (existingMsg) existingMsg.remove();
-            
-            nameInput.placeholder = 'לדוג\' - נופית פרתוש';
-            isGuestMode = false;
-            currentResidenceType = '';
-            isValidSelection = false;
-            validationMsg.style.display = 'none';
-            
-            // איפוס מצב זיכוי
-            if (isCreditMode) {
-                toggleCreditMode();
-            }
-            
-            document.querySelectorAll('.product-card').forEach(card => {
-                card.classList.remove('selected');
-            });
-            
-            updateTotal();
-            updateSubmitButton();
-        }
-        
-        // אתחול
-        document.addEventListener('DOMContentLoaded', async function() {
-            selectedItems = {};
-            recentOrders = JSON.parse(localStorage.getItem('recentOrders') || '[]');
-            isValidSelection = false;
-            currentResidenceType = '';
-            isCreditMode = false;
-            
-            // הגדרת Autocomplete
-            setupAutocomplete();
-            
-            updateRecentOrders();
-            
-            document.getElementById('customerName').addEventListener('input', updateSubmitButton);
-            document.getElementById('customAmount').addEventListener('input', updateTotal);
-            document.getElementById('customAmount').addEventListener('input', updateSubmitButton);
-            document.getElementById('customAmountDesktop').addEventListener('input', updateTotal);
-            document.getElementById('customAmountDesktop').addEventListener('input', updateSubmitButton);
-            document.getElementById('discountAmount').addEventListener('input', updateTotal);
-            document.getElementById('discountAmount').addEventListener('input', updateSubmitButton);
-            document.getElementById('discountAmountDesktop').addEventListener('input', updateTotal);
-            document.getElementById('discountAmountDesktop').addEventListener('input', updateSubmitButton);
-            
-            // טעינת נתונים מדאטה בייס - זה יחביא את מסך הטעינה כשיסתיים
-            await loadData();
-        });
-    </script>
+    <!-- ── RIGHT: Sidebar ──────────────────────────── -->
+    <aside>
+      <div class="order-sidebar" id="orderSidebar">
+
+        <!-- Total -->
+        <div class="order-total-box">
+          <div class="order-total-label" id="totalLabel">סכום כולל</div>
+          <div class="order-total-amount" id="totalDisplay">₪0</div>
+        </div>
+
+        <!-- Submit -->
+        <button class="btn btn-primary btn-large mb-12" id="submitBtn" onclick="submitOrder()" disabled>
+          📝 שלח הזמנה
+        </button>
+
+        <button class="btn btn-secondary btn-large mb-16" onclick="resetForm()">🔄 נקה הכל</button>
+
+        <hr class="divider">
+
+        <!-- Recent orders -->
+        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>📋 הזמנות אחרונות</span>
+          <button class="btn btn-secondary btn-sm" onclick="loadRecentOrders()" title="רענן">🔄</button>
+        </div>
+        <div id="recentOrdersList">
+          <div class="text-muted text-sm" style="padding:8px 0;">טוען...</div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Edit Order Modal -->
+<div id="editOrderModal" class="modal-backdrop" onclick="closeEditModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">✏️ עריכת הזמנה</span>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div id="editOrderContent"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="cancelOrder()">🗑️ בטל הזמנה</button>
+      <button class="btn btn-secondary" onclick="closeEditModal()">ביטול</button>
+      <button class="btn btn-primary" onclick="saveEditOrder()">💾 שמור שינויים</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────
+let PRODUCTS     = [];
+let RESIDENTS    = [];
+let selectedItems = {};         // productName → quantity
+let isCreditMode  = false;
+let isNameValid   = false;
+let residenceType = 'נופי פרת';
+let editingOrderId = null;
+let recentPollTimer = null;
+
+// ─────────────────────────────────────────────
+// Boot
+// ─────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  initTheme();
+  warmupServer();
+  document.getElementById('appTitle').textContent    = CONFIG.APP_NAME    || 'הפרתיה';
+  document.getElementById('appSubtitle').textContent = CONFIG.APP_SUBTITLE || '';
+  await loadData();
+  loadRecentOrders();
+  recentPollTimer = setInterval(loadRecentOrders, 15000);
+});
+
+async function loadData() {
+  updateLoadingProgress('טוען מוצרים...');
+  try {
+    const [pRes, rRes] = await Promise.all([
+      apiCall('getProducts'),
+      apiCall('getResidents'),
+    ]);
+    if (pRes.success) { PRODUCTS = pRes.products || []; renderProducts(); }
+    else showToast('שגיאה בטעינת מוצרים', 'error');
+    if (rRes.success) RESIDENTS = rRes.residents || [];
+    updateLoadingProgress('מוכן!');
+    hideLoadingScreen(400);
+  } catch (e) {
+    showToast('שגיאת חיבור — בודק חיבור לשרת', 'error', 6000);
+    hideLoadingScreen(400);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Products
+// ─────────────────────────────────────────────
+function renderProducts() {
+  const grid = document.getElementById('productsGrid');
+  if (!PRODUCTS.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px;">אין מוצרים</div>';
+    return;
+  }
+
+  // Group by category
+  const categories = {};
+  PRODUCTS.forEach(p => {
+    const cat = p.category || 'כללי';
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(p);
+  });
+
+  let html = '';
+  for (const [cat, products] of Object.entries(categories)) {
+    if (Object.keys(categories).length > 1) {
+      html += `<div class="category-label" style="grid-column:1/-1">${cat}</div>`;
+    }
+    products.forEach(p => {
+      html += `
+        <div class="product-card" id="pc-${esc(p.name)}" onclick="toggleProduct('${esc(p.name)}')">
+          <span class="product-emoji">${p.emoji || '🍽️'}</span>
+          <div class="product-name">${esc(p.name)}</div>
+          <div class="product-price">₪${p.price}</div>
+          <div class="product-qty">
+            <button class="qty-btn" onclick="event.stopPropagation();changeQty('${esc(p.name)}',-1)">−</button>
+            <span class="qty-num" id="qty-${esc(p.name)}">1</span>
+            <button class="qty-btn" onclick="event.stopPropagation();changeQty('${esc(p.name)}',1)">+</button>
+          </div>
+        </div>`;
+    });
+  }
+  grid.innerHTML = html;
+}
+
+function toggleProduct(name) {
+  if (selectedItems[name]) {
+    delete selectedItems[name];
+    document.getElementById('pc-' + name)?.classList.remove('selected');
+  } else {
+    selectedItems[name] = 1;
+    document.getElementById('pc-' + name)?.classList.add('selected');
+    const qEl = document.getElementById('qty-' + name);
+    if (qEl) qEl.textContent = '1';
+  }
+  updateTotal();
+}
+
+function changeQty(name, delta) {
+  if (!selectedItems[name]) return;
+  const newQty = (selectedItems[name] || 1) + delta;
+  if (newQty <= 0) {
+    delete selectedItems[name];
+    document.getElementById('pc-' + name)?.classList.remove('selected');
+  } else {
+    selectedItems[name] = newQty;
+    const qEl = document.getElementById('qty-' + name);
+    if (qEl) qEl.textContent = newQty;
+  }
+  updateTotal();
+}
+
+// ─────────────────────────────────────────────
+// Residence type
+// ─────────────────────────────────────────────
+function setResidenceType(type, btn) {
+  residenceType = type;
+  document.querySelectorAll('#residenceControl .segment-btn')
+    .forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // If switching to guest types, clear validation
+  if (type !== 'נופי פרת') {
+    isNameValid = true;
+    showNameStatus('✓ אורח — ' + type, 'var(--success)');
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('customerNameInput').placeholder = 'שם האורח';
+  } else {
+    validateName(document.getElementById('customerNameInput').value);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Name autocomplete
+// ─────────────────────────────────────────────
+function onNameInput(val) {
+  if (residenceType !== 'נופי פרת') {
+    isNameValid = !!val.trim();
+    document.getElementById('submitBtn').disabled = !isNameValid;
+    return;
+  }
+  const list = document.getElementById('autocompleteList');
+  if (!val.trim()) { list.style.display = 'none'; validateName(''); return; }
+  const matches = RESIDENTS.filter(r =>
+    r.fullName.includes(val) || (r.nickname && r.nickname.includes(val))
+  ).slice(0, 8);
+  if (!matches.length) { list.style.display = 'none'; validateName(val); return; }
+  list.style.display = 'block';
+  list.innerHTML = matches.map(r =>
+    `<div class="autocomplete-item" onmousedown="selectResident('${esc(r.fullName)}')">${r.fullName}${r.nickname ? ' (' + r.nickname + ')' : ''}</div>`
+  ).join('');
+  validateName(val);
+}
+
+function onNameBlur() {
+  setTimeout(() => {
+    document.getElementById('autocompleteList').style.display = 'none';
+  }, 200);
+}
+
+function selectResident(fullName) {
+  document.getElementById('customerNameInput').value = fullName;
+  document.getElementById('autocompleteList').style.display = 'none';
+  validateName(fullName);
+}
+
+function validateName(val) {
+  if (residenceType !== 'נופי פרת') return;
+  const match = RESIDENTS.find(r => r.fullName === val);
+  if (match) {
+    isNameValid = true;
+    showNameStatus('✓ ' + match.fullName, 'var(--success)');
+  } else {
+    isNameValid = false;
+    showNameStatus(val ? '✗ שם לא נמצא ברשימה' : '', 'var(--danger)');
+  }
+  document.getElementById('submitBtn').disabled = !isNameValid;
+}
+
+function showNameStatus(msg, color) {
+  const el = document.getElementById('nameValidation');
+  el.textContent = msg;
+  el.style.color = color;
+}
+
+// ─────────────────────────────────────────────
+// Credit mode
+// ─────────────────────────────────────────────
+function toggleCreditMode() {
+  isCreditMode = !isCreditMode;
+  const btn = document.getElementById('creditToggleBtn');
+  const sidebar = document.getElementById('orderSidebar');
+  const body = document.getElementById('mainContent');
+  btn.classList.toggle('active', isCreditMode);
+  btn.textContent = isCreditMode ? '✓ מצב זיכוי פעיל' : '💳 מצב זיכוי';
+  body.classList.toggle('credit-mode', isCreditMode);
+  document.getElementById('totalLabel').textContent = isCreditMode ? 'סכום זיכוי' : 'סכום כולל';
+  document.getElementById('submitBtn').textContent  = isCreditMode ? '💳 אישור זיכוי' : '📝 שלח הזמנה';
+  document.getElementById('discountRow').style.display = isCreditMode ? 'none' : 'flex';
+  updateTotal();
+}
+
+// ─────────────────────────────────────────────
+// Total
+// ─────────────────────────────────────────────
+function updateTotal() {
+  let total = 0;
+  Object.entries(selectedItems).forEach(([name, qty]) => {
+    const p = PRODUCTS.find(pr => pr.name === name);
+    if (p) total += p.price * qty;
+  });
+  const custom   = parseFloat(document.getElementById('customAmount').value) || 0;
+  const discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+  total += custom;
+  if (!isCreditMode) total -= discount;
+  if (isCreditMode) total = -Math.abs(total);
+
+  const el = document.getElementById('totalDisplay');
+  el.textContent = '₪' + Math.abs(total);
+  el.classList.add('bump');
+  setTimeout(() => el.classList.remove('bump'), 200);
+}
+
+function getTotal() {
+  let total = 0;
+  Object.entries(selectedItems).forEach(([name, qty]) => {
+    const p = PRODUCTS.find(pr => pr.name === name);
+    if (p) total += p.price * qty;
+  });
+  const custom   = parseFloat(document.getElementById('customAmount').value) || 0;
+  const discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+  total += custom;
+  if (!isCreditMode) total -= discount;
+  if (isCreditMode) total = -Math.abs(total);
+  return total;
+}
+
+function buildProductsString() {
+  const parts = [];
+  Object.entries(selectedItems).forEach(([name, qty]) => {
+    parts.push(qty > 1 ? `${name} (${qty})` : name);
+  });
+  const custDesc = document.getElementById('customDescription').value.trim();
+  const custAmt  = parseFloat(document.getElementById('customAmount').value) || 0;
+  if (custAmt) parts.push((custDesc || 'סכום חופשי') + ' ✱' + custAmt + '₪');
+  const discDesc = document.getElementById('discountDescription').value.trim();
+  const discAmt  = parseFloat(document.getElementById('discountAmount').value) || 0;
+  if (discAmt && !isCreditMode) parts.push('הנחה: ' + (discDesc || '') + ' -₪' + discAmt);
+  if (isCreditMode) return parts.map(p => 'זיכוי: ' + p).join(', ');
+  return parts.join(', ');
+}
+
+// ─────────────────────────────────────────────
+// Submit
+// ─────────────────────────────────────────────
+async function submitOrder() {
+  if (!isNameValid) { showToast('יש לבחור שם לקוח', 'error'); return; }
+  const total = getTotal();
+  if (total === 0 && Object.keys(selectedItems).length === 0) {
+    showToast('יש לבחור לפחות מוצר אחד', 'error'); return;
+  }
+  const customerName = document.getElementById('customerNameInput').value.trim();
+  const products     = buildProductsString();
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-sm"></span> שולח...';
+
+  try {
+    const res = await apiCall('addOrder', {
+      customerName, products,
+      total: total,
+      residenceType,
+      isCredit: isCreditMode,
+    });
+    if (res.success) {
+      showToast('✓ הזמנה נשלחה בהצלחה!', 'success', 4000);
+      resetForm();
+      loadRecentOrders();
+    } else {
+      showToast('שגיאה בשליחת הזמנה: ' + (res.message || ''), 'error');
+    }
+  } catch (e) {
+    showToast('שגיאת חיבור', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = isCreditMode ? '💳 אישור זיכוי' : '📝 שלח הזמנה';
+}
+
+// ─────────────────────────────────────────────
+// Reset
+// ─────────────────────────────────────────────
+function resetForm() {
+  selectedItems = {};
+  document.querySelectorAll('.product-card.selected').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.product-qty').forEach(el => {
+    el.style.opacity = '0'; el.style.height = '0'; el.style.transform = 'scaleY(0)';
+  });
+  document.querySelectorAll('.qty-num').forEach(el => el.textContent = '1');
+  document.getElementById('customerNameInput').value = '';
+  document.getElementById('customAmount').value = '';
+  document.getElementById('customDescription').value = '';
+  document.getElementById('discountAmount').value = '';
+  document.getElementById('discountDescription').value = '';
+  document.getElementById('nameValidation').textContent = '';
+  isNameValid = false;
+  document.getElementById('submitBtn').disabled = true;
+  updateTotal();
+  if (isCreditMode) toggleCreditMode();
+}
+
+// ─────────────────────────────────────────────
+// Recent orders
+// ─────────────────────────────────────────────
+let recentOrdersData = [];
+
+async function loadRecentOrders() {
+  try {
+    const res = await apiCall('getRecentOrdersFromMain', { limit: CONFIG.RECENT_ORDERS_DISPLAY || 10 });
+    if (!res.success) return;
+    recentOrdersData = (res.orders || []).reverse(); // newest first
+    renderRecentOrders();
+  } catch (_) {}
+}
+
+function renderRecentOrders() {
+  const el = document.getElementById('recentOrdersList');
+  if (!recentOrdersData.length) {
+    el.innerHTML = '<div class="text-muted text-sm" style="padding:8px 0;">אין הזמנות עדיין</div>';
+    return;
+  }
+  el.innerHTML = recentOrdersData.map(order => {
+    const isCancelled = order.status === 'cancelled';
+    return `
+      <div class="recent-order-item" style="${isCancelled ? 'opacity:0.5;' : ''}">
+        <div class="recent-order-name">${esc(order.customerName)}</div>
+        <div class="recent-order-items">${esc(order.products)}</div>
+        <div class="recent-order-meta">
+          <span>${order.time || ''}</span>
+          <span class="recent-order-total">${isCancelled ? '❌ בוטל' : '₪' + Math.abs(order.total || 0)}</span>
+        </div>
+        ${!isCancelled ? `
+        <div class="recent-order-actions">
+          <button class="btn btn-secondary btn-sm" onclick="openEditOrder('${esc(order.orderId)}')">✏️ ערוך</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmCancelOrder('${esc(order.orderId)}')">✕ בטל</button>
+        </div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// Edit order
+// ─────────────────────────────────────────────
+function openEditOrder(orderId) {
+  editingOrderId = orderId;
+  const order = recentOrdersData.find(o => o.orderId === orderId);
+  if (!order) return;
+  document.getElementById('editOrderContent').innerHTML = `
+    <div class="form-group">
+      <label class="form-label">לקוח</label>
+      <div class="form-input" style="background:var(--bg-base);cursor:default;">${esc(order.customerName)}</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">מוצרים (ערוך ידנית)</label>
+      <textarea id="editProducts" class="form-input" rows="3" style="resize:vertical;">${esc(order.products)}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">סכום כולל (₪)</label>
+      <input type="number" id="editTotal" class="form-input" value="${Math.abs(order.total || 0)}">
+    </div>
+  `;
+  document.getElementById('editOrderModal').classList.add('open');
+}
+
+function closeEditModal(event) {
+  if (event && event.target !== document.getElementById('editOrderModal')) return;
+  document.getElementById('editOrderModal').classList.remove('open');
+  editingOrderId = null;
+}
+
+async function saveEditOrder() {
+  if (!editingOrderId) return;
+  const products = document.getElementById('editProducts').value.trim();
+  const total    = parseInt(document.getElementById('editTotal').value) || 0;
+  if (!products) { showToast('יש להזין מוצרים', 'error'); return; }
+  try {
+    const res = await apiCall('updateOrder', { orderId: editingOrderId, products, total });
+    if (res.success) {
+      showToast('✓ הזמנה עודכנה', 'success');
+      document.getElementById('editOrderModal').classList.remove('open');
+      editingOrderId = null;
+      loadRecentOrders();
+    } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
+  } catch (e) { showToast('שגיאת חיבור', 'error'); }
+}
+
+async function confirmCancelOrder(orderId) {
+  if (!confirm('לבטל את ההזמנה הזו?')) return;
+  await doCancelOrder(orderId);
+}
+
+async function cancelOrder() {
+  if (!editingOrderId) return;
+  if (!confirm('לבטל את ההזמנה?')) return;
+  await doCancelOrder(editingOrderId);
+  document.getElementById('editOrderModal').classList.remove('open');
+  editingOrderId = null;
+}
+
+async function doCancelOrder(orderId) {
+  try {
+    const res = await apiCall('cancelOrder', { orderId });
+    if (res.success) { showToast('הזמנה בוטלה', 'warning'); loadRecentOrders(); }
+    else showToast('שגיאה: ' + (res.message || ''), 'error');
+  } catch (_) { showToast('שגיאת חיבור', 'error'); }
+}
+
+// ─────────────────────────────────────────────
+// Util
+// ─────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
 </body>
 </html>

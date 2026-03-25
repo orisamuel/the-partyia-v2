@@ -1,0 +1,689 @@
+// ============================================================
+// הפרתיה v3 — Google Apps Script Backend
+// ============================================================
+// הגדר כאן את ה-ID של ה-Spreadsheet החדש שלך:
+const SHEET_ID = '1b7i4Nn0ajOVKwZSWUpDVanezscA50Jdh1harmJqiSZY';
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(SHEET_ID);
+}
+
+function getSheet(name) {
+  return getSpreadsheet().getSheetByName(name);
+}
+
+function ensureSheet(name, headers) {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    sheet.appendRow(headers);
+    Logger.log('נוצר גיליון: ' + name);
+  }
+  return sheet;
+}
+
+function fmtDate(d) {
+  return Utilities.formatDate(d, 'Asia/Jerusalem', 'dd/MM/yyyy');
+}
+
+function fmtTime(d) {
+  return Utilities.formatDate(d, 'Asia/Jerusalem', 'HH:mm');
+}
+
+function jsonResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ============================================================
+// PRODUCTS
+// Schema: שם(0), מחיר(1), פעיל(2), קטגוריה(3), אייקון(4), requiresPreparation(5)
+// ============================================================
+
+function getProducts() {
+  try {
+    const HEADERS = ['שם', 'מחיר', 'פעיל', 'קטגוריה', 'אייקון', 'requiresPreparation'];
+    const sheet = ensureSheet('מוצרים', HEADERS);
+
+    // אתחול ראשוני אם ריק
+    if (sheet.getLastRow() <= 1) {
+      const defaults = [
+        ['בירה', 15, 'כן', 'משקאות', '🍺', 'לא'],
+        ['יין אדום', 25, 'כן', 'אלכוהול', '🍷', 'לא'],
+        ['יין לבן', 25, 'כן', 'אלכוהול', '🥂', 'לא'],
+        ['יין רוזה', 25, 'כן', 'אלכוהול', '🌹', 'לא'],
+        ['לימונערק', 30, 'כן', 'קוקטיילים', '🍋', 'כן'],
+        ["ויסקי סאוור ליצ'י", 30, 'כן', 'קוקטיילים', '🥃', 'כן'],
+        ['ויסקי סאוור אננס', 30, 'כן', 'קוקטיילים', '🍍', 'כן'],
+        ['מוחיטו', 30, 'כן', 'קוקטיילים', '🌿', 'כן'],
+        ['אפרול שפריץ', 30, 'כן', 'קוקטיילים', '🍊', 'כן'],
+        ['שתיה קלה', 5, 'כן', 'משקאות', '🥤', 'לא'],
+        ['סיידר', 18, 'כן', 'משקאות', '🍏', 'לא'],
+      ];
+      defaults.forEach(r => sheet.appendRow(r));
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const products = [];
+    for (let i = 1; i < data.length; i++) {
+      const r = data[i];
+      if (r[2] === 'כן') {
+        products.push({
+          name: r[0] || '',
+          price: parseInt(r[1]) || 0,
+          category: r[3] || 'כללי',
+          emoji: r[4] || '🍽️',
+          requiresPreparation: r[5] !== 'לא' && r[5] !== false
+        });
+      }
+    }
+    return { success: true, products };
+  } catch (e) {
+    Logger.log('getProducts error: ' + e);
+    return { success: false, message: e.toString(), products: [] };
+  }
+}
+
+function getAllProductsForReports() {
+  try {
+    const sheet = getSheet('מוצרים');
+    if (!sheet) return { success: false, products: [] };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, products: [] };
+    const products = data.slice(1).map(r => ({
+      name: r[0] || '',
+      price: parseInt(r[1]) || 0,
+      active: r[2] || 'לא',
+      category: r[3] || 'כללי',
+      emoji: r[4] || '🍽️',
+      requiresPreparation: r[5] !== 'לא' && r[5] !== false
+    }));
+    return { success: true, products };
+  } catch (e) {
+    return { success: false, message: e.toString(), products: [] };
+  }
+}
+
+function addProduct(data) {
+  try {
+    const sheet = ensureSheet('מוצרים', ['שם', 'מחיר', 'פעיל', 'קטגוריה', 'אייקון', 'requiresPreparation']);
+    const existing = sheet.getDataRange().getValues();
+    for (let i = 1; i < existing.length; i++) {
+      if (existing[i][0] === data.name) return { success: false, message: 'מוצר עם שם זה כבר קיים' };
+    }
+    sheet.appendRow([
+      data.name,
+      parseInt(data.price) || 0,
+      'כן',
+      data.category || 'כללי',
+      data.emoji || '🍽️',
+      (data.requiresPreparation === 'true' || data.requiresPreparation === true) ? 'כן' : 'לא'
+    ]);
+    return { success: true, message: 'מוצר נוסף בהצלחה' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function updateProduct(data) {
+  try {
+    const sheet = getSheet('מוצרים');
+    if (!sheet) return { success: false, message: 'גיליון מוצרים לא נמצא' };
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][0] === data.name) {
+        if (data.price !== undefined) sheet.getRange(i+1,2).setValue(parseInt(data.price));
+        if (data.active !== undefined) sheet.getRange(i+1,3).setValue(data.active === 'true' || data.active === true ? 'כן' : 'לא');
+        if (data.category !== undefined) sheet.getRange(i+1,4).setValue(data.category);
+        if (data.emoji !== undefined) sheet.getRange(i+1,5).setValue(data.emoji);
+        if (data.requiresPreparation !== undefined) sheet.getRange(i+1,6).setValue(data.requiresPreparation === 'true' || data.requiresPreparation === true ? 'כן' : 'לא');
+        return { success: true, message: 'מוצר עודכן בהצלחה' };
+      }
+    }
+    return { success: false, message: 'מוצר לא נמצא: ' + data.name };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function deleteProduct(name) {
+  try {
+    const sheet = getSheet('מוצרים');
+    if (!sheet) return { success: false, message: 'גיליון מוצרים לא נמצא' };
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][0] === name) {
+        sheet.getRange(i+1, 3).setValue('לא');
+        return { success: true, message: 'מוצר הוסר בהצלחה' };
+      }
+    }
+    return { success: false, message: 'מוצר לא נמצא: ' + name };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ============================================================
+// RESIDENTS
+// Schema: שם מלא(0), כינוי(1), פעיל(2), סוג מגורים(3), הערות(4)
+// ============================================================
+
+function getResidents() {
+  try {
+    const HEADERS = ['שם מלא', 'כינוי', 'פעיל', 'סוג מגורים', 'הערות'];
+    const sheet = ensureSheet('תושבים', HEADERS);
+    if (sheet.getLastRow() <= 1) {
+      const defaults = [
+        ['נופית פרתוש', 'נופית', 'כן', 'נופי פרת', 'מייסדת הפרתיה'],
+        ['יוסי מאור', 'יוסי', 'כן', 'נופי פרת', ''],
+        ['דני כהן', 'דני', 'כן', 'נופי פרת', ''],
+      ];
+      defaults.forEach(r => sheet.appendRow(r));
+    }
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, residents: [] };
+    const residents = [];
+    for (let i = 1; i < data.length; i++) {
+      const r = data[i];
+      if (r[2] === 'כן') {
+        residents.push({
+          fullName: r[0] || '',
+          nickname: r[1] || '',
+          residenceType: r[3] || 'נופי פרת',
+          notes: r[4] || ''
+        });
+      }
+    }
+    return { success: true, residents };
+  } catch (e) {
+    return { success: false, message: e.toString(), residents: [] };
+  }
+}
+
+function getAllResidents() {
+  try {
+    const sheet = getSheet('תושבים');
+    if (!sheet) return { success: false, residents: [] };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, residents: [] };
+    const residents = data.slice(1).map(r => ({
+      fullName: r[0] || '',
+      nickname: r[1] || '',
+      active: r[2] || 'לא',
+      residenceType: r[3] || 'נופי פרת',
+      notes: r[4] || ''
+    }));
+    return { success: true, residents };
+  } catch (e) {
+    return { success: false, message: e.toString(), residents: [] };
+  }
+}
+
+function addResident(data) {
+  try {
+    const sheet = ensureSheet('תושבים', ['שם מלא', 'כינוי', 'פעיל', 'סוג מגורים', 'הערות']);
+    const existing = sheet.getDataRange().getValues();
+    for (let i = 1; i < existing.length; i++) {
+      if (existing[i][0] === data.fullName) return { success: false, message: 'תושב עם שם זה כבר קיים' };
+    }
+    sheet.appendRow([
+      data.fullName,
+      data.nickname || '',
+      'כן',
+      data.residenceType || 'נופי פרת',
+      data.notes || ''
+    ]);
+    return { success: true, message: 'תושב נוסף בהצלחה' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function updateResident(data) {
+  try {
+    const sheet = getSheet('תושבים');
+    if (!sheet) return { success: false, message: 'גיליון תושבים לא נמצא' };
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][0] === data.fullName) {
+        if (data.nickname !== undefined) sheet.getRange(i+1,2).setValue(data.nickname);
+        if (data.active !== undefined) sheet.getRange(i+1,3).setValue(data.active === 'false' || data.active === false ? 'לא' : 'כן');
+        if (data.residenceType !== undefined) sheet.getRange(i+1,4).setValue(data.residenceType);
+        if (data.notes !== undefined) sheet.getRange(i+1,5).setValue(data.notes);
+        return { success: true, message: 'תושב עודכן בהצלחה' };
+      }
+    }
+    return { success: false, message: 'תושב לא נמצא: ' + data.fullName };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ============================================================
+// ORDERS
+// Schema: תאריך(0), שעה(1), שם(2), מוצרים(3), סכום(4), מזהה(5), סטטוס(6), סוג תושב(7), סוג הזמנה(8)
+// ============================================================
+
+function addOrder(orderData) {
+  try {
+    const HEADERS = ['תאריך', 'שעה', 'שם', 'מוצרים', 'סכום', 'מזהה', 'סטטוס', 'סוג תושב', 'סוג הזמנה'];
+    const ordersSheet = ensureSheet('סיכום הזמנות', HEADERS);
+    const now = new Date();
+    const orderId = Utilities.getUuid().substring(0, 8);
+    const orderType = orderData.isCredit ? 'זיכוי' : 'רגילה';
+    ordersSheet.appendRow([
+      fmtDate(now), fmtTime(now),
+      orderData.customerName, orderData.products,
+      orderData.total, orderId,
+      'pending', orderData.residenceType || '', orderType
+    ]);
+    if (!orderData.isCredit) {
+      createActiveItems(orderData, orderId);
+    }
+    return { success: true, message: 'הזמנה נוספה בהצלחה', orderId };
+  } catch (e) {
+    Logger.log('addOrder error: ' + e);
+    return { success: false, message: e.toString() };
+  }
+}
+
+function updateOrder(orderId, products, total) {
+  try {
+    const ordersSheet = getSheet('סיכום הזמנות');
+    if (!ordersSheet) return { success: false, message: 'גיליון הזמנות לא נמצא' };
+    const data = ordersSheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][5] === orderId) {
+        ordersSheet.getRange(i+1, 4).setValue(products);
+        ordersSheet.getRange(i+1, 5).setValue(total);
+        // מחיקת פריטים פעילים קיימים
+        const activeSheet = getSheet('פריטים פעילים');
+        if (activeSheet) {
+          const ad = activeSheet.getDataRange().getValues();
+          for (let j = ad.length - 1; j >= 1; j--) {
+            if (ad[j][4] === orderId) activeSheet.deleteRow(j+1);
+          }
+        }
+        // יצירה מחדש
+        const orderData = {
+          customerName: data[i][2],
+          products: products,
+          residenceType: data[i][7],
+          isCredit: data[i][8] === 'זיכוי'
+        };
+        if (!orderData.isCredit) createActiveItems(orderData, orderId);
+        return { success: true, message: 'הזמנה עודכנה בהצלחה' };
+      }
+    }
+    return { success: false, message: 'הזמנה לא נמצאה: ' + orderId };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function cancelOrder(orderId) {
+  try {
+    const ordersSheet = getSheet('סיכום הזמנות');
+    if (!ordersSheet) return { success: false, message: 'גיליון הזמנות לא נמצא' };
+    const data = ordersSheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][5] === orderId) {
+        ordersSheet.getRange(i+1, 7).setValue('cancelled');
+        const activeSheet = getSheet('פריטים פעילים');
+        if (activeSheet) {
+          const ad = activeSheet.getDataRange().getValues();
+          for (let j = 1; j < ad.length; j++) {
+            if (ad[j][4] === orderId) activeSheet.getRange(j+1, 7).setValue('cancelled');
+          }
+        }
+        return { success: true, message: 'הזמנה בוטלה' };
+      }
+    }
+    return { success: false, message: 'הזמנה לא נמצאה: ' + orderId };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function getActiveItems(limit) {
+  limit = limit || 100;
+  try {
+    const activeSheet = getSheet('פריטים פעילים');
+    if (!activeSheet || activeSheet.getLastRow() <= 1) return getRecentOrdersFromMain(limit);
+    const data = activeSheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, orders: [] };
+    const items = data.slice(1).slice(-limit)
+      .filter(r => r[6] !== 'cancelled')
+      .map((r, idx) => ({
+        date: r[0] ? r[0].toString() : '',
+        time: r[1] ? r[1].toString() : '',
+        customerName: r[2] || '',
+        products: r[3] || '',
+        originalOrderId: r[4] || '',
+        orderId: r[5] || 'temp-' + idx,
+        status: r[6] || 'pending'
+      }));
+    return { success: true, orders: items };
+  } catch (e) {
+    return { success: false, message: e.toString(), orders: [] };
+  }
+}
+
+function getRecentOrdersFromMain(limit) {
+  limit = limit || 100;
+  try {
+    const sheet = getSheet('סיכום הזמנות');
+    if (!sheet) return { success: false, message: 'גיליון לא נמצא', orders: [] };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, orders: [] };
+    const orders = data.slice(1).slice(-limit).map((r, idx) => ({
+      date: r[0] ? r[0].toString() : '',
+      time: r[1] ? r[1].toString() : '',
+      customerName: r[2] || '',
+      products: r[3] || '',
+      total: r[4] || 0,
+      orderId: r[5] || 'temp-' + idx,
+      status: r[6] || 'pending',
+      residenceType: r[7] || '',
+      orderType: r[8] || 'רגילה'
+    }));
+    return { success: true, orders };
+  } catch (e) {
+    return { success: false, message: e.toString(), orders: [] };
+  }
+}
+
+function getOrdersByEvent(eventDate) {
+  try {
+    const sheet = getSheet('סיכום הזמנות');
+    if (!sheet) return { success: false, message: 'גיליון לא נמצא', orders: [] };
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, orders: [] };
+    const eventDateObj = new Date(eventDate);
+    const nextDay = new Date(eventDateObj);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const evStr = fmtDate(eventDateObj);
+    const nxStr = fmtDate(nextDay);
+    const relevant = [];
+    data.slice(1).forEach((r, idx) => {
+      const d = r[0] ? r[0].toString() : '';
+      const t = r[1] ? r[1].toString() : '';
+      if (d === evStr) { relevant.push(rowToOrder(r, idx)); return; }
+      if (d === nxStr) {
+        const m = t.match(/(\d{1,2}):/);
+        if (m && parseInt(m[1]) < 6) relevant.push(rowToOrder(r, idx));
+      }
+    });
+    return { success: true, orders: relevant };
+  } catch (e) {
+    return { success: false, message: e.toString(), orders: [] };
+  }
+}
+
+function rowToOrder(r, idx) {
+  return {
+    date: r[0] ? r[0].toString() : '',
+    time: r[1] ? r[1].toString() : '',
+    customerName: r[2] || '',
+    products: r[3] || '',
+    total: r[4] || 0,
+    orderId: r[5] || 'temp-' + idx,
+    status: r[6] || 'pending',
+    residenceType: r[7] || '',
+    orderType: r[8] || 'רגילה'
+  };
+}
+
+// ============================================================
+// ACTIVE ITEMS / BUILDERS
+// Schema: תאריך(0), שעה(1), שם(2), פריט(3), מזהה_מקורי(4), מזהה_פריט(5), סטטוס(6)
+// ============================================================
+
+function loadProductsCache() {
+  try {
+    const sheet = getSheet('מוצרים');
+    if (!sheet) return [];
+    return sheet.getDataRange().getValues().slice(1).map(r => ({
+      name: r[0] || '',
+      requiresPreparation: r[5] !== 'לא' && r[5] !== false
+    }));
+  } catch (e) { return []; }
+}
+
+function shouldCreateActiveItem(productStr, cache) {
+  const p = productStr.trim();
+  if (!p) return false;
+  if (p.startsWith('הנחה')) return false;
+  if (p.includes('טיפ')) return false;
+  if (p.includes('זיכוי')) return false;
+  if (p.includes('₪') && (p.startsWith('✱') || p.includes('סכום חופשי'))) return false;
+  // שם המוצר ללא כמות
+  const nameOnly = (p.match(/^(.+?)\s*(?:\(\d+\))?$/) || [])[1] || p;
+  const found = cache.find(pc => pc.name === nameOnly.trim());
+  return found ? found.requiresPreparation : true;
+}
+
+function createActiveItems(orderData, orderId) {
+  try {
+    const HEADERS = ['תאריך', 'שעה', 'שם', 'פריט', 'מזהה_מקורי', 'מזהה_פריט', 'סטטוס'];
+    const activeSheet = ensureSheet('פריטים פעילים', HEADERS);
+    const now = new Date();
+    const date = fmtDate(now);
+    const time = fmtTime(now);
+    const cache = loadProductsCache();
+    const products = orderData.products.split(', ');
+    let idx = 0;
+    products.forEach(product => {
+      if (!shouldCreateActiveItem(product, cache)) return;
+      const qm = product.match(/^(.+?)\s*\((\d+)\)$/);
+      if (qm) {
+        const name = qm[1].trim();
+        const qty = parseInt(qm[2]);
+        for (let i = 0; i < qty; i++) {
+          activeSheet.appendRow([date, time, orderData.customerName, name, orderId, orderId + '-' + idx, 'pending']);
+          idx++;
+        }
+      } else {
+        activeSheet.appendRow([date, time, orderData.customerName, product.trim(), orderId, orderId + '-' + idx, 'pending']);
+        idx++;
+      }
+    });
+    Logger.log('נוצרו ' + idx + ' פריטים להזמנה ' + orderId);
+  } catch (e) {
+    Logger.log('createActiveItems error: ' + e);
+  }
+}
+
+function updateItemStatus(itemId, newStatus) {
+  try {
+    const sheet = getSheet('פריטים פעילים');
+    if (!sheet) return { success: false, message: 'גיליון פריטים פעילים לא נמצא' };
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][5] === itemId) {
+        sheet.getRange(i+1, 7).setValue(newStatus);
+        return { success: true, message: 'סטטוס עודכן' };
+      }
+    }
+    return { success: false, message: 'פריט לא נמצא: ' + itemId };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ============================================================
+// INVENTORY
+// Schema: שם מוצר(0), כמות(1), threshold(2), עדכון אחרון(3)
+// ============================================================
+
+function getInventory() {
+  try {
+    const sheet = ensureSheet('מלאי', ['שם מוצר', 'כמות', 'threshold', 'עדכון אחרון']);
+    const data = sheet.getDataRange().getValues();
+    // בנה מפת אימוג'י מגיליון מוצרים
+    const emojiMap = {};
+    const pSheet = getSheet('מוצרים');
+    if (pSheet) {
+      pSheet.getDataRange().getValues().slice(1).forEach(r => { emojiMap[r[0]] = r[4] || '📦'; });
+    }
+    if (data.length <= 1) return { success: true, inventory: [] };
+    const inventory = data.slice(1).map(r => ({
+      name: r[0] || '',
+      stock: parseInt(r[1]) || 0,
+      threshold: parseInt(r[2]) || 5,
+      lastUpdated: r[3] ? r[3].toString() : '',
+      emoji: emojiMap[r[0]] || '📦'
+    }));
+    return { success: true, inventory };
+  } catch (e) {
+    return { success: false, message: e.toString(), inventory: [] };
+  }
+}
+
+function updateStock(productName, delta, reason) {
+  try {
+    const sheet = ensureSheet('מלאי', ['שם מוצר', 'כמות', 'threshold', 'עדכון אחרון']);
+    const data = sheet.getDataRange().getValues();
+    const now = fmtDate(new Date()) + ' ' + fmtTime(new Date());
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === productName) {
+        const cur = parseInt(data[i][1]) || 0;
+        const next = Math.max(0, cur + parseInt(delta));
+        sheet.getRange(i+1, 2).setValue(next);
+        sheet.getRange(i+1, 4).setValue(now);
+        Logger.log('מלאי: ' + productName + ' ' + cur + '→' + next + ' (' + (reason||'') + ')');
+        return { success: true, message: 'מלאי עודכן', newStock: next };
+      }
+    }
+    // מוצר חדש במלאי
+    const initial = Math.max(0, parseInt(delta) || 0);
+    sheet.appendRow([productName, initial, 5, now]);
+    return { success: true, message: 'מוצר נוסף למלאי', newStock: initial };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ============================================================
+// MAINTENANCE
+// ============================================================
+
+function cleanOldActiveItems() {
+  try {
+    const sheet = getSheet('פריטים פעילים');
+    if (!sheet || sheet.getLastRow() <= 1) return;
+    const data = sheet.getDataRange().getValues();
+    const today = fmtDate(new Date());
+    for (let i = data.length - 1; i >= 1; i--) {
+      const d = data[i][0] ? data[i][0].toString() : '';
+      if (d && d !== today) sheet.deleteRow(i+1);
+    }
+    Logger.log('ניקוי פריטים ישנים הושלם');
+  } catch (e) {
+    Logger.log('cleanOldActiveItems error: ' + e);
+  }
+}
+
+function dailyCleanup() {
+  cleanOldActiveItems();
+}
+
+// Time-based trigger: run this every 10 minutes to prevent cold starts
+function keepWarm() {
+  Logger.log('keep-warm ' + new Date().toISOString());
+}
+
+// ============================================================
+// HTTP HANDLER
+// ============================================================
+
+function doPost(e) {
+  try {
+    if (!e || !e.parameter) return jsonResponse({ success: false, message: 'אין פרמטרים' });
+    const action = e.parameter.action;
+    const p = e.parameter;
+
+    switch (action) {
+
+      case 'ping':
+        return jsonResponse({ success: true });
+
+      // ── Products ──────────────────────────────────────────
+      case 'getProducts':
+        return jsonResponse(getProducts());
+
+      case 'getAllProductsForReports':
+        return jsonResponse(getAllProductsForReports());
+
+      case 'addProduct':
+        return jsonResponse(addProduct({ name: p.name, price: p.price, emoji: p.emoji, category: p.category, requiresPreparation: p.requiresPreparation }));
+
+      case 'updateProduct':
+        return jsonResponse(updateProduct({ name: p.name, price: p.price, emoji: p.emoji, category: p.category, requiresPreparation: p.requiresPreparation, active: p.active }));
+
+      case 'deleteProduct':
+        return jsonResponse(deleteProduct(p.name));
+
+      // ── Residents ─────────────────────────────────────────
+      case 'getResidents':
+        return jsonResponse(getResidents());
+
+      case 'getAllResidents':
+        return jsonResponse(getAllResidents());
+
+      case 'addResident':
+        return jsonResponse(addResident({ fullName: p.fullName, nickname: p.nickname, residenceType: p.residenceType, notes: p.notes }));
+
+      case 'updateResident':
+        return jsonResponse(updateResident({ fullName: p.fullName, nickname: p.nickname, residenceType: p.residenceType, active: p.active, notes: p.notes }));
+
+      // ── Orders ────────────────────────────────────────────
+      case 'addOrder':
+        return jsonResponse(addOrder({
+          customerName: p.customerName,
+          products: p.products,
+          total: parseInt(p.total),
+          residenceType: p.residenceType || '',
+          isCredit: p.isCredit === 'true'
+        }));
+
+      case 'updateOrder':
+        return jsonResponse(updateOrder(p.orderId, p.products, parseInt(p.total)));
+
+      case 'cancelOrder':
+        return jsonResponse(cancelOrder(p.orderId));
+
+      case 'getRecentOrders':
+        return jsonResponse(getActiveItems(parseInt(p.limit) || 100));
+
+      case 'getRecentOrdersFromMain':
+        return jsonResponse(getRecentOrdersFromMain(parseInt(p.limit) || 100));
+
+      case 'getOrdersByEvent':
+        if (!p.eventDate) return jsonResponse({ success: false, message: 'לא צוין תאריך' });
+        return jsonResponse(getOrdersByEvent(p.eventDate));
+
+      case 'updateStatus':
+        return jsonResponse(updateItemStatus(p.orderId, p.newStatus));
+
+      // ── Inventory ─────────────────────────────────────────
+      case 'getInventory':
+        return jsonResponse(getInventory());
+
+      case 'updateStock':
+        return jsonResponse(updateStock(p.productName, parseInt(p.delta) || 0, p.reason || ''));
+
+      default:
+        return jsonResponse({ success: false, message: 'פעולה לא מוכרת: ' + action });
+    }
+  } catch (e) {
+    Logger.log('doPost error: ' + e);
+    return jsonResponse({ success: false, message: e.toString() });
+  }
+}

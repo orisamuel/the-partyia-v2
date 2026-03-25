@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f14">
+<title>הפרתיה — ניהול דיירים</title>
+<link rel="stylesheet" href="styles.css">
+<script src="config.js"></script>
+<script src="utils.js"></script>
+<style>
+  .residents-list { display: flex; flex-direction: column; gap: 8px; }
+  .resident-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg-elevated); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 12px 16px;
+    transition: var(--t-fast); cursor: pointer;
+  }
+  .resident-row:hover { border-color: var(--amber-glow); background: var(--glass-hover); }
+  .resident-row.inactive { opacity: 0.4; }
+  .resident-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--amber-dim), var(--amber));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; font-weight: 800; color: #1a0f00;
+    flex-shrink: 0;
+  }
+  .resident-info { flex: 1; min-width: 0; }
+  .resident-name { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+  .resident-meta { font-size: 0.75rem; color: var(--text-secondary); margin-top: 1px; }
+  .resident-actions { display: flex; gap: 6px; }
+  .import-textarea {
+    width: 100%; min-height: 120px; resize: vertical;
+    background: var(--bg-elevated); border: 1.5px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 10px 14px;
+    color: var(--text-primary); font-size: 0.88rem; font-family: inherit;
+    line-height: 1.6;
+  }
+  .import-textarea:focus { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-glow); outline: none; }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">
+  <img src="logo.png" alt="הפרתיה" class="loading-logo">
+  <div class="loading-title">דיירים</div>
+  <div class="loading-spinner"></div>
+  <div id="loadingProgress" class="loading-progress">טוען דיירים...</div>
+</div>
+
+<div id="mainContent">
+<div class="container">
+
+  <header class="header">
+    <a href="admin.html"><img src="logo.png" alt="לוגו" class="header-logo"></a>
+    <div class="header-title">
+      <h1>👥 ניהול דיירים</h1>
+      <p>רשימת הדיירים, הוספה ועריכה</p>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+      <a href="admin.html" class="btn-back">← חזרה</a>
+    </div>
+  </header>
+
+  <div class="page-body">
+
+    <!-- Toolbar -->
+    <div class="flex-between mb-16" style="flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="search-bar-wrapper" style="margin:0;min-width:200px;">
+          <span class="search-bar-icon">🔍</span>
+          <input type="text" id="searchInput" class="form-input search-bar"
+            placeholder="חפש לפי שם או כינוי..." oninput="filterResidents()">
+        </div>
+        <select id="filterType" class="form-select" style="width:auto;" onchange="filterResidents()">
+          <option value="">כל הסוגים</option>
+          <option value="נופי פרת">🏡 נופי פרת</option>
+          <option value="כפר עדום">🌳 כפר עדום</option>
+          <option value="אלון">🍃 אלון</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:5px;font-size:0.82rem;color:var(--text-secondary);cursor:pointer;white-space:nowrap;">
+          <input type="checkbox" id="showInactive" onchange="filterResidents()"> הצג לא פעילים
+        </label>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="openImportModal()">📋 ייבוא רשימה</button>
+        <button class="btn btn-primary"   onclick="openResidentModal()">+ דייר חדש</button>
+      </div>
+    </div>
+
+    <div id="residentCount" class="text-xs text-muted mb-12"></div>
+    <div id="residentsList" class="residents-list">
+      <div class="flex-center" style="padding:40px;color:var(--text-muted);">
+        <div class="spinner-sm" style="margin-left:8px;"></div> טוען...
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Resident modal (add / edit) -->
+<div id="residentModal" class="modal-backdrop" onclick="closeModal(event,'residentModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="residentModalTitle">+ דייר חדש</span>
+      <button class="modal-close" onclick="closeModal(null,'residentModal')">✕</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label class="form-label">שם מלא *</label>
+        <input type="text" id="rFullName" class="form-input" placeholder="ישראל ישראלי">
+        <div class="text-xs text-muted mt-8">השם שיופיע בחיפוש ובדוחות</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">כינוי</label>
+        <input type="text" id="rNickname" class="form-input" placeholder="ישראל">
+        <div class="text-xs text-muted mt-8">לחיפוש מהיר</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">סוג מגורים</label>
+        <select id="rResidenceType" class="form-select">
+          <option value="נופי פרת">🏡 נופי פרת</option>
+          <option value="כפר עדום">🌳 כפר עדום</option>
+          <option value="אלון">🍃 אלון</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label class="form-label">הערות</label>
+        <input type="text" id="rNotes" class="form-input" placeholder="הערה חופשית (אופציונלי)">
+      </div>
+      <div class="form-group" id="rActiveRow" style="display:none;grid-column:1/-1;">
+        <label class="form-label">סטטוס</label>
+        <select id="rActive" class="form-select">
+          <option value="true">✓ פעיל</option>
+          <option value="false">✗ לא פעיל (מוסתר מהחיפוש)</option>
+        </select>
+        <div class="text-xs text-muted mt-8">
+          דיירים לא פעילים לא מופיעים בטופס ההזמנה אבל ההיסטוריה שלהם נשמרת
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal(null,'residentModal')">ביטול</button>
+      <button class="btn btn-primary" onclick="saveResident()">💾 שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import modal -->
+<div id="importModal" class="modal-backdrop" onclick="closeModal(event,'importModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📋 ייבוא רשימת דיירים</span>
+      <button class="modal-close" onclick="closeModal(null,'importModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">סוג מגורים לכל הרשימה</label>
+      <select id="importResidenceType" class="form-select">
+        <option value="נופי פרת">🏡 נופי פרת</option>
+        <option value="כפר עדום">🌳 כפר עדום</option>
+        <option value="אלון">🍃 אלון</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">הדבק רשימת שמות — שורה לכל שם</label>
+      <textarea id="importNames" class="import-textarea"
+        placeholder="ישראל ישראלי&#10;שרה כהן&#10;דני לוי&#10;..."></textarea>
+      <div class="text-xs text-muted mt-8">
+        שמות שכבר קיימים ידולגו אוטומטית
+      </div>
+    </div>
+    <div id="importPreview" class="text-sm text-muted" style="min-height:1.2em;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal(null,'importModal')">ביטול</button>
+      <button class="btn btn-primary" onclick="importResidents()">📥 ייבא</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allResidents  = [];
+let editingName   = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  warmupServer();
+  loadResidents();
+
+  // Live import preview
+  document.getElementById('importNames').addEventListener('input', updateImportPreview);
+});
+
+async function loadResidents() {
+  try {
+    const res = await apiCall('getAllResidents');
+    if (!res.success) { showToast('שגיאה בטעינת דיירים', 'error'); hideLoadingScreen(300); return; }
+    allResidents = res.residents || [];
+    filterResidents();
+    hideLoadingScreen(300);
+  } catch (_) { showToast('שגיאת חיבור', 'error'); hideLoadingScreen(300); }
+}
+
+function filterResidents() {
+  const q           = document.getElementById('searchInput').value.trim().toLowerCase();
+  const typeFilter  = document.getElementById('filterType').value;
+  const showInactive = document.getElementById('showInactive').checked;
+
+  const filtered = allResidents.filter(r =>
+    (showInactive || r.active === 'כן') &&
+    (!typeFilter || r.residenceType === typeFilter) &&
+    (!q || r.fullName.toLowerCase().includes(q) || (r.nickname||'').toLowerCase().includes(q))
+  );
+
+  document.getElementById('residentCount').textContent =
+    `מציג ${filtered.length} מתוך ${allResidents.filter(r => r.active === 'כן').length} דיירים פעילים`;
+
+  renderResidents(filtered);
+}
+
+function renderResidents(list) {
+  const el = document.getElementById('residentsList');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">👥</span><p class="empty-state-text">לא נמצאו דיירים</p></div>';
+    return;
+  }
+
+  // Group by residence type
+  const groups = {};
+  list.forEach(r => {
+    const t = r.residenceType || 'אחר';
+    if (!groups[t]) groups[t] = [];
+    groups[t].push(r);
+  });
+
+  const typeIcons = { 'נופי פרת': '🏡', 'כפר עדום': '🌳', 'אלון': '🍃' };
+
+  let html = '';
+  for (const [type, residents] of Object.entries(groups)) {
+    html += `<div class="section-title" style="margin-top:16px;">${typeIcons[type]||'👤'} ${type} (${residents.length})</div>`;
+    residents.forEach((r, i) => {
+      const initials = (r.fullName||'?').charAt(0);
+      const inactive = r.active !== 'כן';
+      html += `
+        <div class="resident-row animate-fadein ${inactive ? 'inactive' : ''}" style="animation-delay:${i*0.03}s"
+             onclick="openResidentModal('${esc(r.fullName)}')">
+          <div class="resident-avatar">${initials}</div>
+          <div class="resident-info">
+            <div class="resident-name">${esc(r.fullName)}${r.nickname ? ' <span style="color:var(--text-muted);font-weight:400;">('+esc(r.nickname)+')</span>' : ''}</div>
+            <div class="resident-meta">${esc(r.residenceType||'')}${r.notes ? ' · ' + esc(r.notes) : ''}${inactive ? ' · <span style="color:var(--danger)">לא פעיל</span>' : ''}</div>
+          </div>
+          <div class="resident-actions" onclick="event.stopPropagation()">
+            <button class="btn btn-secondary btn-sm" onclick="openResidentModal('${esc(r.fullName)}')">✏️</button>
+          </div>
+        </div>
+      `;
+    });
+  }
+  el.innerHTML = html;
+}
+
+// ── Add / Edit modal ───────────────────────────────────────
+function openResidentModal(fullName) {
+  editingName = fullName || null;
+  const isEdit = !!fullName;
+  document.getElementById('residentModalTitle').textContent = isEdit ? '✏️ עריכת דייר' : '+ דייר חדש';
+  document.getElementById('rActiveRow').style.display        = isEdit ? 'block' : 'none';
+  document.getElementById('rFullName').disabled              = isEdit;
+
+  if (isEdit) {
+    const r = allResidents.find(x => x.fullName === fullName);
+    if (!r) return;
+    document.getElementById('rFullName').value        = r.fullName;
+    document.getElementById('rNickname').value        = r.nickname || '';
+    document.getElementById('rResidenceType').value   = r.residenceType || 'נופי פרת';
+    document.getElementById('rNotes').value           = r.notes || '';
+    document.getElementById('rActive').value          = r.active === 'כן' ? 'true' : 'false';
+  } else {
+    document.getElementById('rFullName').value        = '';
+    document.getElementById('rNickname').value        = '';
+    document.getElementById('rResidenceType').value   = 'נופי פרת';
+    document.getElementById('rNotes').value           = '';
+  }
+  document.getElementById('residentModal').classList.add('open');
+}
+
+async function saveResident() {
+  const fullName      = document.getElementById('rFullName').value.trim();
+  const nickname      = document.getElementById('rNickname').value.trim();
+  const residenceType = document.getElementById('rResidenceType').value;
+  const notes         = document.getElementById('rNotes').value.trim();
+  const active        = document.getElementById('rActive').value;
+
+  if (!fullName) { showToast('יש להזין שם מלא', 'error'); return; }
+
+  const data = { fullName, nickname, residenceType, notes, active };
+
+  try {
+    const action = editingName ? 'updateResident' : 'addResident';
+    const res = await apiCall(action, data);
+    if (res.success) {
+      showToast(editingName ? '✓ דייר עודכן' : '✓ דייר נוסף', 'success');
+      closeModal(null, 'residentModal');
+      loadResidents();
+    } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
+  } catch (_) { showToast('שגיאת חיבור', 'error'); }
+}
+
+// ── Import ─────────────────────────────────────────────────
+function openImportModal() {
+  document.getElementById('importNames').value = '';
+  document.getElementById('importPreview').textContent = '';
+  document.getElementById('importModal').classList.add('open');
+}
+
+function updateImportPreview() {
+  const names = parseImportNames();
+  const existing = new Set(allResidents.map(r => r.fullName));
+  const newOnes  = names.filter(n => !existing.has(n));
+  const dups     = names.filter(n => existing.has(n));
+  let txt = '';
+  if (names.length)  txt += `${names.length} שמות זוהו. `;
+  if (newOnes.length) txt += `${newOnes.length} חדשים לייבוא. `;
+  if (dups.length)    txt += `${dups.length} כבר קיימים (ידולגו).`;
+  document.getElementById('importPreview').textContent = txt;
+}
+
+function parseImportNames() {
+  return document.getElementById('importNames').value
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+}
+
+async function importResidents() {
+  const names = parseImportNames();
+  if (!names.length) { showToast('אין שמות לייבוא', 'error'); return; }
+  const residenceType = document.getElementById('importResidenceType').value;
+  const existing = new Set(allResidents.map(r => r.fullName));
+  const toAdd = names.filter(n => !existing.has(n));
+  if (!toAdd.length) { showToast('כל השמות כבר קיימים', 'warning'); return; }
+
+  closeModal(null, 'importModal');
+  showToast('מייבא ' + toAdd.length + ' דיירים...', 'info', 2000);
+
+  let success = 0;
+  for (const fullName of toAdd) {
+    try {
+      const res = await apiCall('addResident', { fullName, nickname: '', residenceType, notes: '' });
+      if (res.success) success++;
+    } catch (_) {}
+  }
+  showToast(`✓ יובאו ${success} דיירים בהצלחה`, 'success', 4000);
+  loadResidents();
+}
+
+// ── Util ───────────────────────────────────────────────────
+function closeModal(event, id) {
+  if (event && event.target !== document.getElementById(id)) return;
+  document.getElementById(id).classList.remove('open');
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

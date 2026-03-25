@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f14">
+<title>הפרתיה — מלאי</title>
+<link rel="stylesheet" href="styles.css">
+<script src="config.js"></script>
+<script src="utils.js"></script>
+<style>
+  .inventory-card-inner { display: flex; flex-direction: column; align-items: center; }
+  .threshold-bar {
+    width: 100%; height: 4px; background: var(--glass-border);
+    border-radius: 2px; margin: 6px 0; overflow: hidden;
+  }
+  .threshold-fill { height: 100%; border-radius: 2px; transition: width 0.5s var(--ease-smooth); }
+  .fill-ok   { background: var(--success); }
+  .fill-low  { background: var(--warning); }
+  .fill-zero { background: var(--danger); }
+  .log-entry {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--glass-border);
+    font-size: 0.82rem;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-delta-pos { color: var(--success); font-weight: 700; }
+  .log-delta-neg { color: var(--danger);  font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">
+  <img src="logo.png" alt="הפרתיה" class="loading-logo">
+  <div class="loading-title">מלאי</div>
+  <div class="loading-spinner"></div>
+  <div id="loadingProgress" class="loading-progress">טוען מלאי...</div>
+</div>
+
+<div id="mainContent">
+<div class="container">
+
+  <header class="header">
+    <a href="admin.html"><img src="logo.png" alt="לוגו" class="header-logo"></a>
+    <div class="header-title">
+      <h1>📦 ניהול מלאי</h1>
+      <p>הפרתיה — עדכון כמויות</p>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+      <a href="admin.html" class="btn-back">← חזרה</a>
+    </div>
+  </header>
+
+  <div class="page-body">
+
+    <!-- Low stock alert -->
+    <div id="lowStockAlert" style="display:none;"></div>
+
+    <div class="flex-between mb-16" style="flex-wrap:wrap;gap:10px;">
+      <div class="section-title" style="margin:0;border:none;">רשימת מוצרים במלאי</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="loadInventory()">🔄 רענן</button>
+        <button class="btn btn-primary btn-sm" onclick="openAddProductModal()">+ הוסף מוצר למלאי</button>
+      </div>
+    </div>
+
+    <div id="inventoryGrid" class="inventory-grid">
+      <div class="flex-center" style="grid-column:1/-1;padding:40px;color:var(--text-muted);">
+        <div class="spinner-sm" style="margin-left:8px;"></div> טוען מלאי...
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- Add to stock modal -->
+<div id="addStockModal" class="modal-backdrop" onclick="closeModal(event,'addStockModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="addStockTitle">עדכון מלאי</span>
+      <button class="modal-close" onclick="closeModal(null,'addStockModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">כמות לעדכון</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-secondary" onclick="setDeltaSign(-1)" id="btnMinus">− הפחת</button>
+        <input type="number" id="stockDelta" class="form-input" value="1" min="1" style="text-align:center;width:80px;">
+        <button class="btn btn-primary" onclick="setDeltaSign(1)" id="btnPlus">+ הוסף</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">סיבה (אופציונלי)</label>
+      <input type="text" id="stockReason" class="form-input" placeholder="לדוגמה: קנייה, ספירה, שבירה...">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal(null,'addStockModal')">ביטול</button>
+      <button class="btn btn-primary" onclick="submitStockUpdate()">✓ עדכן מלאי</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add product to inventory modal -->
+<div id="addProductModal" class="modal-backdrop" onclick="closeModal(event,'addProductModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">+ הוסף מוצר למלאי</span>
+      <button class="modal-close" onclick="closeModal(null,'addProductModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">שם מוצר</label>
+      <input type="text" id="newInvProduct" class="form-input" placeholder="שם המוצר">
+    </div>
+    <div class="form-group">
+      <label class="form-label">כמות התחלתית</label>
+      <input type="number" id="newInvQty" class="form-input" value="0" min="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">סף התראה (מתי להתריע על מלאי נמוך)</label>
+      <input type="number" id="newInvThreshold" class="form-input" value="5" min="1">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal(null,'addProductModal')">ביטול</button>
+      <button class="btn btn-primary" onclick="submitNewProduct()">+ הוסף</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let inventoryData  = [];
+let editingProduct = null;
+let deltaSign      = 1; // +1 = add, -1 = subtract
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  warmupServer();
+  loadInventory();
+});
+
+async function loadInventory() {
+  try {
+    const res = await apiCall('getInventory');
+    if (!res.success) { showToast('שגיאה בטעינת מלאי', 'error'); hideLoadingScreen(300); return; }
+    inventoryData = res.inventory || [];
+    renderInventory();
+    renderLowStockAlert();
+    hideLoadingScreen(300);
+  } catch (e) {
+    showToast('שגיאת חיבור', 'error');
+    hideLoadingScreen(300);
+  }
+}
+
+function renderInventory() {
+  const grid = document.getElementById('inventoryGrid');
+  if (!inventoryData.length) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <span class="empty-state-icon">📦</span>
+        <p class="empty-state-text">המלאי ריק — הוסף מוצרים כדי להתחיל</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = inventoryData.map(item => {
+    const pct     = item.threshold ? Math.min(100, (item.stock / (item.threshold * 2)) * 100) : 50;
+    const isLow   = item.stock > 0 && item.stock <= item.threshold;
+    const isZero  = item.stock === 0;
+    const cls     = isZero ? 'no-stock' : isLow ? 'low-stock' : '';
+    const numCls  = isZero ? 'stock-zero' : isLow ? 'stock-low' : 'stock-ok';
+    const fillCls = isZero ? 'fill-zero' : isLow ? 'fill-low' : 'fill-ok';
+
+    return `
+      <div class="inventory-card ${cls} animate-fadein">
+        <div class="inventory-card-inner">
+          <div class="inventory-emoji">${item.emoji || '📦'}</div>
+          <div class="inventory-name">${esc(item.name)}</div>
+          <div class="inventory-stock ${numCls}">${item.stock}</div>
+          <div class="threshold-bar">
+            <div class="threshold-fill ${fillCls}" style="width:${pct}%"></div>
+          </div>
+          <div class="text-xs text-muted mb-8">סף: ${item.threshold}</div>
+          <div class="inventory-controls">
+            <button class="stock-adj-btn" onclick="quickAdj('${esc(item.name)}',-1)" title="הפחת 1">−</button>
+            <span class="text-sm fw-bold" style="min-width:20px;text-align:center;">${item.stock}</span>
+            <button class="stock-adj-btn" onclick="quickAdj('${esc(item.name)}',1)" title="הוסף 1">+</button>
+          </div>
+          <button class="btn btn-secondary btn-sm w-full" onclick="openStockModal('${esc(item.name)}')">
+            ✏️ עדכון מפורט
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderLowStockAlert() {
+  const lowItems = inventoryData.filter(i => i.stock <= i.threshold);
+  const alertEl  = document.getElementById('lowStockAlert');
+  if (!lowItems.length) { alertEl.style.display = 'none'; return; }
+  alertEl.style.display = 'block';
+  alertEl.innerHTML = `
+    <div class="alert-strip alert-warning mb-16">
+      ⚠️ <strong>${lowItems.length} מוצרים</strong> במלאי נמוך:
+      ${lowItems.map(i => `<span class="badge badge-danger" style="margin-right:4px;">${esc(i.name)} (${i.stock})</span>`).join('')}
+    </div>
+  `;
+}
+
+async function quickAdj(productName, delta) {
+  const item = inventoryData.find(i => i.name === productName);
+  if (!item) return;
+  const newStock = Math.max(0, item.stock + delta);
+  item.stock = newStock;
+  renderInventory();
+  renderLowStockAlert();
+  try {
+    await apiCall('updateStock', { productName, delta, reason: 'עדכון מהיר' });
+  } catch (_) { showToast('שגיאה בשמירה', 'error'); }
+}
+
+function openStockModal(productName) {
+  editingProduct = productName;
+  deltaSign = 1;
+  document.getElementById('addStockTitle').textContent = 'עדכון מלאי — ' + productName;
+  document.getElementById('stockDelta').value = '';
+  document.getElementById('stockReason').value = '';
+  document.getElementById('btnPlus').className  = 'btn btn-primary';
+  document.getElementById('btnMinus').className = 'btn btn-secondary';
+  document.getElementById('addStockModal').classList.add('open');
+}
+
+function setDeltaSign(sign) {
+  deltaSign = sign;
+  document.getElementById('btnPlus').className  = sign > 0 ? 'btn btn-primary'   : 'btn btn-secondary';
+  document.getElementById('btnMinus').className = sign < 0 ? 'btn btn-danger'     : 'btn btn-secondary';
+}
+
+async function submitStockUpdate() {
+  const raw = parseInt(document.getElementById('stockDelta').value);
+  if (!raw || raw <= 0) { showToast('הכנס כמות תקינה', 'error'); return; }
+  const delta  = deltaSign * raw;
+  const reason = document.getElementById('stockReason').value.trim();
+  closeModal(null, 'addStockModal');
+  try {
+    const res = await apiCall('updateStock', { productName: editingProduct, delta, reason });
+    if (res.success) {
+      showToast(`✓ מלאי עודכן — ${editingProduct}: ${res.newStock}`, 'success');
+      loadInventory();
+    } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
+  } catch (_) { showToast('שגיאת חיבור', 'error'); }
+}
+
+function openAddProductModal() {
+  document.getElementById('newInvProduct').value   = '';
+  document.getElementById('newInvQty').value       = '0';
+  document.getElementById('newInvThreshold').value = '5';
+  document.getElementById('addProductModal').classList.add('open');
+}
+
+async function submitNewProduct() {
+  const name      = document.getElementById('newInvProduct').value.trim();
+  const qty       = parseInt(document.getElementById('newInvQty').value) || 0;
+  const threshold = parseInt(document.getElementById('newInvThreshold').value) || 5;
+  if (!name) { showToast('יש להזין שם מוצר', 'error'); return; }
+  closeModal(null, 'addProductModal');
+  try {
+    // updateStock with positive delta creates the entry
+    const res = await apiCall('updateStock', { productName: name, delta: qty, reason: 'יצירה ראשונית' });
+    if (res.success) { showToast('✓ מוצר נוסף למלאי', 'success'); loadInventory(); }
+    else showToast('שגיאה: ' + (res.message || ''), 'error');
+  } catch (_) { showToast('שגיאת חיבור', 'error'); }
+}
+
+function closeModal(event, id) {
+  if (event && event.target !== document.getElementById(id)) return;
+  document.getElementById(id).classList.remove('open');
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
