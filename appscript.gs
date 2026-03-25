@@ -717,6 +717,33 @@ function seedInventory() {
   }
 }
 
+// Seed initial beer sub-type breakdown (from Excel side table)
+function seedBeerTypes() {
+  try {
+    const sheet = ensureSheet('מלאי', INV_HEADERS);
+    const existing = sheet.getDataRange().getValues();
+    const existingNames = new Set(existing.slice(1).map(r => r[0]));
+    const now = fmtDate(new Date()) + ' ' + fmtTime(new Date());
+    const beerTypes = [
+      ['בירה גולדסטאר', 34, 0, now, 0, ''],
+      ['בירה לף',        4, 0, now, 0, ''],
+      ['בירה קורונה',   13, 0, now, 0, ''],
+      ['בירה מכבי 7.9',  8, 0, now, 0, ''],
+      ['בירה סטלה',      7, 0, now, 0, ''],
+    ];
+    let added = 0;
+    beerTypes.forEach(row => {
+      if (!existingNames.has(row[0])) {
+        sheet.appendRow(row);
+        added++;
+      }
+    });
+    return { success: true, message: 'נוספו ' + added + ' סוגי בירה למלאי' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
 // ============================================================
 // MAINTENANCE
 // ============================================================
@@ -838,6 +865,9 @@ function doPost(e) {
 
       case 'seedInventory':
         return jsonResponse(seedInventory());
+
+      case 'seedBeerTypes':
+        return jsonResponse(seedBeerTypes());
 
       default:
         return jsonResponse({ success: false, message: 'פעולה לא מוכרת: ' + action });

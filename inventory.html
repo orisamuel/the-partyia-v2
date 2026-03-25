@@ -68,14 +68,35 @@
     padding: 10px 14px;
     border: 1px solid var(--glass-border); border-top: none;
     background: var(--bg-elevated);
-    cursor: pointer; transition: background 0.15s;
+    cursor: pointer; transition: background 0.15s; flex-wrap: wrap;
   }
   .inv-group-header:hover { background: var(--glass-hover); }
   .inv-group-title { font-weight: 700; font-size: 0.95rem; }
+  .inv-group-badge {
+    font-size: 0.78rem; background: var(--glass-bg);
+    border: 1px solid var(--glass-border); color: var(--text-secondary);
+    padding: 2px 10px; border-radius: 999px;
+  }
   .inv-group-body { border: 1px solid var(--glass-border); border-top: none; }
   .inv-group-body .inv-row { border-top: 1px solid var(--glass-border); border-radius: 0; }
   .inv-group-body .inv-row:first-child { border-top: none; }
-  .inv-group-body .inv-row:last-child { border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  .inv-group-footer {
+    padding: 8px 12px;
+    border-top: 1px solid var(--glass-border);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  /* Responsive */
+  @media (max-width: 600px) {
+    .inv-header-row, .inv-row {
+      grid-template-columns: 1fr 46px 92px;
+      padding: 8px 10px; gap: 5px;
+    }
+    .inv-col-req, .inv-col-buy { display: none !important; }
+    .inv-adj-btn { width: 24px; height: 24px; font-size: 0.9rem; }
+    .inv-edit-btn { padding: 3px 6px; font-size: 0.65rem; }
+    .inv-group-header { padding: 9px 10px; gap: 7px; }
+    .inv-group-footer { padding: 7px 10px; }
+  }
 </style>
 </head>
 <body>
@@ -111,6 +132,7 @@
       <div class="section-title" style="margin:0;border:none;">רשימת מוצרים במלאי</div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary btn-sm" onclick="loadInventory()">🔄 רענן</button>
+        <button class="btn btn-secondary btn-sm" onclick="runSeedBeerTypes()" title="ייבא סוגי בירה מברירת המחדל">🍺 ייבא סוגי בירה</button>
         <button class="btn btn-primary btn-sm" onclick="openAddProductModal()">+ הוסף מוצר למלאי</button>
       </div>
     </div>
@@ -213,20 +235,21 @@ function makeInvRow(item) {
   const isLow   = !isZero && req > 0 && item.stock < req;
   const numCls  = isZero ? 'inv-stock-zero' : isLow ? 'inv-stock-low' : 'inv-stock-ok';
   const buyCls  = toBuy > 0 ? 'inv-tobuy-pos' : 'inv-tobuy-zero';
+  const safeName = esc(item.name);
   return `
     <div class="inv-row animate-fadein">
       <div class="inv-col-name">
         <span class="inv-emoji">${item.emoji || '📦'}</span>
-        <span>${esc(item.name)}</span>
-        ${item.notes ? `<span class="text-xs text-muted" style="font-style:italic;" title="${esc(item.notes)}">💡</span>` : ''}
+        <span>${safeName}</span>
+        ${item.notes ? `<span class="text-xs text-muted" style="font-style:italic;" title="${safeName}">💡</span>` : ''}
       </div>
-      <div class="inv-col-num ${numCls}">${item.stock}</div>
-      <div class="inv-col-num" style="color:var(--text-secondary);">${req > 0 ? req : '—'}</div>
-      <div class="inv-col-num ${buyCls}">${toBuy > 0 ? toBuy : (req > 0 ? '✓' : '—')}</div>
+      <div class="inv-col-num inv-col-cur ${numCls}">${item.stock}</div>
+      <div class="inv-col-num inv-col-req" style="color:var(--text-secondary);">${req > 0 ? req : '—'}</div>
+      <div class="inv-col-num inv-col-buy ${buyCls}">${toBuy > 0 ? toBuy : (req > 0 ? '✓' : '—')}</div>
       <div class="inv-controls">
-        <button class="inv-adj-btn" data-name="${esc(item.name)}" data-delta="-1" onclick="quickAdj(this.dataset.name,-1)">−</button>
-        <button class="inv-adj-btn" data-name="${esc(item.name)}" data-delta="1"  onclick="quickAdj(this.dataset.name,1)">+</button>
-        <button class="inv-edit-btn" data-name="${esc(item.name)}" onclick="openStockModal(this.dataset.name)">✏️ עדכן</button>
+        <button class="inv-adj-btn" data-name="${safeName}" onclick="quickAdj(this.dataset.name,-1)">−</button>
+        <button class="inv-adj-btn" data-name="${safeName}" onclick="quickAdj(this.dataset.name,1)">+</button>
+        <button class="inv-edit-btn" data-name="${safeName}" onclick="openStockModal(this.dataset.name)">✏️</button>
       </div>
     </div>`;
 }
@@ -242,35 +265,67 @@ function renderInventory() {
     return;
   }
 
-  const beers  = inventoryData.filter(i => i.name.startsWith('בירה'));
-  const others = inventoryData.filter(i => !i.name.startsWith('בירה'));
+  // Beer split: "בירות" = aggregate row, "בירה X" = sub-type rows
+  const beerMain = inventoryData.find(i => i.name === 'בירות');
+  const beerSubs = inventoryData.filter(i => i.name.startsWith('בירה '));
+  const others   = inventoryData.filter(i => i.name !== 'בירות' && !i.name.startsWith('בירה '));
+
+  const subsTotal = beerSubs.reduce((s, i) => s + i.stock, 0);
+  const mainStock = beerMain ? beerMain.stock : subsTotal;
+  const unknown   = Math.max(0, mainStock - subsTotal);
+  const required  = beerMain ? (beerMain.requiredStock || 0) : 0;
+  const toBuyBeer = required > 0 ? Math.max(0, required - mainStock) : 0;
 
   const headerHtml = `
     <div class="inv-header-row">
       <div class="inv-col-name">פריט</div>
-      <div>קיים</div>
-      <div>נדרש</div>
-      <div>לקנות</div>
+      <div class="inv-col-cur">קיים</div>
+      <div class="inv-col-req">נדרש</div>
+      <div class="inv-col-buy">לקנות</div>
       <div></div>
     </div>`;
 
   let html = '<div class="inv-list">' + headerHtml;
   html += others.map(makeInvRow).join('');
 
-  if (beers.length) {
-    const totalBeer  = beers.reduce((s, i) => s + i.stock, 0);
-    const totalReq   = beers.reduce((s, i) => s + (i.requiredStock || 0), 0);
-    const totalToBuy = Math.max(0, totalReq - totalBeer);
+  const hasBeerData = beerMain || beerSubs.length > 0;
+  if (hasBeerData) {
     html += `
       <div class="inv-group-header" onclick="toggleBeerGroup(this)">
         <span style="font-size:1.1rem;">🍺</span>
         <span class="inv-group-title">בירות</span>
-        <span class="text-xs" style="background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-secondary);padding:2px 10px;border-radius:999px;">${totalBeer} יח׳ כולל</span>
-        ${totalToBuy > 0 ? `<span class="badge badge-danger">${totalToBuy} לקנות</span>` : ''}
+        <span class="inv-group-badge">${mainStock} יח׳</span>
+        ${required > 0 ? `<span class="inv-group-badge" style="color:var(--text-muted);">נדרש: ${required}</span>` : ''}
+        ${toBuyBeer > 0 ? `<span class="badge badge-danger">${toBuyBeer} לקנות</span>` : (required > 0 ? `<span class="badge badge-success">✓ מספיק</span>` : '')}
         <span class="inv-group-chevron" style="color:var(--text-muted);font-size:0.8rem;margin-right:auto;transition:transform 0.2s;display:inline-block;">▼</span>
       </div>
-      <div class="inv-group-body" id="beerGroup">
-        ${beers.map(makeInvRow).join('')}
+      <div class="inv-group-body" id="beerGroup">`;
+
+    html += beerSubs.map(makeInvRow).join('');
+
+    if (unknown > 0) {
+      html += `
+        <div class="inv-row">
+          <div class="inv-col-name" style="color:var(--text-muted);">
+            <span class="inv-emoji">🍺</span>
+            <span style="font-style:italic;">בירה לא ידועה</span>
+          </div>
+          <div class="inv-col-num inv-col-cur inv-stock-ok">${unknown}</div>
+          <div class="inv-col-num inv-col-req">—</div>
+          <div class="inv-col-num inv-col-buy">—</div>
+          <div class="inv-controls"></div>
+        </div>`;
+    }
+
+    if (!beerSubs.length && !unknown) {
+      html += `<div style="padding:16px 14px;color:var(--text-muted);font-size:0.85rem;text-align:center;">לא הוגדרו סוגי בירה עדיין</div>`;
+    }
+
+    html += `
+        <div class="inv-group-footer">
+          <button class="btn btn-secondary btn-sm" onclick="openAddBeerTypeModal()">+ סוג בירה חדש</button>
+          ${beerMain ? `<button class="btn btn-secondary btn-sm" data-name="בירות" onclick="openStockModal(this.dataset.name)">✏️ עדכן כללי / נדרש</button>` : ''}
+        </div>
       </div>`;
   }
 
@@ -356,6 +411,25 @@ function openAddProductModal() {
   document.getElementById('newInvQty').value      = '0';
   document.getElementById('newInvRequired').value = '0';
   document.getElementById('addProductModal').classList.add('open');
+}
+
+async function runSeedBeerTypes() {
+  try {
+    const res = await apiCall('seedBeerTypes');
+    showToast(res.success ? ('✓ ' + res.message) : ('שגיאה: ' + res.message), res.success ? 'success' : 'error');
+    if (res.success) loadInventory();
+  } catch (_) { showToast('שגיאת חיבור', 'error'); }
+}
+
+function openAddBeerTypeModal() {
+  document.getElementById('newInvProduct').value  = 'בירה ';
+  document.getElementById('newInvQty').value      = '0';
+  document.getElementById('newInvRequired').value = '0';
+  document.getElementById('addProductModal').classList.add('open');
+  setTimeout(() => {
+    const el = document.getElementById('newInvProduct');
+    el.focus(); el.setSelectionRange(el.value.length, el.value.length);
+  }, 100);
 }
 
 async function submitNewProduct() {
