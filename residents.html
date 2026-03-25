@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d0f14">
-<title>הפרתיה — ניהול דיירים</title>
+<title>הפרתיה — ניהול תושבים</title>
 <link rel="icon" href="logo.png" type="image/png">
 <link rel="stylesheet" href="styles.css">
 <script src="config.js"></script>
@@ -44,9 +44,9 @@
 
 <div id="loadingScreen" class="loading-screen">
   <img src="logo.png" alt="הפרתיה" class="loading-logo">
-  <div class="loading-title">דיירים</div>
+  <div class="loading-title">תושבים</div>
   <div class="loading-spinner"></div>
-  <div id="loadingProgress" class="loading-progress">טוען דיירים...</div>
+  <div id="loadingProgress" class="loading-progress">טוען תושבים...</div>
 </div>
 
 <div id="mainContent">
@@ -55,8 +55,8 @@
   <header class="header">
     <a href="admin.html"><img src="logo.png" alt="לוגו" class="header-logo"></a>
     <div class="header-title">
-      <h1>👥 ניהול דיירים</h1>
-      <p>רשימת הדיירים, הוספה ועריכה</p>
+      <h1>👥 ניהול תושבים</h1>
+      <p>רשימת התושבים, הוספה ועריכה</p>
     </div>
     <div class="header-actions">
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
@@ -77,7 +77,7 @@
         <select id="filterType" class="form-select" style="width:auto;" onchange="filterResidents()">
           <option value="">כל הסוגים</option>
           <option value="נופי פרת">🏡 נופי פרת</option>
-          <option value="כפר עדום">🌳 כפר עדום</option>
+          <option value="כפר אדומים">🌳 כפר אדומים</option>
           <option value="אלון">🍃 אלון</option>
         </select>
         <label style="display:flex;align-items:center;gap:5px;font-size:0.82rem;color:var(--text-secondary);cursor:pointer;white-space:nowrap;">
@@ -86,7 +86,7 @@
       </div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary" onclick="openImportModal()">📋 ייבוא רשימה</button>
-        <button class="btn btn-primary"   onclick="openResidentModal()">+ דייר חדש</button>
+        <button class="btn btn-primary"   onclick="openResidentModal()">+ תושב חדש</button>
       </div>
     </div>
 
@@ -105,7 +105,7 @@
 <div id="residentModal" class="modal-backdrop" onclick="closeModal(event,'residentModal')">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="residentModalTitle">+ דייר חדש</span>
+      <span class="modal-title" id="residentModalTitle">+ תושב חדש</span>
       <button class="modal-close" onclick="closeModal(null,'residentModal')">✕</button>
     </div>
 
@@ -124,7 +124,7 @@
         <label class="form-label">סוג מגורים</label>
         <select id="rResidenceType" class="form-select">
           <option value="נופי פרת">🏡 נופי פרת</option>
-          <option value="כפר עדום">🌳 כפר עדום</option>
+          <option value="כפר אדומים">🌳 כפר אדומים</option>
           <option value="אלון">🍃 אלון</option>
         </select>
       </div>
@@ -155,7 +155,7 @@
 <div id="importModal" class="modal-backdrop" onclick="closeModal(event,'importModal')">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">📋 ייבוא רשימת דיירים</span>
+      <span class="modal-title">📋 ייבוא רשימת תושבים</span>
       <button class="modal-close" onclick="closeModal(null,'importModal')">✕</button>
     </div>
     <div class="form-group">
@@ -217,7 +217,7 @@ function filterResidents() {
   );
 
   document.getElementById('residentCount').textContent =
-    `מציג ${filtered.length} מתוך ${allResidents.filter(r => r.active === 'כן').length} דיירים פעילים`;
+    `מציג ${filtered.length} מתוך ${allResidents.filter(r => r.active === 'כן').length} תושבים פעילים`;
 
   renderResidents(filtered);
 }
@@ -267,7 +267,7 @@ function renderResidents(list) {
 function openResidentModal(fullName) {
   editingName = fullName || null;
   const isEdit = !!fullName;
-  document.getElementById('residentModalTitle').textContent = isEdit ? '✏️ עריכת דייר' : '+ דייר חדש';
+  document.getElementById('residentModalTitle').textContent = isEdit ? '✏️ עריכת תושב' : '+ תושב חדש';
   document.getElementById('rActiveRow').style.display        = isEdit ? 'block' : 'none';
   document.getElementById('rFullName').disabled              = isEdit;
 
