@@ -45,21 +45,13 @@ function hideLoadingScreen(delay = 400) {
 // שולח warm-up ping לפני הקריאה הראשית (מונע cold start)
 function warmupServer() {
     if (typeof CONFIG === 'undefined') return;
-    fetch(CONFIG.SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=ping'
-    }).catch(() => {});
+    fetch(CONFIG.SCRIPT_URL + '?action=ping').catch(() => {});
 }
 
 async function apiCall(action, params = {}) {
     if (typeof CONFIG === 'undefined') throw new Error('CONFIG לא טעון');
-    const body = new URLSearchParams({ action, ...params });
-    const res = await fetch(CONFIG.SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body,
-    });
+    const url = CONFIG.SCRIPT_URL + '?' + new URLSearchParams({ action, ...params });
+    const res = await fetch(url, { redirect: 'follow' });
     if (!res.ok) throw new Error('שגיאת שרת: ' + res.status);
     const text = await res.text();
     try { return JSON.parse(text); }
