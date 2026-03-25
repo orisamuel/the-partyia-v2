@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f14">
+<title>הפרתיה — רשימת קניות</title>
+<link rel="stylesheet" href="styles.css">
+<script src="config.js"></script>
+<script src="utils.js"></script>
+<style>
+  .shopping-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .shopping-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    transition: var(--t-med);
+    cursor: pointer;
+  }
+  .shopping-item:hover { border-color: var(--amber-dim); }
+  .shopping-item.done {
+    opacity: 0.4;
+    border-color: var(--glass-border);
+    background: var(--bg-surface);
+  }
+  .shopping-item.done .item-name { text-decoration: line-through; }
+  .shopping-checkbox {
+    width: 22px; height: 22px; min-width: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: center;
+    transition: var(--t-fast);
+    font-size: 0.75rem;
+  }
+  .shopping-item:not(.done) .shopping-checkbox { border-color: var(--amber-dim); }
+  .shopping-item.done .shopping-checkbox {
+    background: var(--success);
+    border-color: var(--success);
+    color: #fff;
+  }
+  .item-name {
+    flex: 1;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+  }
+  .item-notes {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  .item-badge {
+    background: var(--amber-glow);
+    color: var(--amber-bright);
+    border: 1px solid rgba(245,158,11,0.35);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .item-stock-info {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: left;
+    white-space: nowrap;
+  }
+  .section-divider {
+    display: flex; align-items: center; gap: 10px;
+    color: var(--text-muted); font-size: 0.8rem;
+    margin: 16px 0 8px;
+  }
+  .section-divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: var(--glass-border);
+  }
+  .progress-bar {
+    height: 6px; background: var(--glass-border);
+    border-radius: 3px; overflow: hidden; margin: 0 0 20px;
+  }
+  .progress-fill {
+    height: 100%; background: var(--success);
+    border-radius: 3px; transition: width 0.5s var(--ease-smooth);
+  }
+  .stats-row {
+    display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .stat-chip {
+    background: var(--bg-elevated);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+  }
+  .stat-chip strong { color: var(--text-primary); }
+  .export-strip {
+    position: sticky; bottom: 0;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--glass-border);
+    padding: 12px 16px;
+    display: flex; gap: 8px;
+    justify-content: flex-end;
+    z-index: 10;
+  }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">
+  <img src="logo.png" alt="הפרתיה" class="loading-logo">
+  <div class="loading-title">רשימת קניות</div>
+  <div class="loading-spinner"></div>
+  <div id="loadingProgress" class="loading-progress">טוען...</div>
+</div>
+
+<div id="mainContent">
+<div class="container">
+
+  <header class="header">
+    <a href="admin.html"><img src="logo.png" alt="לוגו" class="header-logo"></a>
+    <div class="header-title">
+      <h1>🛒 רשימת קניות</h1>
+      <p>מה צריך לקנות לפי הפער במלאי</p>
+    </div>
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
+      <a href="admin.html" class="btn-back">← חזרה</a>
+    </div>
+  </header>
+
+  <div class="page-body">
+
+    <div id="statsRow" class="stats-row"></div>
+
+    <div class="progress-bar">
+      <div id="progressFill" class="progress-fill" style="width:0%"></div>
+    </div>
+
+    <div class="flex-between mb-16" style="flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="loadShopping()">🔄 רענן</button>
+        <button class="btn btn-secondary btn-sm" onclick="toggleDone()">
+          <span id="toggleDoneLabel">הסתר נקנה</span>
+        </button>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="uncheckAll()">↩ אפס הכל</button>
+    </div>
+
+    <div id="shoppingList" class="shopping-list">
+      <div class="flex-center" style="padding:40px;color:var(--text-muted);">
+        <div class="spinner-sm" style="margin-left:8px;"></div> טוען...
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="export-strip">
+  <button class="btn btn-secondary btn-sm" onclick="copyToClipboard()">📋 העתק לוואטסאפ</button>
+  <button class="btn btn-primary btn-sm" onclick="exportText()">📤 ייצוא טקסט</button>
+</div>
+
+</div>
+
+<script>
+let allItems = [];
+let checkedItems = new Set();
+let showDone = true;
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  warmupServer();
+  loadShopping();
+});
+
+async function loadShopping() {
+  try {
+    const res = await apiCall('getShoppingList');
+    if (!res.success) { showToast('שגיאה בטעינת רשימה', 'error'); hideLoadingScreen(300); return; }
+    allItems = res.items || [];
+    renderList();
+    hideLoadingScreen(300);
+  } catch (_) { showToast('שגיאת חיבור', 'error'); hideLoadingScreen(300); }
+}
+
+function renderList() {
+  const list = document.getElementById('shoppingList');
+  const done = checkedItems.size;
+  const total = allItems.length;
+
+  // stats
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-chip">סה"כ: <strong>${total} פריטים</strong></div>
+    <div class="stat-chip">נקנו: <strong style="color:var(--success)">${done}</strong></div>
+    <div class="stat-chip">נותר: <strong style="color:var(--amber)">${total - done}</strong></div>
+  `;
+
+  // progress
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  if (!total) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state-icon">✅</span>
+        <p class="empty-state-text">המלאי מלא — אין מה לקנות!</p>
+      </div>`;
+    return;
+  }
+
+  const visible = showDone ? allItems : allItems.filter(i => !checkedItems.has(i.name));
+
+  list.innerHTML = visible.map(item => {
+    const isDone = checkedItems.has(item.name);
+    return `
+      <div class="shopping-item ${isDone ? 'done' : ''}" onclick="toggleItem('${esc(item.name)}')">
+        <div class="shopping-checkbox">${isDone ? '✓' : ''}</div>
+        <div style="flex:1; min-width:0;">
+          <div class="item-name">${esc(item.name)}</div>
+          ${item.notes ? `<div class="item-notes">💡 ${esc(item.notes)}</div>` : ''}
+          <div class="item-stock-info">קיים: ${item.stock} / נדרש: ${item.requiredStock}</div>
+        </div>
+        <div class="item-badge">×${item.toBuy}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleItem(name) {
+  if (checkedItems.has(name)) {
+    checkedItems.delete(name);
+  } else {
+    checkedItems.add(name);
+  }
+  renderList();
+}
+
+function toggleDone() {
+  showDone = !showDone;
+  document.getElementById('toggleDoneLabel').textContent = showDone ? 'הסתר נקנה' : 'הצג נקנה';
+  renderList();
+}
+
+function uncheckAll() {
+  checkedItems.clear();
+  renderList();
+}
+
+function buildTextList() {
+  const remaining = allItems.filter(i => !checkedItems.has(i.name));
+  if (!remaining.length) return '✅ הכל נקנה!';
+  let text = '🛒 רשימת קניות — הפרתיה\n\n';
+  remaining.forEach(item => {
+    text += `• ${item.name} — ×${item.toBuy}`;
+    if (item.notes) text += `\n  💡 ${item.notes}`;
+    text += '\n';
+  });
+  return text;
+}
+
+function copyToClipboard() {
+  const text = buildTextList();
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✓ הועתק ללוח', 'success');
+  }).catch(() => {
+    prompt('העתק את הטקסט:', text);
+  });
+}
+
+function exportText() {
+  const text = buildTextList();
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'shopping-list.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

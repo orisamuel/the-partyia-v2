@@ -171,6 +171,9 @@ function renderInventory() {
     const numCls  = isZero ? 'stock-zero' : isLow ? 'stock-low' : 'stock-ok';
     const fillCls = isZero ? 'fill-zero' : isLow ? 'fill-low' : 'fill-ok';
 
+    const req = item.requiredStock || 0;
+    const needToBuy = req > 0 ? Math.max(0, req - item.stock) : 0;
+
     return `
       <div class="inventory-card ${cls} animate-fadein">
         <div class="inventory-card-inner">
@@ -180,7 +183,12 @@ function renderInventory() {
           <div class="threshold-bar">
             <div class="threshold-fill ${fillCls}" style="width:${pct}%"></div>
           </div>
-          <div class="text-xs text-muted mb-8">סף: ${item.threshold}</div>
+          <div class="text-xs text-muted mb-8" style="display:flex;justify-content:space-between;width:100%;">
+            <span>סף: ${item.threshold}</span>
+            ${req > 0 ? `<span style="color:var(--text-secondary);">נדרש: <strong style="color:${needToBuy > 0 ? 'var(--warning)' : 'var(--success)'};">${req}</strong></span>` : ''}
+          </div>
+          ${needToBuy > 0 ? `<div class="text-xs mb-8" style="color:var(--warning);font-weight:700;">🛒 לקנות: ×${needToBuy}</div>` : ''}
+          ${item.notes ? `<div class="text-xs text-muted mb-8" style="font-style:italic;">💡 ${esc(item.notes)}</div>` : ''}
           <div class="inventory-controls">
             <button class="stock-adj-btn" onclick="quickAdj('${esc(item.name)}',-1)" title="הפחת 1">−</button>
             <span class="text-sm fw-bold" style="min-width:20px;text-align:center;">${item.stock}</span>

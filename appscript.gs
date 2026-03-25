@@ -519,12 +519,14 @@ function updateItemStatus(itemId, newStatus) {
 
 // ============================================================
 // INVENTORY
-// Schema: שם מוצר(0), כמות(1), threshold(2), עדכון אחרון(3)
+// Schema: שם מוצר(0), כמות(1), threshold(2), עדכון אחרון(3), מלאי נדרש(4), הערות(5)
 // ============================================================
+
+const INV_HEADERS = ['שם מוצר', 'כמות', 'threshold', 'עדכון אחרון', 'מלאי נדרש', 'הערות'];
 
 function getInventory() {
   try {
-    const sheet = ensureSheet('מלאי', ['שם מוצר', 'כמות', 'threshold', 'עדכון אחרון']);
+    const sheet = ensureSheet('מלאי', INV_HEADERS);
     const data = sheet.getDataRange().getValues();
     // בנה מפת אימוג'י מגיליון מוצרים
     const emojiMap = {};
@@ -538,6 +540,8 @@ function getInventory() {
       stock: parseInt(r[1]) || 0,
       threshold: parseInt(r[2]) || 5,
       lastUpdated: r[3] ? r[3].toString() : '',
+      requiredStock: parseInt(r[4]) || 0,
+      notes: r[5] ? r[5].toString() : '',
       emoji: emojiMap[r[0]] || '📦'
     }));
     return { success: true, inventory };
@@ -546,9 +550,36 @@ function getInventory() {
   }
 }
 
+function getShoppingList() {
+  try {
+    const sheet = ensureSheet('מלאי', INV_HEADERS);
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return { success: true, items: [] };
+    const items = [];
+    data.slice(1).forEach(r => {
+      const name = r[0] || '';
+      const stock = parseInt(r[1]) || 0;
+      const required = parseInt(r[4]) || 0;
+      const toBuy = required - stock;
+      if (name && toBuy > 0) {
+        items.push({
+          name,
+          stock,
+          requiredStock: required,
+          toBuy,
+          notes: r[5] ? r[5].toString() : ''
+        });
+      }
+    });
+    return { success: true, items };
+  } catch (e) {
+    return { success: false, message: e.toString(), items: [] };
+  }
+}
+
 function updateStock(productName, delta, reason) {
   try {
-    const sheet = ensureSheet('מלאי', ['שם מוצר', 'כמות', 'threshold', 'עדכון אחרון']);
+    const sheet = ensureSheet('מלאי', INV_HEADERS);
     const data = sheet.getDataRange().getValues();
     const now = fmtDate(new Date()) + ' ' + fmtTime(new Date());
     for (let i = 1; i < data.length; i++) {
@@ -563,8 +594,88 @@ function updateStock(productName, delta, reason) {
     }
     // מוצר חדש במלאי
     const initial = Math.max(0, parseInt(delta) || 0);
-    sheet.appendRow([productName, initial, 5, now]);
+    sheet.appendRow([productName, initial, 5, now, 0, '']);
     return { success: true, message: 'מוצר נוסף למלאי', newStock: initial };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function updateRequiredStock(productName, requiredStock, notes) {
+  try {
+    const sheet = ensureSheet('מלאי', INV_HEADERS);
+    const data = sheet.getDataRange().getValues();
+    const now = fmtDate(new Date()) + ' ' + fmtTime(new Date());
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] === productName) {
+        sheet.getRange(i+1, 5).setValue(parseInt(requiredStock) || 0);
+        if (notes !== undefined) sheet.getRange(i+1, 6).setValue(notes);
+        return { success: true, message: 'מלאי נדרש עודכן' };
+      }
+    }
+    // מוצר חדש — צור שורה עם המלאי הנדרש
+    sheet.appendRow([productName, 0, 5, now, parseInt(requiredStock) || 0, notes || '']);
+    return { success: true, message: 'מוצר נוסף למלאי' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// Seed inventory from initial CSV data
+function seedInventory() {
+  try {
+    const sheet = ensureSheet('מלאי', INV_HEADERS);
+    const existing = sheet.getDataRange().getValues();
+    const existingNames = new Set(existing.slice(1).map(r => r[0]));
+    const now = fmtDate(new Date()) + ' ' + fmtTime(new Date());
+    const seed = [
+      ['וויסקי לקוקטטילים (גראנטס)', 3, 5, now, 3, 'וויסקי יחסית זול (גראנטס)'],
+      ['וויסקי סבבה', 2, 1, now, 1, 'גלנמורנג\'י/מנקי שולדרס/משהו טוב במחיר סבבה'],
+      ['רום (בקרדי)', 0, 5, now, 2, ''],
+      ['ערק', 0, 5, now, 2, ''],
+      ['יין אדום', 1, 1, now, 1, 'קטגוריה של 50 ש"ח'],
+      ['יין לבן', 1, 1, now, 1, 'קטגוריה של 50 ש"ח'],
+      ['יין אדום לסיידר', 0, 2, now, 4, 'היינות האדומים של טפרברג 2 ב-65 ש"ח'],
+      ['קווה', 0, 1, now, 2, ''],
+      ['אפרול', 1, 1, now, 1, ''],
+      ['וודקה', 2, 1, now, 1, ''],
+      ['מונין ליצ\'י', 1, 1, now, 1, 'קונים בפיופ'],
+      ['מונין אננס', 1, 1, now, 1, 'קונים בפיופ'],
+      ['מונין פסיפלורה', 1, 1, now, 1, 'קונים בפיופ'],
+      ['בירות', 60, 20, now, 50, 'לדאוג ל-50 בירות, אפשר לזרום עם המגוון. קונים 1/3. לפחות 18 גולדסטאר'],
+      ['מיץ לימון טבעי סחוט', 10, 3, now, 12, 'חשוב לשים לב שקונים את הטבעי והטובים אחרת זה מבאס (בד"כ בבקבוקי זכוכית)'],
+      ['מיץ תפוזים סחוט טבעי', 3, 2, now, 4, '4 ליטר לערב, חשוב סחוט משהו טוב'],
+      ['לימונדה', 3, 2, now, 2, ''],
+      ['סודה', 0, 2, now, 3, ''],
+      ['סיידר תפוחים טבעי', 2, 1, now, 1, 'פחית גדולה של סיידר'],
+      ['רדבול', 2, 2, now, 2, ''],
+      ['עלי נענע טריים', 0, 1, now, 2, ''],
+      ['שק לימונים', 5, 5, now, 10, 'לפחות 10 לימונים'],
+      ['תפוז', 7, 1, now, 1, 'תפוז 1'],
+      ['תפוחים', 8, 3, now, 5, 'אפשר גם 2 אגסים'],
+      ['קרח', 6, 3, now, 8, 'לדבר עם איציק, אם הוא מביא אין צורך לקנות'],
+      ['סוכר', 1, 1, now, 1, 'בעיקר לשים לב שלא נגמר לפעם הבאה'],
+      ['צ\'ילי גרוס', 1, 1, now, 1, ''],
+      ['פלפל צ\'ילי', 1, 1, now, 1, ''],
+      ['כוכבי אניס', 1, 1, now, 1, 'שקית'],
+      ['מקלות קינמון', 1, 1, now, 1, 'שקית של מקלות'],
+      ['ציפורן תבלין', 1, 1, now, 1, 'במידה ומכינים סיידר'],
+      ['קשים שחורים', 300, 50, now, 100, 'לשים כל הזמן לב שיש קשים. ניתן לקנות במקסטוק/פיופ'],
+      ['זיתים', 5, 2, now, 6, 'חבילות של שימורים טובים!'],
+      ['נאצ\'וס', 11, 5, now, 10, 'להזמין דרך זוהר'],
+      ['גומי', 0, 1, now, 2, 'שיהיה 2 חבילות'],
+      ['סבון כלים', 3, 1, now, 1, ''],
+      ['נייר סופר', 3, 1, now, 1, ''],
+      ['דלי מגבונים', 2, 1, now, 1, ''],
+    ];
+    let added = 0;
+    seed.forEach(row => {
+      if (!existingNames.has(row[0])) {
+        sheet.appendRow(row);
+        added++;
+      }
+    });
+    return { success: true, message: 'נוספו ' + added + ' פריטים למלאי' };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
@@ -678,6 +789,15 @@ function doPost(e) {
 
       case 'updateStock':
         return jsonResponse(updateStock(p.productName, parseInt(p.delta) || 0, p.reason || ''));
+
+      case 'getShoppingList':
+        return jsonResponse(getShoppingList());
+
+      case 'updateRequiredStock':
+        return jsonResponse(updateRequiredStock(p.productName, p.requiredStock, p.notes));
+
+      case 'seedInventory':
+        return jsonResponse(seedInventory());
 
       default:
         return jsonResponse({ success: false, message: 'פעולה לא מוכרת: ' + action });
