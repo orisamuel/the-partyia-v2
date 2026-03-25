@@ -379,7 +379,7 @@ function getActiveItems(limit) {
     const items = data.slice(1).slice(-limit)
       .filter(r => r[6] !== 'cancelled')
       .map((r, idx) => ({
-        date: r[0] ? r[0].toString() : '',
+        date: r[0] instanceof Date ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
         time: fmtCellTime(r[1]),
         customerName: r[2] || '',
         products: r[3] || '',
@@ -401,7 +401,7 @@ function getRecentOrdersFromMain(limit) {
     const data = sheet.getDataRange().getValues();
     if (data.length <= 1) return { success: true, orders: [] };
     const orders = data.slice(1).slice(-limit).map((r, idx) => ({
-      date: r[0] ? r[0].toString() : '',
+      date: r[0] instanceof Date ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
       time: fmtCellTime(r[1]),
       customerName: r[2] || '',
       products: r[3] || '',
@@ -430,8 +430,8 @@ function getOrdersByEvent(eventDate) {
     const nxStr = fmtDate(nextDay);
     const relevant = [];
     data.slice(1).forEach((r, idx) => {
-      const d = r[0] ? r[0].toString() : '';
-      const t = r[1] ? r[1].toString() : '';
+      const d = r[0] instanceof Date ? fmtDate(r[0]) : (r[0] ? r[0].toString() : '');
+      const t = fmtCellTime(r[1]);
       if (d === evStr) { relevant.push(rowToOrder(r, idx)); return; }
       if (d === nxStr) {
         const m = t.match(/(\d{1,2}):/);
@@ -446,8 +446,8 @@ function getOrdersByEvent(eventDate) {
 
 function rowToOrder(r, idx) {
   return {
-    date: r[0] ? r[0].toString() : '',
-    time: r[1] ? r[1].toString() : '',
+    date: r[0] instanceof Date ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
+    time: fmtCellTime(r[1]),
     customerName: r[2] || '',
     products: r[3] || '',
     total: r[4] || 0,
