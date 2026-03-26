@@ -162,15 +162,27 @@ async function loadStats() {
     if (ordersRes.success) {
       const orders  = ordersRes.orders || [];
 
-      // Normalize dd/MM/yyyy with or without zero-padding
-      const normDate = s => {
-        const m = String(s || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-        return m ? `${m[1].padStart(2,'0')}/${m[2].padStart(2,'0')}/${m[3]}` : String(s || '');
+      // Parse order date string (dd/MM/yyyy or GMT string) to midnight Date
+      const parseOrderDate = s => {
+        if (!s) return null;
+        const str = String(s);
+        if (str.includes('GMT') || str.includes('00:00:00')) {
+          const d = new Date(str);
+          return isNaN(d.getTime()) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+        if (str.includes('/')) {
+          const [day, month, year] = str.split('/').map(Number);
+          if (day && month && year) return new Date(year, month - 1, day);
+        }
+        return null;
       };
-      const today = new Date();
-      const todayFmt = normDate(`${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`);
+      const now = new Date();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
-      const todayOrders = orders.filter(o => normDate(o.date) === todayFmt && o.status !== 'cancelled');
+      const todayOrders = orders.filter(o => {
+        const d = parseOrderDate(o.date);
+        return d && d.getTime() === todayMidnight && o.status !== 'cancelled';
+      });
       const pending     = todayOrders.filter(o => o.status === 'pending').length;
       const revenue     = todayOrders
         .filter(o => o.orderType !== 'זיכוי')
