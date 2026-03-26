@@ -413,11 +413,13 @@ async function changeStatus(itemId, newStatus) {
   try {
     const res = await apiCall('updateStatus', { orderId: itemId, newStatus });
     if (res.success) {
-      // Commit to local data so the status survives pendingChanges expiry
-      // (prevents the next poll from reverting if the sheet write is slow)
-      committedStatuses[itemId] = newStatus;
-      const item = ordersData.find(i => i.orderId === itemId);
-      if (item) item.status = newStatus;
+      // Only commit if no newer change has been made since this request fired
+      const current = pendingChanges[itemId];
+      if (current && current.status === newStatus) {
+        committedStatuses[itemId] = newStatus;
+        const item = ordersData.find(i => i.orderId === itemId);
+        if (item) item.status = newStatus;
+      }
     } else {
       showToast('שגיאה בעדכון סטטוס', 'error', 3000);
       delete pendingChanges[itemId];
