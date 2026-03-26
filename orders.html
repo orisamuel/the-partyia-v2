@@ -102,7 +102,7 @@
         <tr>
           <th style="width:72px">שעה</th>
           <th style="width:160px">לקוח</th>
-          <th>פריטים</th>
+          <th>פריטים / הערה</th>
           <th style="width:220px">סטטוס</th>
         </tr>
       </thead>
@@ -303,7 +303,7 @@ function renderDesktop(items) {
     <tr id="row-${item.orderId}">
       <td class="text-sm text-muted">${esc(fmtTimeStr(item.time))}</td>
       <td><strong style="color:var(--amber-bright)">${esc(item.customerName)}</strong></td>
-      <td class="text-sm">${esc(item.products)}</td>
+      <td class="text-sm">${esc(item.products)}${item.note ? `<div style="font-size:0.78rem;color:var(--warning);margin-top:2px;">📝 ${esc(item.note)}</div>` : ''}</td>
       <td>${statusSlider(item.orderId, item.status)}</td>
     </tr>
   `).join('');
@@ -319,7 +319,7 @@ function renderMobile(items) {
   el.innerHTML = items.map(item => `
     <div class="order-card status-${item.status}" id="card-${item.orderId}">
       <div class="order-card-name">${esc(item.customerName)}</div>
-      <div class="order-card-items">${esc(item.products)}</div>
+      <div class="order-card-items">${esc(item.products)}${item.note ? `<div style="font-size:0.78rem;color:var(--warning);margin-top:2px;">📝 ${esc(item.note)}</div>` : ''}</div>
       <div class="order-card-footer">
         <span class="order-card-time">${esc(fmtTimeStr(item.time))}</span>
         ${statusSlider(item.orderId, item.status)}
@@ -366,13 +366,18 @@ function fmtTimeStr(t) {
 // Status update
 // ─────────────────────────────────────────────
 async function changeStatus(itemId, newStatus) {
-  // Optimistic
+  // Optimistic — show change immediately, guard for STATUS_LOCK ms
   pendingChanges[itemId] = { status: newStatus, ts: Date.now() };
   applyOptimistic(itemId, newStatus);
 
   try {
     const res = await apiCall('updateStatus', { orderId: itemId, newStatus });
-    if (!res.success) {
+    if (res.success) {
+      // Commit to local data so the status survives pendingChanges expiry
+      // (prevents the next poll from reverting if the sheet write is slow)
+      const item = ordersData.find(i => i.orderId === itemId);
+      if (item) item.status = newStatus;
+    } else {
       showToast('שגיאה בעדכון סטטוס', 'error', 3000);
       delete pendingChanges[itemId];
     }
