@@ -242,8 +242,7 @@ async function fetchOrders() {
     const res = await apiCall('getRecentOrders', { limit: 150 });
     if (!res.success) return;
     const rawItems = res.orders || [];
-    const withNotes = rawItems.filter(i => i.note);
-    if (withNotes.length) console.log('[orders] items with note:', withNotes.map(i => ({name: i.customerName, note: i.note})));
+    console.log('[orders] raw sample (first 3):', rawItems.slice(0,3).map(i => ({name:i.customerName, products:i.products, note:i.note, date:i.date})));
     const items = filterTodayOrders(rawItems);
     checkForNewOrders(items);
     ordersData = items;
