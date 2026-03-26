@@ -270,11 +270,11 @@ function renderInventory() {
   const beerSubs  = inventoryData.filter(i => i.name.startsWith('בירה '));
   const others    = inventoryData.filter(i => i.name !== 'בירות' && !i.name.startsWith('בירה '));
 
-  const subsTotal = beerSubs.reduce((s, i) => s + i.stock, 0);
-  const mainStock = beerMain ? beerMain.stock : subsTotal;   // total = "בירות".stock
-  const unknown   = Math.max(0, mainStock - subsTotal);       // unaccounted beers
-  const required  = beerMain ? (beerMain.requiredStock || 0) : 0;
-  const toBuyBeer = required > 0 ? Math.max(0, required - mainStock) : 0;
+  const subsTotal  = beerSubs.reduce((s, i) => s + i.stock, 0);
+  const uncat      = beerMain ? beerMain.stock : 0;  // uncategorized beers (in "בירות" row)
+  const mainStock  = subsTotal + uncat;               // total = all named + uncategorized
+  const required   = beerMain ? (beerMain.requiredStock || 0) : 0;
+  const toBuyBeer  = required > 0 ? Math.max(0, required - mainStock) : 0;
 
   const headerHtml = `
     <div class="inv-header-row">
@@ -311,14 +311,14 @@ function renderInventory() {
     // Named sub-types
     html += beerSubs.map(i => makeInvRow(i)).join('');
 
-    // "לא ידוע" row — read-only, shows unaccounted beers
-    if (unknown > 0) {
+    // "לא ידוע" row — shows uncategorized beers (beerMain.stock)
+    if (uncat > 0) {
       html += `
         <div class="inv-row" style="opacity:0.7;">
           <div class="inv-col-name" style="color:var(--text-muted);font-style:italic;">
             <span class="inv-emoji">❓</span><span>לא ידוע</span>
           </div>
-          <div class="inv-col-num inv-col-cur inv-stock-ok">${unknown}</div>
+          <div class="inv-col-num inv-col-cur inv-stock-ok">${uncat}</div>
           <div class="inv-col-num inv-col-req">—</div>
           <div class="inv-col-num inv-col-buy">—</div>
           <div class="inv-controls"></div>
@@ -332,7 +332,7 @@ function renderInventory() {
       </div>`;
   }
 
-  html += others.map(makeInvRow).join('');
+  html += others.map(i => makeInvRow(i)).join('');
   html += '</div>';
   grid.innerHTML = html;
 }

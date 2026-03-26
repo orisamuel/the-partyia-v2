@@ -441,73 +441,41 @@
             });
         }
         
-        // פילטור לפי טווח תאריכים - עם טיפול בפורמטים שונים
+        // המרת תאריך הזמנה (dd/MM/yyyy או GMT string) ל-YYYY-MM-DD
+        function orderDateToYMD(dateStr) {
+            if (!dateStr) return null;
+            const s = dateStr.toString().trim();
+            if (s.includes('/')) {
+                const parts = s.split('/');
+                if (parts.length === 3) {
+                    const [d, m, y] = parts;
+                    return `${y.trim()}-${m.trim().padStart(2,'0')}-${d.trim().padStart(2,'0')}`;
+                }
+            }
+            if (s.includes('GMT') || s.includes('00:00:00')) {
+                const dt = new Date(s);
+                if (!isNaN(dt.getTime())) {
+                    return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+                }
+            }
+            return null;
+        }
+
+        // פילטור לפי טווח תאריכים — השוואת מחרוזות YYYY-MM-DD כדי למנוע בעיות timezone
         function filterByDateRange(orders, fromDate, toDate) {
-            const fromDateObj = new Date(fromDate);
-            const toDateObj = new Date(toDate);
-            
-            console.log('🔍 מפלטר לטווח:');
-            console.log('   מתאריך:', fromDateObj.toDateString());
-            console.log('   עד תאריך:', toDateObj.toDateString());
-            
             let matchCount = 0;
-            
             const filtered = orders.filter(order => {
                 try {
-                    const orderDateStr = order.date || '';
-                    
-                    if (!orderDateStr) {
-                        console.log('⚠️  הזמנה ללא תאריך:', order.customerName);
-                        return false;
-                    }
-                    
-                    let orderDate;
-                    
-                    // זיהוי פורמט התאריך
-                    if (orderDateStr.includes('GMT') || orderDateStr.includes('00:00:00')) {
-                        // פורמט Date object: "Thu Jul 03 2025 00:00:00 GMT+0300"
-                        orderDate = new Date(orderDateStr);
-                        console.log('📅 Date object:', orderDateStr, '→', orderDate.toDateString());
-                    } else if (orderDateStr.includes('/')) {
-                        // פורמט DD/MM/YYYY: "03/07/2025"
-                        const dateParts = orderDateStr.split('/');
-                        if (dateParts.length !== 3) {
-                            console.log('⚠️  פורמט DD/MM/YYYY לא תקין:', orderDateStr);
-                            return false;
-                        }
-                        const [day, month, year] = dateParts.map(Number);
-                        orderDate = new Date(year, month - 1, day);
-                        console.log('📅 DD/MM/YYYY:', orderDateStr, '→', orderDate.toDateString());
-                    } else {
-                        console.log('⚠️  פורמט תאריך לא מוכר:', orderDateStr);
-                        return false;
-                    }
-                    
-                    // בדיקת תקינות התאריך
-                    if (isNaN(orderDate.getTime())) {
-                        console.log('⚠️  תאריך לא תקין:', orderDateStr);
-                        return false;
-                    }
-                    
-                    const isInRange = orderDate >= fromDateObj && orderDate <= toDateObj;
-                    
-                    // דיבוג מפורט
-                    if (matchCount < 10) { // מציג רק 10 הראשונים כדי לא להציף
-                        console.log(`   ${isInRange ? '✅' : '❌'} ${order.customerName}: ${orderDate.toDateString()}`);
-                    }
-                    
-                    if (isInRange) {
-                        matchCount++;
-                    }
-                    
-                    return isInRange;
+                    const ymd = orderDateToYMD(order.date);
+                    if (!ymd) return false;
+                    const inRange = ymd >= fromDate && ymd <= toDate;
+                    if (inRange) matchCount++;
+                    return inRange;
                 } catch (e) {
-                    console.log('❌ שגיאה בעיבוד תאריך:', e.message, 'עבור הזמנה:', order.customerName);
                     return false;
                 }
             });
-            
-            console.log('📊 נמצאו', matchCount, 'הזמנות בטווח');
+            console.log('נמצאו', matchCount, 'הזמנות בטווח', fromDate, '-', toDate);
             return filtered;
         }
         

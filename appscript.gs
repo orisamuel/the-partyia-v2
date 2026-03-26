@@ -738,7 +738,15 @@ function seedBeerTypes() {
         added++;
       }
     });
-    return { success: true, message: 'נוספו ' + added + ' סוגי בירה למלאי' };
+    // Reset "בירות" stock to 0 — sub-types now track the stock
+    const allData = sheet.getDataRange().getValues();
+    for (let i = 1; i < allData.length; i++) {
+      if (allData[i][0] === 'בירות') {
+        sheet.getRange(i + 1, 2).setValue(0);
+        break;
+      }
+    }
+    return { success: true, message: 'נוספו ' + added + ' סוגי בירה למלאי — מלאי "בירות" אופס' };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
