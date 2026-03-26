@@ -161,16 +161,16 @@ async function loadStats() {
 
     if (ordersRes.success) {
       const orders  = ordersRes.orders || [];
-      const todayStr = new Date().toLocaleDateString('he-IL', { day:'2-digit', month:'2-digit', year:'numeric' }).replace(/\./g,'/');
 
-      // Try matching today's date — orders store date as dd/MM/yyyy
+      // Normalize dd/MM/yyyy with or without zero-padding
+      const normDate = s => {
+        const m = String(s || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        return m ? `${m[1].padStart(2,'0')}/${m[2].padStart(2,'0')}/${m[3]}` : String(s || '');
+      };
       const today = new Date();
-      const dd    = String(today.getDate()).padStart(2,'0');
-      const mm    = String(today.getMonth()+1).padStart(2,'0');
-      const yyyy  = today.getFullYear();
-      const todayFmt = `${dd}/${mm}/${yyyy}`;
+      const todayFmt = normDate(`${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`);
 
-      const todayOrders = orders.filter(o => o.date === todayFmt && o.status !== 'cancelled');
+      const todayOrders = orders.filter(o => normDate(o.date) === todayFmt && o.status !== 'cancelled');
       const pending     = todayOrders.filter(o => o.status === 'pending').length;
       const revenue     = todayOrders
         .filter(o => o.orderType !== 'זיכוי')
