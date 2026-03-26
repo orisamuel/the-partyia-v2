@@ -314,7 +314,7 @@ function addOrder(orderData) {
   }
 }
 
-function updateOrder(orderId, products, total) {
+function updateOrder(orderId, products, total, note) {
   try {
     const ordersSheet = getSheet('סיכום הזמנות');
     if (!ordersSheet) return { success: false, message: 'גיליון הזמנות לא נמצא' };
@@ -323,6 +323,7 @@ function updateOrder(orderId, products, total) {
       if (data[i][5] === orderId) {
         ordersSheet.getRange(i+1, 4).setValue(products);
         ordersSheet.getRange(i+1, 5).setValue(total);
+        if (note !== undefined) ordersSheet.getRange(i+1, 10).setValue(note);
         // מחיקת פריטים פעילים קיימים
         const activeSheet = getSheet('פריטים פעילים');
         if (activeSheet) {
@@ -332,11 +333,13 @@ function updateOrder(orderId, products, total) {
           }
         }
         // יצירה מחדש
+        const resolvedNote = note !== undefined ? note : (data[i][9] || '');
         const orderData = {
           customerName: data[i][2],
           products: products,
           residenceType: data[i][7],
-          isCredit: data[i][8] === 'זיכוי'
+          isCredit: data[i][8] === 'זיכוי',
+          note: resolvedNote
         };
         if (!orderData.isCredit) createActiveItems(orderData, orderId);
         return { success: true, message: 'הזמנה עודכנה בהצלחה' };
@@ -862,7 +865,7 @@ function doPost(e) {
         }));
 
       case 'updateOrder':
-        return jsonResponse(updateOrder(p.orderId, p.products, parseInt(p.total)));
+        return jsonResponse(updateOrder(p.orderId, p.products, parseInt(p.total), p.note));
 
       case 'cancelOrder':
         return jsonResponse(cancelOrder(p.orderId));
