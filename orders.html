@@ -432,7 +432,7 @@ function applyOptimistic(itemId, newStatus) {
 // ─────────────────────────────────────────────
 // Cleanup ready orders
 // ─────────────────────────────────────────────
-function cleanupDone() {
+async function cleanupDone() {
   const readyItems = ordersData.filter(i => i.status === 'ready');
   if (!readyItems.length) { showToast('אין הזמנות מוכנות לניקוי', 'info'); return; }
   const now = Date.now();
@@ -446,6 +446,15 @@ function cleanupDone() {
   renderDesktop(remaining);
   renderMobile(remaining);
   showToast('נוקו ' + readyItems.length + ' הזמנות מוכנות 🧹', 'success');
+  // Persist cancellation to backend for each ready item
+  await Promise.all(readyItems.map(i => apiCall('updateStatus', { orderId: i.orderId, newStatus: 'cancelled' }).then(res => {
+    if (res.success) {
+      const item = ordersData.find(o => o.orderId === i.orderId);
+      if (item) item.status = 'cancelled';
+    } else {
+      delete pendingChanges[i.orderId];
+    }
+  }).catch(() => { delete pendingChanges[i.orderId]; })));
 }
 
 // ─────────────────────────────────────────────
