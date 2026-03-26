@@ -577,6 +577,7 @@ function resetForm() {
   document.querySelectorAll('.qty-num').forEach(el => el.textContent = '1');
   document.querySelectorAll('.product-note-input').forEach(el => el.value = '');
   document.getElementById('customerNameInput').value = '';
+  document.getElementById('customerNameInput').placeholder = 'התחל להקליד שם...';
   document.getElementById('customAmount').value = '';
   document.getElementById('customDescription').value = '';
   document.getElementById('discountAmount').value = '';
@@ -585,6 +586,11 @@ function resetForm() {
   document.getElementById('nameValidation').textContent = '';
   isNameValid = false;
   document.getElementById('submitBtn').disabled = true;
+  // Reset residence type to default
+  residenceType = 'נופי פרת';
+  const btns = document.querySelectorAll('#residenceControl .segment-btn');
+  btns.forEach(b => b.classList.remove('active'));
+  btns[0].classList.add('active');
   updateTotal();
   if (isCreditMode) toggleCreditMode();
 }
