@@ -299,21 +299,28 @@ function updateCounters(items) {
   `;
 }
 
+function parseProductNote(str) {
+  const m = String(str || '').match(/^(.*?)\s*\[(.+)\]\s*$/);
+  return m ? { name: m[1].trim(), note: m[2].trim() } : { name: String(str || '').trim(), note: '' };
+}
+
 function renderDesktop(items) {
   const tbody = document.getElementById('ordersTableBody');
   if (!items.length) {
     tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:var(--text-muted);">אין הזמנות פעילות כרגע 🍺</td></tr>';
     return;
   }
-  tbody.innerHTML = items.map(item => `
-    <tr id="row-${item.orderId}">
+  tbody.innerHTML = items.map(item => {
+    const parsed = parseProductNote(item.products);
+    const notes = [parsed.note, item.note].filter(Boolean).join(' | ');
+    return `<tr id="row-${item.orderId}">
       <td class="text-sm text-muted">${esc(fmtTimeStr(item.time))}</td>
       <td><strong style="color:var(--amber-bright)">${esc(item.customerName)}</strong></td>
-      <td class="text-sm">${esc(item.products)}</td>
-      <td class="text-sm">${item.note ? `<span style="color:var(--warning)">📝 ${esc(item.note)}</span>` : ''}</td>
+      <td class="text-sm">${esc(parsed.name)}</td>
+      <td class="text-sm">${notes ? `<span style="color:var(--warning)">📝 ${esc(notes)}</span>` : ''}</td>
       <td>${statusSlider(item.orderId, item.status)}</td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
   requestAnimationFrame(() => items.forEach(i => positionThumb(i.orderId, i.status)));
 }
 
@@ -323,17 +330,21 @@ function renderMobile(items) {
     el.innerHTML = '<div class="empty-state"><span class="empty-state-icon">🍺</span><p class="empty-state-text">אין הזמנות פעילות</p></div>';
     return;
   }
-  el.innerHTML = items.map(item => `
+  el.innerHTML = items.map(item => {
+    const parsed = parseProductNote(item.products);
+    const notes = [parsed.note, item.note].filter(Boolean).join(' | ');
+    return `
     <div class="order-card status-${item.status}" id="card-${item.orderId}">
       <div class="order-card-name">${esc(item.customerName)}</div>
-      <div class="order-card-items">${esc(item.products)}</div>
-      ${item.note ? `<div class="order-note">📝 ${esc(item.note)}</div>` : ''}
+      <div class="order-card-items">${esc(parsed.name)}</div>
+      ${notes ? `<div class="order-note">📝 ${esc(notes)}</div>` : ''}
       <div class="order-card-footer">
         <span class="order-card-time">${esc(fmtTimeStr(item.time))}</span>
         ${statusSlider(item.orderId, item.status)}
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
   requestAnimationFrame(() => items.forEach(i => positionThumb(i.orderId, i.status)));
 }
 
