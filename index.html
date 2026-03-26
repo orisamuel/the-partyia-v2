@@ -72,6 +72,17 @@
     .cat-cards, .cat-cards-full { grid-template-columns: repeat(3, 1fr); }
   }
 
+  /* Per-product note input */
+  .product-note-input {
+    display: none; width: 100%; margin-top: 5px;
+    padding: 3px 7px; font-size: 0.7rem;
+    border-radius: 6px; border: 1px solid var(--glass-border);
+    background: var(--bg-base); color: var(--text-primary);
+    outline: none;
+  }
+  .product-note-input:focus { border-color: var(--amber-dim); }
+  .product-card.selected .product-note-input { display: block; }
+
   @media (max-width: 900px) {
     .index-layout { grid-template-columns: 1fr; }
     .order-sidebar { position: static; }
@@ -224,6 +235,7 @@
 let PRODUCTS     = [];
 let RESIDENTS    = [];
 let selectedItems = {};         // productName → quantity
+let productNotes  = {};         // productName → note string
 let isCreditMode  = false;
 let isNameValid   = false;
 let residenceType = 'נופי פרת';
@@ -307,6 +319,9 @@ function renderProducts() {
             <span class="qty-num" id="qty-${idx}">1</span>
             <button class="qty-btn" onclick="event.stopPropagation();changeQty(${idx},1)">+</button>
           </div>
+          <input class="product-note-input" id="pnote-${idx}" placeholder="📝 הערה למוצר..."
+            onclick="event.stopPropagation()"
+            oninput="setProductNote(${idx}, this.value)">
         </div>`;
     }).join('');
 
@@ -326,14 +341,23 @@ function toggleProduct(idx) {
   const name = PRODUCT_NAMES[idx];
   if (selectedItems[name]) {
     delete selectedItems[name];
+    delete productNotes[name];
     document.getElementById('pc-' + idx)?.classList.remove('selected');
     const qEl = document.getElementById('qty-' + idx);
     if (qEl) qEl.textContent = '1';
+    const noteEl = document.getElementById('pnote-' + idx);
+    if (noteEl) noteEl.value = '';
   } else {
     selectedItems[name] = 1;
     document.getElementById('pc-' + idx)?.classList.add('selected');
   }
   updateTotal();
+}
+
+function setProductNote(idx, val) {
+  const name = PRODUCT_NAMES[idx];
+  if (val.trim()) productNotes[name] = val.trim();
+  else delete productNotes[name];
 }
 
 function changeQty(idx, delta) {
@@ -482,7 +506,9 @@ function getTotal() {
 function buildProductsString() {
   const parts = [];
   Object.entries(selectedItems).forEach(([name, qty]) => {
-    parts.push(qty > 1 ? `${name} (${qty})` : name);
+    const note  = productNotes[name];
+    const label = note ? `${name} [${note}]` : name;
+    parts.push(qty > 1 ? `${label} (${qty})` : label);
   });
   const custDesc = document.getElementById('customDescription').value.trim();
   const custAmt  = parseFloat(document.getElementById('customAmount').value) || 0;
@@ -539,8 +565,10 @@ async function submitOrder() {
 // ─────────────────────────────────────────────
 function resetForm() {
   selectedItems = {};
+  productNotes  = {};
   document.querySelectorAll('.product-card.selected').forEach(el => el.classList.remove('selected'));
   document.querySelectorAll('.qty-num').forEach(el => el.textContent = '1');
+  document.querySelectorAll('.product-note-input').forEach(el => el.value = '');
   document.getElementById('customerNameInput').value = '';
   document.getElementById('customAmount').value = '';
   document.getElementById('customDescription').value = '';
@@ -615,6 +643,10 @@ function openEditOrder(orderId) {
       <label class="form-label">סכום כולל (₪)</label>
       <input type="number" id="editTotal" class="form-input" value="${Math.abs(order.total || 0)}">
     </div>
+    <div class="form-group">
+      <label class="form-label">📝 הערה</label>
+      <input type="text" id="editNote" class="form-input" value="${esc(order.note || '')}" placeholder="הערה אופציונלית...">
+    </div>
   `;
   document.getElementById('editOrderModal').classList.add('open');
 }
@@ -629,9 +661,10 @@ async function saveEditOrder() {
   if (!editingOrderId) return;
   const products = document.getElementById('editProducts').value.trim();
   const total    = parseInt(document.getElementById('editTotal').value) || 0;
+  const note     = document.getElementById('editNote')?.value.trim() || '';
   if (!products) { showToast('יש להזין מוצרים', 'error'); return; }
   try {
-    const res = await apiCall('updateOrder', { orderId: editingOrderId, products, total });
+    const res = await apiCall('updateOrder', { orderId: editingOrderId, products, total, note });
     if (res.success) {
       showToast('✓ הזמנה עודכנה', 'success');
       document.getElementById('editOrderModal').classList.remove('open');
