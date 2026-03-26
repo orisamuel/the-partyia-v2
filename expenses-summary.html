@@ -333,52 +333,36 @@
             console.log('[expenses]', msg);
         }
 
-        // שליפת נתוני הזמנות
+        // שליפת נתוני הזמנות — כל הסינון נעשה בצד הלקוח
         async function fetchOrdersData(isSingleMode, eventDate, fromDate, toDate) {
-            // איפוס לוח דיבאג
             const panel = document.getElementById('debugPanel');
             if (panel) { panel.innerHTML = ''; panel.style.display = 'block'; }
 
             try {
-                let allOrders;
-
-                if (isSingleMode) {
-                    // סינון בשרת — מדויק, ללא בעיות timezone/פורמט
-                    dbg(`📡 getOrdersByEvent(${eventDate})`);
-                    const res = await apiCall('getOrdersByEvent', { eventDate });
-                    if (!res.success) throw new Error(res.message || 'שגיאה לא ידועה');
-                    allOrders = res.orders || [];
-                } else {
-                    // כל ההזמנות, סינון תאריך בצד הלקוח
-                    dbg(`📡 getRecentOrdersFromMain(1000) — טווח ${fromDate} עד ${toDate}`);
-                    const res = await apiCall('getRecentOrdersFromMain', { limit: 1000 });
-                    if (!res.success) throw new Error(res.message || 'שגיאה לא ידועה');
-                    allOrders = res.orders || [];
-                }
+                dbg(`📡 getRecentOrdersFromMain(1000)`);
+                const res = await apiCall('getRecentOrdersFromMain', { limit: 1000 });
+                if (!res.success) throw new Error(res.message || 'שגיאה לא ידועה');
+                const allOrders = res.orders || [];
 
                 dbg(`📦 התקבלו ${allOrders.length} הזמנות מהשרת`);
                 if (allOrders.length > 0) {
-                    const s = allOrders[0];
-                    dbg(`📅 ראשונה: date="${s.date}" time="${s.time}" name="${s.customerName}"`);
-                } else {
-                    // בדוק כמה שורות בכלל יש בגיליון
-                    const diag = await apiCall('getRecentOrdersFromMain', { limit: 5 });
-                    const total = (diag.orders || []).length;
-                    dbg(`🔍 בגיליון סיכום הזמנות: ${total} שורות בסה"כ (מקסימום 5 מוצגות)`);
-                    if (total > 0) dbg(`📅 דוגמה: date="${diag.orders[0].date}" name="${diag.orders[0].customerName}"`);
+                    dbg(`📅 ראשונה: date="${allOrders[0].date}" name="${allOrders[0].customerName}"`);
                 }
 
-                // סינון הזמנות בדיקה
+                // סינון בדיקות
                 const real = allOrders.filter(o => !(o.customerName || '').includes('בדיק'));
                 dbg(`✅ אחרי סינון בדיקות: ${real.length}`);
 
+                // סינון תאריך — בפרונטאנד, תומך גם ב-GMT strings
+                let filtered;
                 if (isSingleMode) {
-                    dbg(`✅ אירוע יחיד — הסינון בוצע בשרת, מחזיר ${real.length}`);
-                    return real;
+                    filtered = filterByEventDate(real, eventDate);
+                    dbg(`✅ אחרי סינון תאריך ${eventDate}: ${filtered.length}`);
+                } else {
+                    filtered = filterByDateRange(real, fromDate, toDate);
+                    dbg(`✅ אחרי סינון טווח ${fromDate}–${toDate}: ${filtered.length}`);
                 }
 
-                const filtered = filterByDateRange(real, fromDate, toDate);
-                dbg(`✅ אחרי סינון טווח: ${filtered.length}`);
                 return filtered;
 
             } catch (error) {
