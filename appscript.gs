@@ -1,5 +1,6 @@
 // ============================================================
 // הפרתיה v3 — Google Apps Script Backend
+// Last updated: 2026-03-26 — note support for orders + active items
 // ============================================================
 // הגדר כאן את ה-ID של ה-Spreadsheet החדש שלך:
 const SHEET_ID = '1ANaiZRPldIIK_hTZiw3m0fULzaEbwUbwC3OtCFzaJmM';
