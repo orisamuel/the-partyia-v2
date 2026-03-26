@@ -800,8 +800,9 @@
             }
             
             XLSX.writeFile(wb, fileName);
+            showToast('✓ קובץ אקסל הורד', 'success');
         }
-        
+
         // הצגת שגיאה
         function showError(message) {
             const resultsSection = document.getElementById('resultsSection');

@@ -395,16 +395,24 @@ async function submitStockUpdate() {
   const rawDelta = parseInt(document.getElementById('stockDelta').value);
   const rawReq   = document.getElementById('stockRequired').value;
   const reason   = document.getElementById('stockReason').value.trim();
+  const hasDelta = rawDelta && rawDelta > 0;
+  const hasReq   = rawReq !== '';
+  if (!hasDelta && !hasReq) {
+    showToast('לא הוזנו שינויים', 'warning');
+    return;
+  }
   closeModal(null, 'addStockModal');
   try {
-    if (rawDelta && rawDelta > 0) {
+    if (hasDelta) {
       const delta = deltaSign * rawDelta;
       const res = await apiCall('updateStock', { productName: editingProduct, delta, reason });
       if (res.success) showToast(`✓ מלאי עודכן — ${editingProduct}: ${res.newStock}`, 'success');
-      else showToast('שגיאה: ' + (res.message || ''), 'error');
+      else showToast('שגיאה בעדכון מלאי: ' + (res.message || ''), 'error');
     }
-    if (rawReq !== '') {
-      await apiCall('updateRequiredStock', { productName: editingProduct, requiredStock: parseInt(rawReq) || 0 });
+    if (hasReq) {
+      const res = await apiCall('updateRequiredStock', { productName: editingProduct, requiredStock: parseInt(rawReq) || 0 });
+      if (res && res.success === false) showToast('שגיאה בעדכון מלאי נדרש: ' + (res.message || ''), 'error');
+      else if (!hasDelta) showToast(`✓ מלאי נדרש עודכן — ${editingProduct}`, 'success');
     }
     loadInventory();
   } catch (_) { showToast('שגיאת חיבור', 'error'); }

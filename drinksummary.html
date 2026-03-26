@@ -377,9 +377,11 @@
                         updateProductSelect();
                 } else {
                     console.error('❌ שרת החזיר שגיאה:', result.message);
+                    showToast('שגיאה בטעינת נתוני מוצרים', 'warning');
                 }
             } catch (error) {
                 console.error('❌ שגיאה בטעינת מידע מוצרים:', error);
+                showToast('שגיאת חיבור בטעינת מוצרים', 'warning');
             }
         }
         
@@ -1278,17 +1280,19 @@
                 }
                 
                 XLSX.writeFile(wb, fileName);
+                showToast('✓ קובץ אקסל הורד', 'success');
                 return;
             }
-            
+
             // יצוא פשוט לניתוח מוצר
             const ws = XLSX.utils.json_to_sheet(exportData);
             if (!ws['!worksheetOptions']) ws['!worksheetOptions'] = {};
             ws['!worksheetOptions']['rightToLeft'] = true;
-            
+
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'ניתוח מוצר');
             XLSX.writeFile(wb, fileName);
+            showToast('✓ קובץ אקסל הורד', 'success');
         }
         
         // פונקציות עזר

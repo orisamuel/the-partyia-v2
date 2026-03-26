@@ -180,7 +180,7 @@ async function loadStats() {
       document.getElementById('statPending').textContent      = pending;
       document.getElementById('statRevenue').textContent      = '₪' + revenue;
     }
-  } catch (_) {}
+  } catch (_) { showToast('שגיאה בטעינת נתוני לוח בקרה', 'error'); }
 }
 </script>
 </body>

@@ -252,8 +252,10 @@ function toggleDone() {
 }
 
 function uncheckAll() {
+  if (!checkedItems.size) { showToast('אין פריטים מסומנים לאיפוס', 'info'); return; }
   checkedItems.clear();
   renderList();
+  showToast('הרשימה אופסה', 'info');
 }
 
 function buildTextList() {
