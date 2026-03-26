@@ -360,6 +360,12 @@
                 if (allOrders.length > 0) {
                     const s = allOrders[0];
                     dbg(`📅 ראשונה: date="${s.date}" time="${s.time}" name="${s.customerName}"`);
+                } else {
+                    // בדוק כמה שורות בכלל יש בגיליון
+                    const diag = await apiCall('getRecentOrdersFromMain', { limit: 5 });
+                    const total = (diag.orders || []).length;
+                    dbg(`🔍 בגיליון סיכום הזמנות: ${total} שורות בסה"כ (מקסימום 5 מוצגות)`);
+                    if (total > 0) dbg(`📅 דוגמה: date="${diag.orders[0].date}" name="${diag.orders[0].customerName}"`);
                 }
 
                 // סינון הזמנות בדיקה
