@@ -149,6 +149,9 @@
                 </div>
             </div>
             
+            <!-- לוח דיבאג -->
+            <div id="debugPanel" style="background:rgba(255,200,0,0.07);border:1px solid rgba(255,200,0,0.3);padding:10px 14px;border-radius:8px;margin:10px 0;font-size:12px;font-family:monospace;direction:ltr;text-align:left;display:none;"></div>
+
             <!-- תוצאות -->
             <div class="results-section" id="resultsSection">
                 <!-- סטטיסטיקות -->
@@ -323,57 +326,57 @@
             }
         }
         
-        // שליפת נתוני הזמנות - תמיד מהגיליון הראשי עם סינון בדיקות
+        // עזר: כתיבה ללוח דיבאג
+        function dbg(msg) {
+            const panel = document.getElementById('debugPanel');
+            if (panel) panel.innerHTML += `<div>${msg}</div>`;
+            console.log('[expenses]', msg);
+        }
+
+        // שליפת נתוני הזמנות
         async function fetchOrdersData(isSingleMode, eventDate, fromDate, toDate) {
-            console.log('=== מתחיל fetchOrdersData עם סינון בדיקות וסינון בצד הלקוח ===');
-            if (isSingleMode) {
-                console.log('מצב אירוע יחיד:', eventDate);
-            } else {
-                console.log('טווח תאריכים:', fromDate, 'עד', toDate);
-            }
-            
+            // איפוס לוח דיבאג
+            const panel = document.getElementById('debugPanel');
+            if (panel) { panel.innerHTML = ''; panel.style.display = 'block'; }
+
             try {
-                const jsonResult = await apiCall('getRecentOrdersFromMain', { limit: 1000 });
-                
-                if (!jsonResult.success) {
-                    console.error('השרת החזיר שגיאה:', jsonResult.message);
-                    throw new Error(jsonResult.message || 'שגיאה לא ידועה');
-                }
-                
-                const allOrders = jsonResult.orders || [];
-                console.log('מספר הזמנות שהתקבלו מהשרת:', allOrders.length);
-                
-                // סינון 1: הזמנות בדיקה - חדש!
-                console.log('=== מתחיל סינון הזמנות בדיקה ===');
-                const ordersWithoutTests = allOrders.filter(order => {
-                    const customerName = (order.customerName || '').toLowerCase();
-                    const isTestOrder = customerName.includes('בדיק');
-                    if (isTestOrder) {
-                        console.log('🚫 מסנן הזמנת בדיקה:', order.customerName);
-                    }
-                    return !isTestOrder;
-                });
-                console.log('מספר הזמנות אחרי סינון בדיקות:', ordersWithoutTests.length);
-                
-                // סינון 2: הזמנות רלוונטיות לתאריך/טווח
-                console.log('=== מתחיל סינון הזמנות לתאריך/טווח ===');
-                let relevantOrders;
+                let allOrders;
+
                 if (isSingleMode) {
-                    relevantOrders = filterByEventDate(ordersWithoutTests, eventDate);
+                    // סינון בשרת — מדויק, ללא בעיות timezone/פורמט
+                    dbg(`📡 getOrdersByEvent(${eventDate})`);
+                    const res = await apiCall('getOrdersByEvent', { eventDate });
+                    if (!res.success) throw new Error(res.message || 'שגיאה לא ידועה');
+                    allOrders = res.orders || [];
                 } else {
-                    relevantOrders = filterByDateRange(ordersWithoutTests, fromDate, toDate);
+                    // כל ההזמנות, סינון תאריך בצד הלקוח
+                    dbg(`📡 getRecentOrdersFromMain(1000) — טווח ${fromDate} עד ${toDate}`);
+                    const res = await apiCall('getRecentOrdersFromMain', { limit: 1000 });
+                    if (!res.success) throw new Error(res.message || 'שגיאה לא ידועה');
+                    allOrders = res.orders || [];
                 }
-                
-                console.log('מספר הזמנות אחרי סינון תאריך/טווח:', relevantOrders.length);
-                console.log('דוגמה להזמנה רלוונטית:', relevantOrders[0]);
-                
-                return relevantOrders;
-                
+
+                dbg(`📦 התקבלו ${allOrders.length} הזמנות מהשרת`);
+                if (allOrders.length > 0) {
+                    const s = allOrders[0];
+                    dbg(`📅 ראשונה: date="${s.date}" time="${s.time}" name="${s.customerName}"`);
+                }
+
+                // סינון הזמנות בדיקה
+                const real = allOrders.filter(o => !(o.customerName || '').includes('בדיק'));
+                dbg(`✅ אחרי סינון בדיקות: ${real.length}`);
+
+                if (isSingleMode) {
+                    dbg(`✅ אירוע יחיד — הסינון בוצע בשרת, מחזיר ${real.length}`);
+                    return real;
+                }
+
+                const filtered = filterByDateRange(real, fromDate, toDate);
+                dbg(`✅ אחרי סינון טווח: ${filtered.length}`);
+                return filtered;
+
             } catch (error) {
-                console.error('=== שגיאה ב-fetchOrdersData ===');
-                console.error('סוג השגיאה:', error.name);
-                console.error('הודעת השגיאה:', error.message);
-                console.error('מקום השגיאה:', error.stack);
+                dbg(`❌ שגיאה: ${error.message}`);
                 throw error;
             }
         }
