@@ -133,8 +133,10 @@ let pollTimer      = null;
 let autoStopTimer  = null;
 let seenOrderIds   = new Set();
 let ordersData     = [];
-let pendingChanges = {};           // orderId → { status, ts }
-const STATUS_LOCK  = 6000;         // ms to keep optimistic status
+let pendingChanges    = {};         // orderId → { status, ts }
+const STATUS_LOCK     = 6000;      // ms to keep optimistic status
+let committedStatuses = {};        // orderId → status (API-confirmed, awaiting server sync)
+let lastDisplayKey    = '';        // prevents re-render when display is unchanged
 
 // ─────────────────────────────────────────────
 // Boot
@@ -156,7 +158,9 @@ function toggleSystem() {
 function startSystem() {
   isRunning = true;
   seenOrderIds.clear();
-  pendingChanges = {};
+  pendingChanges    = {};
+  committedStatuses = {};
+  lastDisplayKey    = '';
 
   setSystemUI(true);
 
@@ -246,8 +250,18 @@ async function fetchOrders() {
     console.log('[orders] raw sample (first 3):', rawItems.slice(0,3).map(i => ({name:i.customerName, products:i.products, note:i.note, date:i.date})));
     const items = filterTodayOrders(rawItems);
     checkForNewOrders(items);
-    ordersData = items;
-    renderAll(items);
+    const now = Date.now();
+    ordersData = items.map(item => {
+      const p = pendingChanges[item.orderId];
+      if (p && now - p.ts < STATUS_LOCK) return { ...item, status: p.status };
+      const committed = committedStatuses[item.orderId];
+      if (committed !== undefined) {
+        if (item.status === committed) delete committedStatuses[item.orderId];
+        else return { ...item, status: committed };
+      }
+      return item;
+    });
+    renderAll(ordersData);
     document.getElementById('lastUpdateText').textContent =
       'עדכון: ' + new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   } catch (_) { /* silent — don't spam on network flap */ }
@@ -285,6 +299,10 @@ function renderAll(items) {
     const p = pendingChanges[item.orderId];
     return (p && now - p.ts < STATUS_LOCK) ? { ...item, status: p.status } : item;
   }).filter(i => i.status !== 'cancelled');
+
+  const key = display.map(i => i.orderId + ':' + i.status).join(',');
+  if (key === lastDisplayKey) return;
+  lastDisplayKey = key;
 
   updateCounters(display);
   renderDesktop(display);
@@ -397,6 +415,7 @@ async function changeStatus(itemId, newStatus) {
     if (res.success) {
       // Commit to local data so the status survives pendingChanges expiry
       // (prevents the next poll from reverting if the sheet write is slow)
+      committedStatuses[itemId] = newStatus;
       const item = ordersData.find(i => i.orderId === itemId);
       if (item) item.status = newStatus;
     } else {
@@ -445,10 +464,12 @@ async function cleanupDone() {
   updateCounters(remaining);
   renderDesktop(remaining);
   renderMobile(remaining);
+  lastDisplayKey = '';
   showToast('נוקו ' + readyItems.length + ' הזמנות מוכנות 🧹', 'success');
   // Persist cancellation to backend for each ready item
   await Promise.all(readyItems.map(i => apiCall('updateStatus', { orderId: i.orderId, newStatus: 'cancelled' }).then(res => {
     if (res.success) {
+      committedStatuses[i.orderId] = 'cancelled';
       const item = ordersData.find(o => o.orderId === i.orderId);
       if (item) item.status = 'cancelled';
     } else {
