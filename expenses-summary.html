@@ -149,9 +149,6 @@
                 </div>
             </div>
             
-            <!-- לוח דיבאג -->
-            <div id="debugPanel" style="background:rgba(255,200,0,0.07);border:1px solid rgba(255,200,0,0.3);padding:10px 14px;border-radius:8px;margin:10px 0;font-size:12px;font-family:monospace;direction:ltr;text-align:left;display:none;"></div>
-
             <!-- תוצאות -->
             <div class="results-section" id="resultsSection">
                 <!-- סטטיסטיקות -->
@@ -326,47 +323,21 @@
             }
         }
         
-        // עזר: כתיבה ללוח דיבאג
-        function dbg(msg) {
-            const panel = document.getElementById('debugPanel');
-            if (panel) panel.innerHTML += `<div>${msg}</div>`;
-            console.log('[expenses]', msg);
-        }
-
         // שליפת נתוני הזמנות — כל הסינון נעשה בצד הלקוח
         async function fetchOrdersData(isSingleMode, eventDate, fromDate, toDate) {
-            const panel = document.getElementById('debugPanel');
-            if (panel) { panel.innerHTML = ''; panel.style.display = 'block'; }
-
             try {
-                dbg(`📡 getRecentOrdersFromMain(1000)`);
                 const res = await apiCall('getRecentOrdersFromMain', { limit: 1000 });
                 if (!res.success) throw new Error(res.message || 'שגיאה לא ידועה');
                 const allOrders = res.orders || [];
 
-                dbg(`📦 התקבלו ${allOrders.length} הזמנות מהשרת`);
-                if (allOrders.length > 0) {
-                    dbg(`📅 ראשונה: date="${allOrders[0].date}" name="${allOrders[0].customerName}"`);
-                }
-
-                // סינון בדיקות
                 const real = allOrders.filter(o => !(o.customerName || '').includes('בדיק'));
-                dbg(`✅ אחרי סינון בדיקות: ${real.length}`);
 
-                // סינון תאריך — בפרונטאנד, תומך גם ב-GMT strings
-                let filtered;
                 if (isSingleMode) {
-                    filtered = filterByEventDate(real, eventDate);
-                    dbg(`✅ אחרי סינון תאריך ${eventDate}: ${filtered.length}`);
+                    return filterByEventDate(real, eventDate);
                 } else {
-                    filtered = filterByDateRange(real, fromDate, toDate);
-                    dbg(`✅ אחרי סינון טווח ${fromDate}–${toDate}: ${filtered.length}`);
+                    return filterByDateRange(real, fromDate, toDate);
                 }
-
-                return filtered;
-
             } catch (error) {
-                dbg(`❌ שגיאה: ${error.message}`);
                 throw error;
             }
         }
