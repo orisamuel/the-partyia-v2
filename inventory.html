@@ -132,9 +132,6 @@
 
   /* ── Low stock alert (mobile-safe) ── */
   #lowStockAlert {
-    position: sticky;
-    top: 0;
-    z-index: 20;
     margin-bottom: 16px;
   }
   #lowStockAlert .alert-strip {
@@ -382,10 +379,10 @@ function makeInvRow(item, safeName) {
       <div class="inv-col-num inv-col-cur ${numCls}">${item.stock}</div>
       <div class="inv-col-num inv-col-req" style="color:var(--text-secondary);">${req > 0 ? req : '—'}</div>
       <div class="inv-col-num inv-col-buy ${buyCls}">${toBuy > 0 ? toBuy : (req > 0 ? '✓' : '—')}</div>
-      <div class="inv-controls" onclick="event.stopPropagation()">
-        <button class="inv-adj-btn" data-name="${safeName}" onclick="quickAdj(this.dataset.name,-1)">−</button>
-        <button class="inv-adj-btn" data-name="${safeName}" onclick="quickAdj(this.dataset.name,1)">+</button>
-        <button class="inv-edit-btn" data-name="${safeName}" onclick="openStockModal(this.dataset.name)">✏️</button>
+      <div class="inv-controls">
+        <button class="inv-adj-btn" data-name="${safeName}" onclick="event.stopPropagation();quickAdj(this.dataset.name,-1)">−</button>
+        <button class="inv-adj-btn" data-name="${safeName}" onclick="event.stopPropagation();quickAdj(this.dataset.name,1)">+</button>
+        <button class="inv-edit-btn" data-name="${safeName}" onclick="event.stopPropagation();openStockModal(this.dataset.name)">✏️</button>
       </div>
     </div>`;
 
@@ -521,10 +518,10 @@ function renderBeerGroup(beerMain, beerSubs) {
       <span class="inv-group-badge">${mainStock} יח׳</span>
       ${required > 0 ? `<span class="inv-group-badge" style="color:var(--text-muted);">נדרש: ${required}</span>` : ''}
       ${toBuyBeer > 0 ? `<span class="badge badge-danger">${toBuyBeer} לקנות</span>` : (required > 0 ? `<span class="badge badge-success">✓ מספיק</span>` : '')}
-      <div style="margin-right:auto;display:flex;align-items:center;gap:4px;" onclick="event.stopPropagation()">
-        <button class="inv-adj-btn" data-name="${beerName}" onclick="quickAdj(this.dataset.name,-1)">−</button>
-        <button class="inv-adj-btn" data-name="${beerName}" onclick="quickAdj(this.dataset.name,1)">+</button>
-        <button class="inv-edit-btn" data-name="${beerName}" onclick="openStockModal(this.dataset.name)">✏️</button>
+      <div style="margin-right:auto;display:flex;align-items:center;gap:4px;">
+        <button class="inv-adj-btn" data-name="${beerName}" onclick="event.stopPropagation();quickAdj(this.dataset.name,-1)">−</button>
+        <button class="inv-adj-btn" data-name="${beerName}" onclick="event.stopPropagation();quickAdj(this.dataset.name,1)">+</button>
+        <button class="inv-edit-btn" data-name="${beerName}" onclick="event.stopPropagation();openStockModal(this.dataset.name)">✏️</button>
       </div>
       <span class="inv-group-chevron" id="beer-chevron" style="padding:4px;">▼</span>
     </div>
@@ -547,7 +544,7 @@ function renderBeerGroup(beerMain, beerSubs) {
 
   html += `
       <div class="inv-group-footer">
-        <button class="btn btn-secondary btn-sm" onclick="openAddBeerTypeModal()">+ סוג בירה חדש</button>
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openAddBeerTypeModal()">+ סוג בירה חדש</button>
       </div>
     </div>`;
 
