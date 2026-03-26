@@ -200,11 +200,42 @@ function manualRefresh() {
 // ─────────────────────────────────────────────
 // Fetch
 // ─────────────────────────────────────────────
+function normalizeDateStr(s) {
+  if (!s) return '';
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    const [d, m, y] = s.split('/');
+    return `${d.padStart(2,'0')}/${m.padStart(2,'0')}/${y}`;
+  }
+  if (s.includes('GMT') || s.includes('00:00:00')) {
+    const dt = new Date(s);
+    if (!isNaN(dt.getTime()))
+      return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+  }
+  return s;
+}
+
+function filterTodayOrders(items) {
+  const now    = new Date();
+  const hour   = now.getHours();
+  const fmt    = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  const todayStr = fmt(now);
+  // בין 00:00 ל-06:00 גם מציגים הזמנות מהאירוע של אתמול
+  let prevStr = null;
+  if (hour < 6) {
+    const prev = new Date(now); prev.setDate(prev.getDate() - 1);
+    prevStr = fmt(prev);
+  }
+  return items.filter(item => {
+    const d = normalizeDateStr(item.date);
+    return d === todayStr || (prevStr && d === prevStr);
+  });
+}
+
 async function fetchOrders() {
   try {
     const res = await apiCall('getRecentOrders', { limit: 150 });
     if (!res.success) return;
-    const items = res.orders || [];
+    const items = filterTodayOrders(res.orders || []);
     checkForNewOrders(items);
     ordersData = items;
     renderAll(items);
