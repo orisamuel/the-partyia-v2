@@ -31,6 +31,12 @@ function fmtDate(d) {
   return Utilities.formatDate(d, 'Asia/Jerusalem', 'dd/MM/yyyy');
 }
 
+// V8 runtime: instanceof Date can fail for Date objects from getValues()
+// Use duck-typing instead
+function isDate(v) {
+  return v && typeof v.getTime === 'function';
+}
+
 function fmtTime(d) {
   return Utilities.formatDate(d, 'Asia/Jerusalem', 'HH:mm');
 }
@@ -360,7 +366,7 @@ function cancelOrder(orderId) {
 function fmtCellTime(val) {
   // Google Sheets may return time cells as Date objects — format to HH:mm
   if (!val && val !== 0) return '';
-  if (val instanceof Date) return Utilities.formatDate(val, 'Asia/Jerusalem', 'HH:mm');
+  if (isDate(val)) return Utilities.formatDate(val, 'Asia/Jerusalem', 'HH:mm');
   const s = String(val);
   // Already HH:mm
   if (/^\d{1,2}:\d{2}$/.test(s)) return s;
@@ -379,7 +385,7 @@ function getActiveItems(limit) {
     const items = data.slice(1).slice(-limit)
       .filter(r => r[6] !== 'cancelled')
       .map((r, idx) => ({
-        date: r[0] instanceof Date ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
+        date: isDate(r[0]) ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
         time: fmtCellTime(r[1]),
         customerName: r[2] || '',
         products: r[3] || '',
@@ -401,7 +407,7 @@ function getRecentOrdersFromMain(limit) {
     const data = sheet.getDataRange().getValues();
     if (data.length <= 1) return { success: true, orders: [] };
     const orders = data.slice(1).slice(-limit).map((r, idx) => ({
-      date: r[0] instanceof Date ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
+      date: isDate(r[0]) ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
       time: fmtCellTime(r[1]),
       customerName: r[2] || '',
       products: r[3] || '',
@@ -430,7 +436,7 @@ function getOrdersByEvent(eventDate) {
     const nxStr = fmtDate(nextDay);
     const relevant = [];
     data.slice(1).forEach((r, idx) => {
-      const d = r[0] instanceof Date ? fmtDate(r[0]) : (r[0] ? r[0].toString() : '');
+      const d = isDate(r[0]) ? fmtDate(r[0]) : (r[0] ? r[0].toString() : '');
       const t = fmtCellTime(r[1]);
       if (d === evStr) { relevant.push(rowToOrder(r, idx)); return; }
       if (d === nxStr) {
@@ -446,7 +452,7 @@ function getOrdersByEvent(eventDate) {
 
 function rowToOrder(r, idx) {
   return {
-    date: r[0] instanceof Date ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
+    date: isDate(r[0]) ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
     time: fmtCellTime(r[1]),
     customerName: r[2] || '',
     products: r[3] || '',
