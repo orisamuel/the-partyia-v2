@@ -288,12 +288,12 @@ function updateResident(data) {
 
 // ============================================================
 // ORDERS
-// Schema: תאריך(0), שעה(1), שם(2), מוצרים(3), סכום(4), מזהה(5), סטטוס(6), סוג תושב(7), סוג הזמנה(8)
+// Schema: תאריך(0), שעה(1), שם(2), מוצרים(3), סכום(4), מזהה(5), סטטוס(6), סוג תושב(7), סוג הזמנה(8), הערה(9)
 // ============================================================
 
 function addOrder(orderData) {
   try {
-    const HEADERS = ['תאריך', 'שעה', 'שם', 'מוצרים', 'סכום', 'מזהה', 'סטטוס', 'סוג תושב', 'סוג הזמנה'];
+    const HEADERS = ['תאריך', 'שעה', 'שם', 'מוצרים', 'סכום', 'מזהה', 'סטטוס', 'סוג תושב', 'סוג הזמנה', 'הערה'];
     const ordersSheet = ensureSheet('סיכום הזמנות', HEADERS);
     const now = new Date();
     const orderId = Utilities.getUuid().substring(0, 8);
@@ -302,7 +302,7 @@ function addOrder(orderData) {
       fmtDate(now), fmtTime(now),
       orderData.customerName, orderData.products,
       orderData.total, orderId,
-      'pending', orderData.residenceType || '', orderType
+      'pending', orderData.residenceType || '', orderType, orderData.note || ''
     ]);
     if (!orderData.isCredit) {
       createActiveItems(orderData, orderId);
@@ -402,7 +402,8 @@ function getActiveItems(limit) {
         products: r[3] || '',
         originalOrderId: r[4] || '',
         orderId: r[5] || 'temp-' + idx,
-        status: r[6] || 'pending'
+        status: r[6] || 'pending',
+        note: r[7] || ''
       }));
     return { success: true, orders: items };
   } catch (e) {
@@ -426,7 +427,8 @@ function getRecentOrdersFromMain(limit) {
       orderId: r[5] || 'temp-' + idx,
       status: r[6] || 'pending',
       residenceType: r[7] || '',
-      orderType: r[8] || 'רגילה'
+      orderType: r[8] || 'רגילה',
+      note: r[9] || ''
     }));
     return { success: true, orders };
   } catch (e) {
@@ -471,13 +473,14 @@ function rowToOrder(r, idx) {
     orderId: r[5] || 'temp-' + idx,
     status: r[6] || 'pending',
     residenceType: r[7] || '',
-    orderType: r[8] || 'רגילה'
+    orderType: r[8] || 'רגילה',
+    note: r[9] || ''
   };
 }
 
 // ============================================================
 // ACTIVE ITEMS / BUILDERS
-// Schema: תאריך(0), שעה(1), שם(2), פריט(3), מזהה_מקורי(4), מזהה_פריט(5), סטטוס(6)
+// Schema: תאריך(0), שעה(1), שם(2), פריט(3), מזהה_מקורי(4), מזהה_פריט(5), סטטוס(6), הערה(7)
 // ============================================================
 
 function loadProductsCache() {
@@ -506,7 +509,7 @@ function shouldCreateActiveItem(productStr, cache) {
 
 function createActiveItems(orderData, orderId) {
   try {
-    const HEADERS = ['תאריך', 'שעה', 'שם', 'פריט', 'מזהה_מקורי', 'מזהה_פריט', 'סטטוס'];
+    const HEADERS = ['תאריך', 'שעה', 'שם', 'פריט', 'מזהה_מקורי', 'מזהה_פריט', 'סטטוס', 'הערה'];
     const activeSheet = ensureSheet('פריטים פעילים', HEADERS);
     const now = new Date();
     const date = fmtDate(now);
@@ -517,15 +520,16 @@ function createActiveItems(orderData, orderId) {
     products.forEach(product => {
       if (!shouldCreateActiveItem(product, cache)) return;
       const qm = product.match(/^(.+?)\s*\((\d+)\)$/);
+      const note = orderData.note || '';
       if (qm) {
         const name = qm[1].trim();
         const qty = parseInt(qm[2]);
         for (let i = 0; i < qty; i++) {
-          activeSheet.appendRow([date, time, orderData.customerName, name, orderId, orderId + '-' + idx, 'pending']);
+          activeSheet.appendRow([date, time, orderData.customerName, name, orderId, orderId + '-' + idx, 'pending', note]);
           idx++;
         }
       } else {
-        activeSheet.appendRow([date, time, orderData.customerName, product.trim(), orderId, orderId + '-' + idx, 'pending']);
+        activeSheet.appendRow([date, time, orderData.customerName, product.trim(), orderId, orderId + '-' + idx, 'pending', note]);
         idx++;
       }
     });
@@ -853,7 +857,8 @@ function doPost(e) {
           products: p.products,
           total: parseInt(p.total),
           residenceType: p.residenceType || '',
-          isCredit: p.isCredit === 'true'
+          isCredit: p.isCredit === 'true',
+          note: p.note || ''
         }));
 
       case 'updateOrder':

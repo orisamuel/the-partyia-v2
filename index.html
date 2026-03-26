@@ -116,6 +116,7 @@
         <div class="customer-bar">
           <div class="segment-control" id="residenceControl">
             <button class="segment-btn active" onclick="setResidenceType('נופי פרת', this)">🏡 נופי פרת</button>
+            <button class="segment-btn" onclick="setResidenceType('נופי פרת לא ברשימה', this)">🏡 לא ברשימה</button>
             <button class="segment-btn" onclick="setResidenceType('כפר אדומים', this)">🌳 כפר אדומים</button>
             <button class="segment-btn" onclick="setResidenceType('אלון', this)">🍃 אלון</button>
           </div>
@@ -166,6 +167,12 @@
         <div class="order-total-box">
           <div class="order-total-label" id="totalLabel">סכום כולל</div>
           <div class="order-total-amount" id="totalDisplay">₪0</div>
+        </div>
+
+        <!-- Note -->
+        <div class="mb-8">
+          <div class="custom-label">📝 הערה להזמנה</div>
+          <input type="text" id="orderNote" class="form-input" placeholder="הערה אופציונלית...">
         </div>
 
         <!-- Submit -->
@@ -498,6 +505,7 @@ async function submitOrder() {
   }
   const customerName = document.getElementById('customerNameInput').value.trim();
   const products     = buildProductsString();
+  const note         = document.getElementById('orderNote').value.trim();
 
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
@@ -509,6 +517,7 @@ async function submitOrder() {
       total: total,
       residenceType,
       isCredit: isCreditMode,
+      note,
     });
     if (res.success) {
       showToast('✓ הזמנה נשלחה בהצלחה!', 'success', 4000);
@@ -537,6 +546,7 @@ function resetForm() {
   document.getElementById('customDescription').value = '';
   document.getElementById('discountAmount').value = '';
   document.getElementById('discountDescription').value = '';
+  document.getElementById('orderNote').value = '';
   document.getElementById('nameValidation').textContent = '';
   isNameValid = false;
   document.getElementById('submitBtn').disabled = true;
@@ -570,6 +580,7 @@ function renderRecentOrders() {
       <div class="recent-order-item" style="${isCancelled ? 'opacity:0.5;' : ''}">
         <div class="recent-order-name">${esc(order.customerName)}</div>
         <div class="recent-order-items">${esc(order.products)}</div>
+        ${order.note ? `<div class="text-xs" style="color:var(--warning);margin-top:2px;">📝 ${esc(order.note)}</div>` : ''}
         <div class="recent-order-meta">
           <span>${fmtTimeStr(order.time)}</span>
           <span class="recent-order-total">${isCancelled ? '❌ בוטל' : '₪' + Math.abs(order.total || 0)}</span>
