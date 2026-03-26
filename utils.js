@@ -98,6 +98,105 @@ function showStatus(message, type = 'info', duration = 5000) {
     showToast(message, type, duration);
 }
 
+// ── Auth ────────────────────────────────────────────────────
+
+const AUTH_KEY     = 'partyia_auth';
+const AUTH_TTL_MS  = 12 * 60 * 60 * 1000; // 12 שעות
+
+function getAuthSession() {
+    try {
+        const raw = sessionStorage.getItem(AUTH_KEY);
+        if (!raw) return null;
+        const s = JSON.parse(raw);
+        if (!s.loggedIn || Date.now() > s.exp) {
+            sessionStorage.removeItem(AUTH_KEY);
+            return null;
+        }
+        return s;
+    } catch (_) { return null; }
+}
+
+function setAuthSession(username) {
+    sessionStorage.setItem(AUTH_KEY, JSON.stringify({
+        loggedIn: true,
+        user: username,
+        exp: Date.now() + AUTH_TTL_MS
+    }));
+}
+
+function clearAuthSession() {
+    sessionStorage.removeItem(AUTH_KEY);
+}
+
+function logout() {
+    clearAuthSession();
+    window.location.href = 'login.html';
+}
+
+// קרא בתחילת כל דף מוגן — מפנה ל-login.html אם אין סשן
+function requireAuth() {
+    if (!getAuthSession()) {
+        sessionStorage.setItem('partyia_redirect', window.location.href);
+        window.location.href = 'login.html';
+    }
+}
+
+// ── Re-auth dialog for critical operations ──────────────────
+
+let _reAuthCallback = null;
+
+function requirePassword(callback) {
+    _reAuthCallback = callback;
+    const modal = document.getElementById('reAuthModal');
+    if (!modal) { _buildReAuthModal(); }
+    document.getElementById('reAuthPassword').value = '';
+    document.getElementById('reAuthError').textContent = '';
+    document.getElementById('reAuthModal').classList.add('open');
+    setTimeout(() => document.getElementById('reAuthPassword').focus(), 100);
+}
+
+function _buildReAuthModal() {
+    const div = document.createElement('div');
+    div.id = 'reAuthModal';
+    div.className = 'modal-backdrop';
+    div.onclick = (e) => { if (e.target === div) div.classList.remove('open'); };
+    div.innerHTML = `
+      <div class="modal" style="max-width:360px;">
+        <div class="modal-header">
+          <span class="modal-title">🔐 אימות לפעולה קריטית</span>
+          <button class="modal-close" onclick="document.getElementById('reAuthModal').classList.remove('open')">✕</button>
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;">הכנס סיסמה כדי לאשר את הפעולה</p>
+        <div class="form-group">
+          <input type="password" id="reAuthPassword" class="form-input" placeholder="סיסמה"
+            onkeydown="if(event.key==='Enter') submitReAuth()">
+        </div>
+        <div id="reAuthError" style="color:var(--danger);font-size:0.82rem;min-height:18px;"></div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" onclick="document.getElementById('reAuthModal').classList.remove('open')">ביטול</button>
+          <button class="btn btn-primary" onclick="submitReAuth()">✓ אשר</button>
+        </div>
+      </div>`;
+    document.body.appendChild(div);
+}
+
+async function submitReAuth() {
+    const pwd = document.getElementById('reAuthPassword').value;
+    const session = getAuthSession();
+    if (!session) { window.location.href = 'login.html'; return; }
+    try {
+        const res = await apiCall('validateCredentials', { username: session.user, password: pwd });
+        if (res.success) {
+            document.getElementById('reAuthModal').classList.remove('open');
+            if (_reAuthCallback) { _reAuthCallback(); _reAuthCallback = null; }
+        } else {
+            document.getElementById('reAuthError').textContent = 'סיסמה שגויה';
+        }
+    } catch (_) {
+        document.getElementById('reAuthError').textContent = 'שגיאת חיבור';
+    }
+}
+
 // ── Formatting ─────────────────────────────────────────────
 
 function formatCurrency(amount) {

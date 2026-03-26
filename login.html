@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0d0f14">
+<title>הפרתיה — כניסה</title>
+<link rel="icon" href="logo.png" type="image/png">
+<link rel="stylesheet" href="styles.css">
+<script src="config.js"></script>
+<script src="utils.js"></script>
+<style>
+  .login-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .login-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 40px 36px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: var(--shadow-lg);
+  }
+  .login-logo {
+    display: block;
+    margin: 0 auto 20px;
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+  }
+  .login-title {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--amber-bright);
+    margin-bottom: 4px;
+  }
+  .login-sub {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+  }
+  .login-error {
+    color: var(--danger);
+    font-size: 0.85rem;
+    text-align: center;
+    min-height: 20px;
+    margin-bottom: 8px;
+  }
+  .login-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <img src="logo.png" alt="הפרתיה" class="login-logo">
+    <div class="login-title">הפרתיה</div>
+    <div class="login-sub">פאב קהילתי נופי פרת</div>
+
+    <div class="form-group">
+      <label class="form-label">שם משתמש</label>
+      <input type="text" id="loginUser" class="form-input" placeholder="שם משתמש"
+        autocomplete="username" onkeydown="if(event.key==='Enter') document.getElementById('loginPass').focus()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">סיסמה</label>
+      <input type="password" id="loginPass" class="form-input" placeholder="סיסמה"
+        autocomplete="current-password" onkeydown="if(event.key==='Enter') submitLogin()">
+    </div>
+    <div id="loginError" class="login-error"></div>
+    <button class="btn btn-primary login-btn" id="loginBtn" onclick="submitLogin()">כניסה →</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  // אם כבר מחובר — מעביר ישר
+  if (getAuthSession()) {
+    goAfterLogin();
+    return;
+  }
+  document.getElementById('loginUser').focus();
+});
+
+async function submitLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  const btn   = document.getElementById('loginBtn');
+
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'יש להזין שם משתמש וסיסמה'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'מתחבר...';
+
+  try {
+    const res = await apiCall('validateCredentials', { username, password });
+    if (res.success) {
+      setAuthSession(username);
+      goAfterLogin();
+    } else {
+      errEl.textContent = res.message || 'שם משתמש או סיסמה שגויים';
+      btn.disabled = false;
+      btn.textContent = 'כניסה →';
+      document.getElementById('loginPass').select();
+    }
+  } catch (_) {
+    errEl.textContent = 'שגיאת חיבור — נסה שוב';
+    btn.disabled = false;
+    btn.textContent = 'כניסה →';
+  }
+}
+
+function goAfterLogin() {
+  const redirect = sessionStorage.getItem('partyia_redirect');
+  sessionStorage.removeItem('partyia_redirect');
+  window.location.href = redirect || 'admin.html';
+}
+</script>
+</body>
+</html>

@@ -141,6 +141,7 @@ const STATUS_LOCK  = 6000;         // ms to keep optimistic status
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  requireAuth();
   warmupServer();
   hideLoadingScreen(300);
 });

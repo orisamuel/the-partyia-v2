@@ -170,6 +170,24 @@
   <button class="btn btn-primary btn-sm" onclick="exportText()">📤 ייצוא טקסט</button>
 </div>
 
+<!-- Edit notes modal -->
+<div id="editNotesModal" class="modal-backdrop" onclick="closeModal(event,'editNotesModal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="editNotesTitle">ערוך הערה</span>
+      <button class="modal-close" onclick="closeModal(null,'editNotesModal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">הערה על המוצר</label>
+      <input type="text" id="editNotesInput" class="form-input" placeholder="טיפ, מידע, מאיפה לקנות...">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal(null,'editNotesModal')">ביטול</button>
+      <button class="btn btn-primary" onclick="submitEditNotes()">✓ שמור</button>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
@@ -179,6 +197,7 @@ let showDone = true;
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  requireAuth();
   warmupServer();
   loadShopping();
 });
@@ -230,7 +249,10 @@ function renderList() {
           ${item.notes ? `<div class="item-notes">💡 ${esc(item.notes)}</div>` : ''}
           <div class="item-stock-info">קיים: ${item.stock} / נדרש: ${item.requiredStock}</div>
         </div>
-        <div class="item-badge">×${item.toBuy}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <div class="item-badge">×${item.toBuy}</div>
+          <button style="background:none;border:none;cursor:pointer;font-size:1rem;padding:4px;opacity:0.6;" title="ערוך הערה" onclick="event.stopPropagation();openEditNotes('${esc(item.name)}','${esc(item.notes || '')}')">✏️</button>
+        </div>
       </div>
     `;
   }).join('');
@@ -252,10 +274,33 @@ function toggleDone() {
 }
 
 function uncheckAll() {
+  // אפס הכל מנקה את הסימונים בלבד — לא משפיע על המלאי בדאטה בייס
   if (!checkedItems.size) { showToast('אין פריטים מסומנים לאיפוס', 'info'); return; }
   checkedItems.clear();
   renderList();
-  showToast('הרשימה אופסה', 'info');
+  showToast('הסימונים אופסו (המלאי לא השתנה)', 'info');
+}
+
+let editingNotesProduct = null;
+
+function openEditNotes(name, currentNotes) {
+  editingNotesProduct = name;
+  document.getElementById('editNotesTitle').textContent = 'הערה — ' + name;
+  document.getElementById('editNotesInput').value = currentNotes || '';
+  document.getElementById('editNotesModal').classList.add('open');
+}
+
+async function submitEditNotes() {
+  const notes = document.getElementById('editNotesInput').value;
+  closeModal(null, 'editNotesModal');
+  try {
+    await apiCall('updateRequiredStock', { productName: editingNotesProduct, notes });
+    // Update local data
+    const item = allItems.find(i => i.name === editingNotesProduct);
+    if (item) item.notes = notes;
+    renderList();
+    showToast('✓ הערה עודכנה', 'success');
+  } catch (_) { showToast('שגיאת חיבור', 'error'); }
 }
 
 function buildTextList() {
@@ -288,6 +333,11 @@ function exportText() {
   a.download = 'shopping-list.txt';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function closeModal(event, id) {
+  if (event && event.target !== document.getElementById(id)) return;
+  document.getElementById(id).classList.remove('open');
 }
 
 function esc(s) {
