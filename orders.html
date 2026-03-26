@@ -107,12 +107,13 @@
         <tr>
           <th style="width:72px">שעה</th>
           <th style="width:160px">לקוח</th>
-          <th>פריטים / הערה</th>
+          <th>פריטים</th>
+          <th style="width:160px">הערה</th>
           <th style="width:220px">סטטוס</th>
         </tr>
       </thead>
       <tbody id="ordersTableBody">
-        <tr><td colspan="4" style="padding:36px;text-align:center;color:var(--text-muted);">הפעל את המערכת כדי לראות הזמנות</td></tr>
+        <tr><td colspan="5" style="padding:36px;text-align:center;color:var(--text-muted);">הפעל את המערכת כדי לראות הזמנות</td></tr>
       </tbody>
     </table>
 
@@ -301,7 +302,7 @@ function updateCounters(items) {
 function renderDesktop(items) {
   const tbody = document.getElementById('ordersTableBody');
   if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="4" style="padding:40px;text-align:center;color:var(--text-muted);">אין הזמנות פעילות כרגע 🍺</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:var(--text-muted);">אין הזמנות פעילות כרגע 🍺</td></tr>';
     return;
   }
   tbody.innerHTML = items.map(item => `
@@ -309,6 +310,7 @@ function renderDesktop(items) {
       <td class="text-sm text-muted">${esc(fmtTimeStr(item.time))}</td>
       <td><strong style="color:var(--amber-bright)">${esc(item.customerName)}</strong></td>
       <td class="text-sm">${esc(item.products)}</td>
+      <td class="text-sm">${item.note ? `<span style="color:var(--warning)">📝 ${esc(item.note)}</span>` : ''}</td>
       <td>${statusSlider(item.orderId, item.status)}</td>
     </tr>
   `).join('');
@@ -325,6 +327,7 @@ function renderMobile(items) {
     <div class="order-card status-${item.status}" id="card-${item.orderId}">
       <div class="order-card-name">${esc(item.customerName)}</div>
       <div class="order-card-items">${esc(item.products)}</div>
+      ${item.note ? `<div class="order-note">📝 ${esc(item.note)}</div>` : ''}
       <div class="order-card-footer">
         <span class="order-card-time">${esc(fmtTimeStr(item.time))}</span>
         ${statusSlider(item.orderId, item.status)}
