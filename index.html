@@ -87,6 +87,19 @@
     .index-layout { grid-template-columns: 1fr; }
     .order-sidebar { position: static; }
   }
+
+  /* Submit button — not-ready state (clickable but visually dimmed) */
+  #submitBtn.btn-not-ready {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* Recent orders — internal scroll */
+  #recentOrdersList {
+    max-height: 320px;
+    overflow-y: auto;
+    padding-left: 2px;
+  }
 </style>
 </head>
 <body>
@@ -187,8 +200,8 @@
         </div>
 
         <!-- Submit -->
-        <button class="btn btn-primary btn-large mb-12" id="submitBtn" onclick="submitOrder()" disabled>
-          📝 שלח הזמנה
+        <button class="btn btn-primary btn-large mb-12 btn-not-ready" id="submitBtn" onclick="submitOrder()">
+          📝 שליחת הזמנה
         </button>
 
         <button class="btn btn-secondary btn-large mb-16" onclick="resetForm()">🔄 נקה הכל</button>
@@ -391,7 +404,7 @@ function setResidenceType(type, btn) {
     nameInput.placeholder = 'שם...';
     showNameStatus('', '');
     isNameValid = !!nameInput.value.trim();
-    document.getElementById('submitBtn').disabled = !isNameValid;
+    document.getElementById('submitBtn').classList.toggle('btn-not-ready', !isNameValid);
   }
 }
 
@@ -401,7 +414,7 @@ function setResidenceType(type, btn) {
 function onNameInput(val) {
   if (residenceType !== 'נופי פרת') {
     isNameValid = !!val.trim();
-    document.getElementById('submitBtn').disabled = !isNameValid;
+    document.getElementById('submitBtn').classList.toggle('btn-not-ready', !isNameValid);
     return;
   }
   const list = document.getElementById('autocompleteList');
@@ -442,7 +455,7 @@ function validateName(val) {
     isNameValid = false;
     showNameStatus(val ? '✗ שם לא נמצא ברשימה' : '', 'var(--danger)');
   }
-  document.getElementById('submitBtn').disabled = !isNameValid;
+  document.getElementById('submitBtn').classList.toggle('btn-not-ready', !isNameValid);
 }
 
 function showNameStatus(msg, color) {
@@ -463,7 +476,7 @@ function toggleCreditMode() {
   btn.textContent = isCreditMode ? '✓ מצב זיכוי פעיל' : '💳 מצב זיכוי';
   body.classList.toggle('credit-mode', isCreditMode);
   document.getElementById('totalLabel').textContent = isCreditMode ? 'סכום זיכוי' : 'סכום כולל';
-  document.getElementById('submitBtn').textContent  = isCreditMode ? '💳 אישור זיכוי' : '📝 שלח הזמנה';
+  document.getElementById('submitBtn').textContent  = isCreditMode ? '💳 אישור זיכוי' : '📝 שליחת הזמנה';
   document.getElementById('discountRow').style.display = isCreditMode ? 'none' : 'block';
   updateTotal();
 }
@@ -507,7 +520,8 @@ function buildProductsString() {
   const parts = [];
   Object.entries(selectedItems).forEach(([name, qty]) => {
     const note = productNotes[name];
-    const label = note ? `${name} [${note}]` : name;
+    const safeNote = note ? note.replace(/,\s*/g, ' / ') : '';
+    const label = safeNote ? `${name} [${safeNote}]` : name;
     parts.push(qty > 1 ? `${label} (${qty})` : label);
   });
   const custDesc = document.getElementById('customDescription').value.trim();
@@ -564,7 +578,7 @@ async function submitOrder() {
   }
 
   btn.disabled = false;
-  btn.innerHTML = isCreditMode ? '💳 אישור זיכוי' : '📝 שלח הזמנה';
+  btn.innerHTML = isCreditMode ? '💳 אישור זיכוי' : '📝 שליחת הזמנה';
 }
 
 // ─────────────────────────────────────────────
@@ -585,7 +599,7 @@ function resetForm() {
   document.getElementById('orderNote').value = '';
   document.getElementById('nameValidation').textContent = '';
   isNameValid = false;
-  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').classList.add('btn-not-ready');
   // Reset residence type to default
   residenceType = 'נופי פרת';
   const btns = document.querySelectorAll('#residenceControl .segment-btn');
