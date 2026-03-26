@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0d0f14">
-<title>הפרתיה — סיכום הוצאות</title>
+<title>הפרתיה — סיכום תשלומי תושבים</title>
 <link rel="icon" href="logo.png" type="image/png">
 <link rel="stylesheet" href="styles.css">
 <script src="config.js"></script>
@@ -95,8 +95,8 @@
   <header class="header">
     <a href="admin.html"><img src="logo.png" alt="לוגו" class="header-logo"></a>
     <div class="header-title">
-      <h1>💰 סיכום הוצאות</h1>
-      <p>הוצאות לפי תושב ותאריך</p>
+      <h1>💰 סיכום תשלומי תושבים</h1>
+      <p>תשלומים לפי תושב ותאריך</p>
     </div>
     <div class="header-actions">
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
@@ -396,8 +396,8 @@
             return orders.filter(order => {
                 const orderDateStr = order.date;
                 const orderTime = order.time;
-                
-                if (!orderDateStr || !orderTime) return false;
+
+                if (!orderDateStr) return false;
                 
                 let orderDate;
                 let orderDateFormatted;
@@ -426,7 +426,7 @@
                 }
                 
                 // הזמנות לילה מהיום שאחרי
-                if (orderDateFormatted === nextDayStr) {
+                if (orderDateFormatted === nextDayStr && orderTime) {
                     const timeMatch = orderTime.toString().match(/(\d{1,2}):(\d{2})/);
                     if (timeMatch) {
                         const hour = parseInt(timeMatch[1]);
