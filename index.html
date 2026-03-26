@@ -375,9 +375,12 @@ function onNameInput(val) {
   }
   const list = document.getElementById('autocompleteList');
   if (!val.trim()) { list.style.display = 'none'; validateName(''); return; }
-  const matches = RESIDENTS.filter(r =>
-    r.fullName.includes(val) || (r.nickname && r.nickname.includes(val))
-  ).slice(0, 8);
+  const tokens = val.trim().split(/\s+/).filter(Boolean);
+  const matches = RESIDENTS.filter(r => {
+    const name = r.fullName;
+    const nick = r.nickname || '';
+    return tokens.every(t => name.includes(t) || nick.includes(t));
+  }).slice(0, 8);
   if (!matches.length) { list.style.display = 'none'; validateName(val); return; }
   list.style.display = 'block';
   list.innerHTML = matches.map(r =>
