@@ -283,10 +283,10 @@ function updatePrepToggleUI() {
 }
 
 async function saveProduct() {
-  const name  = document.getElementById('pName').value.trim();
-  const price = document.getElementById('pPrice').value;
-  const emoji = document.getElementById('pEmoji').value.trim() || '🍽️';
-  const cat   = document.getElementById('pCategory').value;
+  const name   = document.getElementById('pName').value.trim();
+  const price  = document.getElementById('pPrice').value;
+  const emoji  = document.getElementById('pEmoji').value.trim() || '🍽️';
+  const cat    = document.getElementById('pCategory').value;
   const active = document.getElementById('pActive').value;
 
   if (!name)  { showToast('יש להזין שם מוצר', 'error'); return; }
@@ -294,6 +294,18 @@ async function saveProduct() {
 
   const data = { name, price, emoji, category: cat, requiresPreparation: isRequirePrep, active };
 
+  // שינוי מחיר של מוצר קיים — דורש אימות
+  if (editingName) {
+    const original = allProducts.find(x => x.name === editingName);
+    if (original && parseInt(price) !== original.price) {
+      requirePassword(() => _doSaveProduct(data));
+      return;
+    }
+  }
+  _doSaveProduct(data);
+}
+
+async function _doSaveProduct(data) {
   try {
     const action = editingName ? 'updateProduct' : 'addProduct';
     const res = await apiCall(action, data);
@@ -305,17 +317,20 @@ async function saveProduct() {
   } catch (_) { showToast('שגיאת חיבור', 'error'); }
 }
 
-async function deleteProduct() {
+function deleteProduct() {
   if (!editingName) return;
-  if (!confirm('להסיר את "' + editingName + '" מהתפריט?')) return;
-  try {
-    const res = await apiCall('deleteProduct', { name: editingName });
-    if (res.success) {
-      showToast('מוצר הוסר', 'warning');
-      document.getElementById('productModal').classList.remove('open');
-      loadProducts();
-    } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
-  } catch (_) { showToast('שגיאת חיבור', 'error'); }
+  // מחיקה — דורשת אימות תמיד
+  requirePassword(async () => {
+    if (!confirm('להסיר את "' + editingName + '" מהתפריט לצמיתות?')) return;
+    try {
+      const res = await apiCall('deleteProduct', { name: editingName });
+      if (res.success) {
+        showToast('מוצר הוסר', 'warning');
+        document.getElementById('productModal').classList.remove('open');
+        loadProducts();
+      } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
+    } catch (_) { showToast('שגיאת חיבור', 'error'); }
+  });
 }
 
 // ── Emoji picker ───────────────────────────────────────────
