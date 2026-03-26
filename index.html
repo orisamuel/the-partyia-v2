@@ -501,10 +501,11 @@ function getTotal() {
 }
 
 function buildProductsString() {
+  const generalNote = document.getElementById('orderNote').value.trim();
   const parts = [];
   Object.entries(selectedItems).forEach(([name, qty]) => {
-    const note  = productNotes[name];
-    const label = note ? `${name} [${note}]` : name;
+    const notes = [productNotes[name], generalNote].filter(Boolean).join(', ');
+    const label = notes ? `${name} [${notes}]` : name;
     parts.push(qty > 1 ? `${label} (${qty})` : label);
   });
   const custDesc = document.getElementById('customDescription').value.trim();

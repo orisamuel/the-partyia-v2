@@ -308,10 +308,7 @@ function renderDesktop(items) {
     <tr id="row-${item.orderId}">
       <td class="text-sm text-muted">${esc(fmtTimeStr(item.time))}</td>
       <td><strong style="color:var(--amber-bright)">${esc(item.customerName)}</strong></td>
-      <td class="text-sm">
-        <div>${esc(item.products)}</div>
-        ${item.note ? `<div class="order-note">📝 ${esc(item.note)}</div>` : ''}
-      </td>
+      <td class="text-sm">${esc(item.products)}</td>
       <td>${statusSlider(item.orderId, item.status)}</td>
     </tr>
   `).join('');
@@ -328,7 +325,6 @@ function renderMobile(items) {
     <div class="order-card status-${item.status}" id="card-${item.orderId}">
       <div class="order-card-name">${esc(item.customerName)}</div>
       <div class="order-card-items">${esc(item.products)}</div>
-      ${item.note ? `<div class="order-note">📝 ${esc(item.note)}</div>` : ''}
       <div class="order-card-footer">
         <span class="order-card-time">${esc(fmtTimeStr(item.time))}</span>
         ${statusSlider(item.orderId, item.status)}
