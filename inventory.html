@@ -336,6 +336,8 @@ const CAT_EMOJI  = { 'אלכוהול': '🍺', 'פירות ותוספות לקו
 let inventoryData  = [];
 let editingProduct = null;
 let deltaSign      = 1;
+let openCategories = new Set(); // קטגוריות פתוחות
+let beerGroupOpen  = false;     // האם קבוצת הבירות פתוחה
 
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
@@ -501,6 +503,7 @@ function renderInventory() {
   });
 
   grid.innerHTML = html;
+  restoreOpenState();
 }
 
 function renderBeerGroup(beerMain, beerSubs) {
@@ -552,12 +555,15 @@ function renderBeerGroup(beerMain, beerSubs) {
 }
 
 function toggleCategory(catId) {
-  const body   = document.getElementById(catId);
+  const body    = document.getElementById(catId);
   const chevron = document.getElementById('chev-' + catId);
   if (!body) return;
   const isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
   if (chevron) chevron.style.transform = isOpen ? 'rotate(-90deg)' : '';
+  // זכור מצב
+  if (isOpen) openCategories.delete(catId);
+  else        openCategories.add(catId);
 }
 
 function toggleBeerGroup(header) {
@@ -567,6 +573,22 @@ function toggleBeerGroup(header) {
   const isOpen = group.style.display !== 'none';
   group.style.display = isOpen ? 'none' : 'block';
   if (chevron) chevron.style.transform = isOpen ? 'rotate(-90deg)' : '';
+  beerGroupOpen = !isOpen;
+}
+
+function restoreOpenState() {
+  openCategories.forEach(catId => {
+    const body    = document.getElementById(catId);
+    const chevron = document.getElementById('chev-' + catId);
+    if (body) body.style.display = 'block';
+    if (chevron) chevron.style.transform = '';
+  });
+  if (beerGroupOpen) {
+    const group   = document.getElementById('beerGroup');
+    const chevron = document.getElementById('beer-chevron');
+    if (group)   group.style.display = 'block';
+    if (chevron) chevron.style.transform = '';
+  }
 }
 
 /* ── Low stock alert ── */
