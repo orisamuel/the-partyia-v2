@@ -823,7 +823,7 @@ function doPost(e) {
     switch (action) {
 
       case 'ping':
-        return jsonResponse({ success: true });
+        return jsonResponse({ success: true, version: 'v3-notes-2026-03-26' });
 
       case 'debugEcho':
         return jsonResponse({ success: true, received: { action: p.action, note: p.note, customerName: p.customerName, products: p.products } });
