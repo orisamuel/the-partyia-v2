@@ -82,6 +82,11 @@
   }
   .product-note-input:focus { border-color: var(--amber-dim); }
   .product-card.selected .product-note-input { display: block; }
+  .instant-badge {
+    position: absolute; top: 6px; left: 6px;
+    font-size: 0.7rem; line-height: 1;
+    opacity: 0.75;
+  }
 
   @media (max-width: 900px) {
     .index-layout { grid-template-columns: 1fr; }
@@ -324,6 +329,7 @@ function renderProducts() {
       PRODUCT_NAMES[idx] = p.name;
       return `
         <div class="product-card" id="pc-${idx}" onclick="toggleProduct(${idx})">
+          ${!p.requiresPreparation ? '<span class="instant-badge" title="יוצא מיד">⚡</span>' : ''}
           <span class="product-emoji">${p.emoji || '🍽️'}</span>
           <div class="product-name">${esc(p.name)}</div>
           <div class="product-price">₪${p.price}</div>

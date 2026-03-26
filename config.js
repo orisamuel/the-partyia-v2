@@ -12,7 +12,7 @@ const CONFIG = {
 
     // ── Google Sheets ────────────────────────────────────────
     // קישור ישיר לגיליון הנתונים (לכפתור "פתח Sheets" בממשק)
-    SHEETS_URL: 'https://docs.google.com/spreadsheets/d/1b7i4Nn0ajOVKwZSWUpDVanezscA50Jdh1harmJqiSZY',
+    SHEETS_URL: 'https://docs.google.com/spreadsheets/d/1ANaiZRPldIIK_hTZiw3m0fULzaEbwUbwC3OtCFzaJmM/edit?gid=687781604#gid=687781604',
 
     // ── שם האפליקציה ─────────────────────────────────────────
     APP_NAME: 'הפרתיה',
