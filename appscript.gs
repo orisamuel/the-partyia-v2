@@ -583,7 +583,7 @@ function updateItemStatus(itemId, newStatus) {
 // Schema: שם מוצר(0), כמות(1), threshold(2), עדכון אחרון(3), מלאי נדרש(4), הערות(5)
 // ============================================================
 
-const INV_HEADERS = ['שם מוצר', 'כמות', 'threshold', 'עדכון אחרון', 'מלאי נדרש', 'הערות'];
+const INV_HEADERS = ['שם מוצר', 'כמות', 'threshold', 'עדכון אחרון', 'מלאי נדרש', 'הערות', 'קטגוריה'];
 
 function getInventory() {
   try {
@@ -603,6 +603,7 @@ function getInventory() {
       lastUpdated: r[3] ? r[3].toString() : '',
       requiredStock: parseInt(r[4]) || 0,
       notes: r[5] ? r[5].toString() : '',
+      category: r[6] ? r[6].toString() : 'אחר',
       emoji: emojiMap[r[0]] || '📦'
     }));
     return { success: true, inventory };
@@ -616,22 +617,49 @@ function getShoppingList() {
     const sheet = ensureSheet('מלאי', INV_HEADERS);
     const data = sheet.getDataRange().getValues();
     if (data.length <= 1) return { success: true, items: [] };
+
+    const rows = data.slice(1);
     const items = [];
-    data.slice(1).forEach(r => {
+
+    // Beer aggregation: "בירות" holds the required stock target;
+    // actual stock = sum of all "בירה X" sub-types + uncategorized stock in "בירות" row
+    const beerMainRow = rows.find(r => r[0] === 'בירות');
+    const beerSubRows = rows.filter(r => r[0] && String(r[0]).startsWith('בירה '));
+    const beerSubsTotal = beerSubRows.reduce((s, r) => s + (parseInt(r[1]) || 0), 0);
+    const beerUncategorized = beerMainRow ? (parseInt(beerMainRow[1]) || 0) : 0;
+    const beerTotalStock = beerSubsTotal + beerUncategorized;
+    const beerRequired = beerMainRow ? (parseInt(beerMainRow[4]) || 0) : 0;
+
+    if (beerRequired > 0 && beerTotalStock < beerRequired) {
+      items.push({
+        name: 'בירות',
+        stock: beerTotalStock,
+        requiredStock: beerRequired,
+        toBuy: beerRequired - beerTotalStock,
+        notes: beerMainRow && beerMainRow[5] ? beerMainRow[5].toString() : '',
+        category: beerMainRow && beerMainRow[6] ? beerMainRow[6].toString() : 'אלכוהול'
+      });
+    }
+
+    // All other items — skip beer rows
+    rows.forEach(r => {
       const name = r[0] || '';
+      if (!name || name === 'בירות' || String(name).startsWith('בירה ')) return;
       const stock = parseInt(r[1]) || 0;
       const required = parseInt(r[4]) || 0;
       const toBuy = required - stock;
-      if (name && toBuy > 0) {
+      if (toBuy > 0) {
         items.push({
           name,
           stock,
           requiredStock: required,
           toBuy,
-          notes: r[5] ? r[5].toString() : ''
+          notes: r[5] ? r[5].toString() : '',
+          category: r[6] ? r[6].toString() : 'אחר'
         });
       }
     });
+
     return { success: true, items };
   } catch (e) {
     return { success: false, message: e.toString(), items: [] };
@@ -655,27 +683,28 @@ function updateStock(productName, delta, reason) {
     }
     // מוצר חדש במלאי
     const initial = Math.max(0, parseInt(delta) || 0);
-    sheet.appendRow([productName, initial, 5, now, 0, '']);
+    sheet.appendRow([productName, initial, 5, now, 0, '', 'אחר']);
     return { success: true, message: 'מוצר נוסף למלאי', newStock: initial };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
 }
 
-function updateRequiredStock(productName, requiredStock, notes) {
+function updateRequiredStock(productName, requiredStock, notes, category) {
   try {
     const sheet = ensureSheet('מלאי', INV_HEADERS);
     const data = sheet.getDataRange().getValues();
     const now = fmtDate(new Date()) + ' ' + fmtTime(new Date());
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === productName) {
-        sheet.getRange(i+1, 5).setValue(parseInt(requiredStock) || 0);
+        if (requiredStock !== undefined && requiredStock !== '') sheet.getRange(i+1, 5).setValue(parseInt(requiredStock) || 0);
         if (notes !== undefined) sheet.getRange(i+1, 6).setValue(notes);
+        if (category !== undefined && category !== '') sheet.getRange(i+1, 7).setValue(category);
         return { success: true, message: 'מלאי נדרש עודכן' };
       }
     }
     // מוצר חדש — צור שורה עם המלאי הנדרש
-    sheet.appendRow([productName, 0, 5, now, parseInt(requiredStock) || 0, notes || '']);
+    sheet.appendRow([productName, 0, 5, now, parseInt(requiredStock) || 0, notes || '', category || 'אחר']);
     return { success: true, message: 'מוצר נוסף למלאי' };
   } catch (e) {
     return { success: false, message: e.toString() };
@@ -773,6 +802,34 @@ function seedBeerTypes() {
     }
     return { success: true, message: 'נוספו ' + added + ' סוגי בירה למלאי — מלאי "בירות" אופס' };
   } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+
+function validateCredentials(username, password) {
+  try {
+    const ss = getSpreadsheet();
+    let settingsSheet = ss.getSheetByName('הגדרות');
+    if (!settingsSheet) {
+      // יצירה עם ברירות מחדל — המשתמש ישנה ישירות בגיליון
+      settingsSheet = ss.insertSheet('הגדרות');
+      settingsSheet.appendRow(['שם משתמש', 'סיסמה']);
+      settingsSheet.appendRow(['admin', 'partyia123']);
+    }
+    const data = settingsSheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).trim() === String(username).trim() &&
+          String(data[i][1]).trim() === String(password).trim()) {
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'שם משתמש או סיסמה שגויים' };
+  } catch (e) {
+    Logger.log('validateCredentials error: ' + e);
     return { success: false, message: e.toString() };
   }
 }
@@ -898,7 +955,10 @@ function doPost(e) {
         return jsonResponse(getShoppingList());
 
       case 'updateRequiredStock':
-        return jsonResponse(updateRequiredStock(p.productName, p.requiredStock, p.notes));
+        return jsonResponse(updateRequiredStock(p.productName, p.requiredStock, p.notes, p.category));
+
+      case 'validateCredentials':
+        return jsonResponse(validateCredentials(p.username, p.password));
 
       case 'seedInventory':
         return jsonResponse(seedInventory());

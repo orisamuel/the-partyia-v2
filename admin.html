@@ -45,6 +45,7 @@
     <div class="header-actions">
       <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</button>
       <a href="CONFIG.SHEETS_URL" id="sheetsLink" target="_blank" class="header-link">📊 Sheets</a>
+      <button class="btn-back" onclick="logout()" title="התנתק" style="cursor:pointer;">🚪</button>
     </div>
   </header>
 
@@ -137,6 +138,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
+  requireAuth();
   warmupServer();
   document.getElementById('sheetsLink').href = CONFIG.SHEETS_URL || '#';
   document.getElementById('sheetsCard').onclick = () => window.open(CONFIG.SHEETS_URL, '_blank');
