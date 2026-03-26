@@ -31,10 +31,19 @@ function fmtDate(d) {
   return Utilities.formatDate(d, 'Asia/Jerusalem', 'dd/MM/yyyy');
 }
 
-// V8 runtime: instanceof Date can fail for Date objects from getValues()
-// Use duck-typing instead
-function isDate(v) {
-  return v && typeof v.getTime === 'function';
+// Normalize any date value (Date object or GMT string) to dd/MM/yyyy
+// Works even when instanceof Date / getTime fail on Apps Script V8 getValues() objects
+function normalizeDate(v) {
+  if (!v && v !== 0) return '';
+  const s = String(v);
+  // Already dd/MM/yyyy
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) return s;
+  // Date object or parseable string (GMT string etc.)
+  try {
+    const dt = new Date(v);
+    if (!isNaN(dt.getTime())) return fmtDate(dt);
+  } catch(e) {}
+  return s;
 }
 
 function fmtTime(d) {
@@ -366,7 +375,9 @@ function cancelOrder(orderId) {
 function fmtCellTime(val) {
   // Google Sheets may return time cells as Date objects — format to HH:mm
   if (!val && val !== 0) return '';
-  if (isDate(val)) return Utilities.formatDate(val, 'Asia/Jerusalem', 'HH:mm');
+  if (val instanceof Date || (val && typeof val.getTime === 'function')) return Utilities.formatDate(val, 'Asia/Jerusalem', 'HH:mm');
+  const parsed = new Date(val);
+  if (!isNaN(parsed.getTime())) return Utilities.formatDate(parsed, 'Asia/Jerusalem', 'HH:mm');
   const s = String(val);
   // Already HH:mm
   if (/^\d{1,2}:\d{2}$/.test(s)) return s;
@@ -385,7 +396,7 @@ function getActiveItems(limit) {
     const items = data.slice(1).slice(-limit)
       .filter(r => r[6] !== 'cancelled')
       .map((r, idx) => ({
-        date: isDate(r[0]) ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
+        date: normalizeDate(r[0]),
         time: fmtCellTime(r[1]),
         customerName: r[2] || '',
         products: r[3] || '',
@@ -407,7 +418,7 @@ function getRecentOrdersFromMain(limit) {
     const data = sheet.getDataRange().getValues();
     if (data.length <= 1) return { success: true, orders: [] };
     const orders = data.slice(1).slice(-limit).map((r, idx) => ({
-      date: isDate(r[0]) ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
+      date: normalizeDate(r[0]),
       time: fmtCellTime(r[1]),
       customerName: r[2] || '',
       products: r[3] || '',
@@ -436,7 +447,7 @@ function getOrdersByEvent(eventDate) {
     const nxStr = fmtDate(nextDay);
     const relevant = [];
     data.slice(1).forEach((r, idx) => {
-      const d = isDate(r[0]) ? fmtDate(r[0]) : (r[0] ? r[0].toString() : '');
+      const d = normalizeDate(r[0]);
       const t = fmtCellTime(r[1]);
       if (d === evStr) { relevant.push(rowToOrder(r, idx)); return; }
       if (d === nxStr) {
@@ -452,7 +463,7 @@ function getOrdersByEvent(eventDate) {
 
 function rowToOrder(r, idx) {
   return {
-    date: isDate(r[0]) ? fmtDate(r[0]) : (r[0] ? r[0].toString() : ''),
+    date: normalizeDate(r[0]),
     time: fmtCellTime(r[1]),
     customerName: r[2] || '',
     products: r[3] || '',
