@@ -75,8 +75,14 @@
     </div>
     <div class="form-group">
       <label class="form-label">סיסמה</label>
-      <input type="password" id="loginPass" class="form-input" placeholder="סיסמה"
-        autocomplete="current-password" onkeydown="if(event.key==='Enter') submitLogin()">
+      <div style="position:relative;">
+        <input type="password" id="loginPass" class="form-input" placeholder="סיסמה"
+          autocomplete="current-password" onkeydown="if(event.key==='Enter') submitLogin()"
+          style="padding-left:44px;">
+        <button type="button" onclick="togglePassView()" id="passToggle"
+          style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);padding:4px;"
+          title="הצג/הסתר סיסמה">👁️</button>
+      </div>
     </div>
     <div id="loginError" class="login-error"></div>
     <button class="btn btn-primary login-btn" id="loginBtn" onclick="submitLogin()">כניסה →</button>
@@ -121,6 +127,18 @@ async function submitLogin() {
     errEl.textContent = 'שגיאת חיבור — נסה שוב';
     btn.disabled = false;
     btn.textContent = 'כניסה →';
+  }
+}
+
+function togglePassView() {
+  const inp = document.getElementById('loginPass');
+  const btn = document.getElementById('passToggle');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '👁️';
   }
 }
 
