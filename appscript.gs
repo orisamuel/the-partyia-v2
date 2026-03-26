@@ -825,6 +825,9 @@ function doPost(e) {
       case 'ping':
         return jsonResponse({ success: true });
 
+      case 'debugEcho':
+        return jsonResponse({ success: true, received: { action: p.action, note: p.note, customerName: p.customerName, products: p.products } });
+
       // ── Products ──────────────────────────────────────────
       case 'getProducts':
         return jsonResponse(getProducts());

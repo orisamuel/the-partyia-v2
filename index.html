@@ -554,6 +554,8 @@ async function submitOrder() {
   const products     = buildProductsString();
   const note         = document.getElementById('orderNote').value.trim();
 
+  console.log('[submitOrder] sending note:', JSON.stringify(note), '| products:', products);
+
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-sm"></span> שולח...';
