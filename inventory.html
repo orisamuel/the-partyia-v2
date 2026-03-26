@@ -374,7 +374,7 @@ function makeInvRow(item, safeName) {
 
   // Row body (clickable area excludes controls on mobile)
   const rowHtml = `
-    <div class="inv-row animate-fadein" id="row-${safeName}" onclick="handleRowClick(event, '${safeName}')">
+    <div class="inv-row animate-fadein" id="row-${safeName}" data-safe="${safeName}" onclick="handleRowClick(event,this.dataset.safe)">
       <div class="inv-col-name">
         <span class="inv-emoji">${item.emoji || '📦'}</span>
         <span>${display}</span>
@@ -525,8 +525,8 @@ function renderBeerGroup(beerMain, beerSubs) {
         <button class="inv-adj-btn" data-name="${beerName}" onclick="quickAdj(this.dataset.name,-1)">−</button>
         <button class="inv-adj-btn" data-name="${beerName}" onclick="quickAdj(this.dataset.name,1)">+</button>
         <button class="inv-edit-btn" data-name="${beerName}" onclick="openStockModal(this.dataset.name)">✏️</button>
-        <span class="inv-group-chevron" id="beer-chevron">▼</span>
       </div>
+      <span class="inv-group-chevron" id="beer-chevron" style="padding:4px;">▼</span>
     </div>
     <div class="inv-group-body" id="beerGroup" style="display:none;">`;
 
