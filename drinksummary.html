@@ -67,11 +67,18 @@
         .stat-card.credits-card .stat-number { color: var(--danger); }
         .chart-section {
             background: var(--bg-elevated); border: 1px solid var(--glass-border);
-            padding: 24px; border-radius: var(--radius-lg); margin-bottom: 24px;
+            padding: 28px 24px; border-radius: var(--radius-lg); margin-bottom: 24px;
         }
-        .chart-title { font-size: 1.1rem; font-weight: 700; color: var(--amber); margin-bottom: 20px; text-align: center; }
-        .chart-container { position: relative; width: 100%; height: 460px; display: flex; justify-content: center; align-items: center; }
-        .chart-canvas { max-width: 100%; max-height: 460px; }
+        .chart-title {
+            font-size: 1.1rem; font-weight: 700; color: var(--amber);
+            margin-bottom: 20px; text-align: center;
+            letter-spacing: 0.02em;
+        }
+        .chart-container {
+            position: relative; width: 100%; height: 400px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .chart-canvas { max-width: 100%; max-height: 400px; }
         .table-section {
             background: var(--bg-elevated); border: 1px solid var(--glass-border);
             border-radius: var(--radius-lg); overflow: hidden;
@@ -270,8 +277,8 @@
         
         // הגדרות צבעים
         const COLORS = [
-            '#E67E22', '#3498DB', '#2ECC71', '#E74C3C', '#9B59B6',
-            '#F1C40F', '#1ABC9C', '#34495E', '#FF6B6B', '#4ECDC4'
+            '#F59E0B', '#3B82F6', '#10B981', '#EF4444', '#8B5CF6',
+            '#F97316', '#06B6D4', '#EC4899', '#84CC16', '#6366F1'
         ];
         
         // הגדרות קיבוץ מוצרים
@@ -1002,22 +1009,33 @@
                     datasets: [{
                         data: positiveData.map(item => item.quantity),
                         backgroundColor: COLORS.slice(0, positiveData.length),
-                        borderWidth: 3,
-                        borderColor: '#fff'
+                        borderWidth: 2,
+                        borderColor: 'rgba(13,15,20,0.8)',
+                        hoverBorderWidth: 3,
+                        hoverBorderColor: '#fff',
+                        hoverOffset: 8
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    cutout: '60%',
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'bottom',
+                            position: positiveData.length > 5 ? 'bottom' : 'right',
+                            align: 'center',
                             labels: {
-                                padding: 20,
+                                padding: positiveData.length > 5 ? 14 : 18,
+                                boxWidth: 14,
+                                boxHeight: 14,
+                                borderRadius: 4,
+                                useBorderRadius: true,
+                                color: '#e5e7eb',
                                 font: {
-                                    size: 14,
-                                    weight: 'bold'
+                                    size: 13,
+                                    weight: '600',
+                                    family: 'inherit'
                                 },
                                 generateLabels: function(chart) {
                                     const data = chart.data;
@@ -1026,10 +1044,10 @@
                                             const value = data.datasets[0].data[i];
                                             const percentage = ((value / totalQuantity) * 100).toFixed(1);
                                             return {
-                                                text: `${label}: ${value} (${percentage}%)`,
+                                                text: `${label}  ${value} (${percentage}%)`,
                                                 fillStyle: data.datasets[0].backgroundColor[i],
-                                                strokeStyle: data.datasets[0].backgroundColor[i],
-                                                lineWidth: 2,
+                                                strokeStyle: 'transparent',
+                                                lineWidth: 0,
                                                 hidden: false,
                                                 index: i
                                             };
@@ -1040,17 +1058,23 @@
                             }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(13,15,20,0.92)',
+                            borderColor: 'rgba(245,158,11,0.4)',
+                            borderWidth: 1,
+                            titleColor: '#F59E0B',
+                            bodyColor: '#e5e7eb',
+                            padding: 12,
                             callbacks: {
                                 label: function(context) {
                                     const quantity = context.parsed;
                                     const percentage = ((quantity / totalQuantity) * 100).toFixed(1);
-                                    return `${context.label}: ${quantity} יחידות (${percentage}%)`;
+                                    return `  ${quantity} יחידות  ·  ${percentage}%`;
                                 }
                             }
                         }
                     },
                     layout: {
-                        padding: 40
+                        padding: 16
                     }
                 }
             });
@@ -1079,38 +1103,42 @@
                     datasets: [{
                         label: 'כמות נמכרה (נטו)',
                         data: dateData.map(item => item.quantity),
-                        borderColor: '#E67E22',
-                        backgroundColor: 'rgba(230, 126, 34, 0.1)',
-                        borderWidth: 3,
+                        borderColor: '#F59E0B',
+                        backgroundColor: 'rgba(245,158,11,0.08)',
+                        borderWidth: 2.5,
                         fill: true,
                         tension: 0.4,
-                        pointBackgroundColor: '#E67E22',
-                        pointBorderColor: '#fff',
+                        pointBackgroundColor: '#F59E0B',
+                        pointBorderColor: '#0d0f14',
                         pointBorderWidth: 2,
-                        pointRadius: 6,
-                        pointHoverRadius: 8
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#F59E0B',
+                        pointHoverBorderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
+                            backgroundColor: 'rgba(13,15,20,0.92)',
+                            borderColor: 'rgba(245,158,11,0.4)',
+                            borderWidth: 1,
+                            titleColor: '#F59E0B',
+                            bodyColor: '#e5e7eb',
+                            padding: 12,
                             callbacks: {
                                 title: function(context) {
-                                    const index = context[0].dataIndex;
-                                    return dateData[index].dateFormatted;
+                                    return dateData[context[0].dataIndex].dateFormatted;
                                 },
                                 label: function(context) {
-                                    const index = context.dataIndex;
-                                    const quantity = dateData[index].quantity;
-                                    const revenue = dateData[index].revenue;
+                                    const d = dateData[context.dataIndex];
                                     return [
-                                        `כמות: ${quantity} יחידות`,
-                                        `הכנסה: ₪${revenue}`
+                                        `  כמות: ${d.quantity} יחידות`,
+                                        `  הכנסה: ₪${d.revenue}`
                                     ];
                                 }
                             }
@@ -1119,21 +1147,27 @@
                     scales: {
                         y: {
                             beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#9ca3af', font: { size: 12 } },
                             title: {
                                 display: true,
-                                text: 'כמות נמכרה (נטו)'
+                                text: 'כמות נמכרה (נטו)',
+                                color: '#9ca3af',
+                                font: { size: 12 }
                             }
                         },
                         x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#9ca3af', font: { size: 12 } },
                             title: {
                                 display: true,
-                                text: 'תאריך'
+                                text: 'תאריך',
+                                color: '#9ca3af',
+                                font: { size: 12 }
                             }
                         }
                     },
-                    layout: {
-                        padding: 20
-                    }
+                    layout: { padding: 16 }
                 }
             });
             

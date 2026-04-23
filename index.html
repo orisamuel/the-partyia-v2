@@ -434,7 +434,7 @@ function onNameInput(val) {
   if (!matches.length) { list.style.display = 'none'; validateName(val); return; }
   list.style.display = 'block';
   list.innerHTML = matches.map(r =>
-    `<div class="autocomplete-item" onmousedown="selectResident('${esc(r.fullName)}')">${r.fullName}${r.nickname ? ' (' + r.nickname + ')' : ''}</div>`
+    `<div class="autocomplete-item" onmousedown="selectResident(${JSON.stringify(r.fullName)})">${r.fullName}${r.nickname ? ' (' + r.nickname + ')' : ''}</div>`
   ).join('');
   validateName(val);
 }

@@ -248,14 +248,14 @@ function renderResidents(list) {
       const inactive = r.active !== 'כן';
       html += `
         <div class="resident-row animate-fadein ${inactive ? 'inactive' : ''}" style="animation-delay:${i*0.03}s"
-             onclick="openResidentModal('${esc(r.fullName)}')">
+             onclick="openResidentModal(${JSON.stringify(r.fullName)})">
           <div class="resident-avatar">${initials}</div>
           <div class="resident-info">
             <div class="resident-name">${esc(r.fullName)}${r.nickname ? ' <span style="color:var(--text-muted);font-weight:400;">('+esc(r.nickname)+')</span>' : ''}</div>
             <div class="resident-meta">${esc(r.residenceType||'')}${r.notes ? ' · ' + esc(r.notes) : ''}${inactive ? ' · <span style="color:var(--danger)">לא פעיל</span>' : ''}</div>
           </div>
           <div class="resident-actions" onclick="event.stopPropagation()">
-            <button class="btn btn-secondary btn-sm" onclick="openResidentModal('${esc(r.fullName)}')">✏️</button>
+            <button class="btn btn-secondary btn-sm" onclick="openResidentModal(${JSON.stringify(r.fullName)})">✏️</button>
           </div>
         </div>
       `;
