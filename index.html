@@ -434,8 +434,14 @@ function onNameInput(val) {
   if (!matches.length) { list.style.display = 'none'; validateName(val); return; }
   list.style.display = 'block';
   list.innerHTML = matches.map(r =>
-    `<div class="autocomplete-item" onmousedown="selectResident(${JSON.stringify(r.fullName)})">${r.fullName}${r.nickname ? ' (' + r.nickname + ')' : ''}</div>`
+    `<div class="autocomplete-item" data-name="${esc(r.fullName)}">${r.fullName}${r.nickname ? ' (' + r.nickname + ')' : ''}</div>`
   ).join('');
+  list.querySelectorAll('.autocomplete-item').forEach(el => {
+    el.addEventListener('mousedown', e => {
+      e.preventDefault();
+      selectResident(el.dataset.name);
+    });
+  });
   validateName(val);
 }
 

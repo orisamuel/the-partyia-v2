@@ -46,6 +46,21 @@
   .emoji-btn:hover  { background: var(--amber-glow); border-color: var(--amber-dim); }
   .emoji-btn.chosen { background: var(--amber-glow); border-color: var(--amber); }
   .req-prep-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+  .btn-toggle-active {
+    flex: 1; border: none; border-radius: var(--radius-sm); padding: 6px 10px;
+    font-size: 0.78rem; font-weight: 700; font-family: inherit; cursor: pointer;
+    transition: var(--t-fast);
+  }
+  .btn-toggle-active.is-active {
+    background: rgba(239,68,68,0.12); color: var(--danger);
+    border: 1px solid rgba(239,68,68,0.3);
+  }
+  .btn-toggle-active.is-active:hover { background: rgba(239,68,68,0.22); }
+  .btn-toggle-active.is-inactive {
+    background: rgba(16,185,129,0.12); color: var(--success);
+    border: 1px solid rgba(16,185,129,0.3);
+  }
+  .btn-toggle-active.is-inactive:hover { background: rgba(16,185,129,0.22); }
 </style>
 </head>
 <body>
@@ -207,7 +222,7 @@ function renderProducts(products) {
     const inactive = p.active !== 'כן';
     const prep = p.requiresPreparation;
     return `
-      <div class="product-mgmt-card animate-fadein ${inactive ? 'inactive' : ''}">
+      <div class="product-mgmt-card animate-fadein ${inactive ? 'inactive' : ''}" data-name="${esc(p.name)}">
         <div class="product-mgmt-header">
           <span class="product-mgmt-emoji">${p.emoji || '🍽️'}</span>
           <div>
@@ -219,14 +234,21 @@ function renderProducts(products) {
           <span class="badge">${esc(p.category || 'כללי')}</span>
           ${prep ? '<span class="badge" style="background:var(--warning-bg);color:var(--warning);border-color:rgba(245,158,11,0.3);">👨‍🍳 הכנה</span>'
                  : '<span class="badge" style="background:var(--success-bg);color:var(--success);border-color:rgba(16,185,129,0.3);">⚡ מהיר</span>'}
-          ${inactive ? '<span class="badge badge-danger">לא פעיל</span>' : ''}
         </div>
         <div class="product-mgmt-actions">
-          <button class="btn btn-secondary btn-sm w-full" onclick="openProductModal('${esc(p.name)}')">✏️ ערוך</button>
+          <button class="btn btn-secondary btn-sm" style="flex:1" data-edit="${esc(p.name)}">✏️ ערוך</button>
+          <button class="btn-toggle-active ${inactive ? 'is-inactive' : 'is-active'}" data-toggle="${esc(p.name)}">${inactive ? '✓ הפעל' : '✕ השבת'}</button>
         </div>
       </div>
     `;
   }).join('');
+
+  grid.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => openProductModal(btn.dataset.edit));
+  });
+  grid.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => toggleProductActive(btn.dataset.toggle));
+  });
 }
 
 // ── Modal ──────────────────────────────────────────────────
@@ -331,6 +353,23 @@ function deleteProduct() {
       } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
     } catch (_) { showToast('שגיאת חיבור', 'error'); }
   });
+}
+
+async function toggleProductActive(name) {
+  const p = allProducts.find(x => x.name === name);
+  if (!p) return;
+  const newActive = p.active === 'כן' ? 'false' : 'true';
+  try {
+    const res = await apiCall('updateProduct', {
+      name: p.name, price: p.price, emoji: p.emoji || '🍽️',
+      category: p.category || 'כללי', requiresPreparation: p.requiresPreparation,
+      active: newActive
+    });
+    if (res.success) {
+      showToast(newActive === 'true' ? '✓ מוצר הופעל' : 'מוצר הושבת', newActive === 'true' ? 'success' : 'warning');
+      loadProducts();
+    } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
+  } catch (_) { showToast('שגיאת חיבור', 'error'); }
 }
 
 // ── Emoji picker ───────────────────────────────────────────
