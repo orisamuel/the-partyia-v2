@@ -46,21 +46,13 @@
   .emoji-btn:hover  { background: var(--amber-glow); border-color: var(--amber-dim); }
   .emoji-btn.chosen { background: var(--amber-glow); border-color: var(--amber); }
   .req-prep-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
-  .btn-toggle-active {
-    flex: 1; border: none; border-radius: var(--radius-sm); padding: 6px 10px;
-    font-size: 0.78rem; font-weight: 700; font-family: inherit; cursor: pointer;
-    transition: var(--t-fast);
+  .active-toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 6px; border-top: 1px solid var(--glass-border);
   }
-  .btn-toggle-active.is-active {
-    background: rgba(239,68,68,0.12); color: var(--danger);
-    border: 1px solid rgba(239,68,68,0.3);
-  }
-  .btn-toggle-active.is-active:hover { background: rgba(239,68,68,0.22); }
-  .btn-toggle-active.is-inactive {
-    background: rgba(16,185,129,0.12); color: var(--success);
-    border: 1px solid rgba(16,185,129,0.3);
-  }
-  .btn-toggle-active.is-inactive:hover { background: rgba(16,185,129,0.22); }
+  .active-toggle-label { font-size: 0.78rem; color: var(--text-secondary); font-weight: 600; }
+  .toggle-switch.success { background: var(--success); }
+  .toggle-switch.loading { opacity: 0.5; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -219,10 +211,10 @@ function renderProducts(products) {
     return;
   }
   grid.innerHTML = products.map(p => {
-    const inactive = p.active !== 'כן';
+    const active = p.active === 'כן';
     const prep = p.requiresPreparation;
     return `
-      <div class="product-mgmt-card animate-fadein ${inactive ? 'inactive' : ''}" data-name="${esc(p.name)}">
+      <div class="product-mgmt-card animate-fadein ${active ? '' : 'inactive'}" data-name="${esc(p.name)}">
         <div class="product-mgmt-header">
           <span class="product-mgmt-emoji">${p.emoji || '🍽️'}</span>
           <div>
@@ -237,7 +229,12 @@ function renderProducts(products) {
         </div>
         <div class="product-mgmt-actions">
           <button class="btn btn-secondary btn-sm" style="flex:1" data-edit="${esc(p.name)}">✏️ ערוך</button>
-          <button class="btn-toggle-active ${inactive ? 'is-inactive' : 'is-active'}" data-toggle="${esc(p.name)}">${inactive ? '✓ הפעל' : '✕ השבת'}</button>
+        </div>
+        <div class="active-toggle-row">
+          <span class="active-toggle-label">${active ? 'פעיל' : 'לא פעיל'}</span>
+          <div class="toggle-switch success ${active ? 'on' : ''}" data-toggle="${esc(p.name)}">
+            <div class="toggle-knob"></div>
+          </div>
         </div>
       </div>
     `;
@@ -246,8 +243,8 @@ function renderProducts(products) {
   grid.querySelectorAll('[data-edit]').forEach(btn => {
     btn.addEventListener('click', () => openProductModal(btn.dataset.edit));
   });
-  grid.querySelectorAll('[data-toggle]').forEach(btn => {
-    btn.addEventListener('click', () => toggleProductActive(btn.dataset.toggle));
+  grid.querySelectorAll('[data-toggle]').forEach(tog => {
+    tog.addEventListener('click', () => toggleProductActive(tog.dataset.toggle, tog));
   });
 }
 
@@ -355,10 +352,21 @@ function deleteProduct() {
   });
 }
 
-async function toggleProductActive(name) {
+async function toggleProductActive(name, togEl) {
   const p = allProducts.find(x => x.name === name);
   if (!p) return;
-  const newActive = p.active === 'כן' ? 'false' : 'true';
+
+  const wasActive = p.active === 'כן';
+  const newActive = wasActive ? 'false' : 'true';
+  const card = togEl.closest('.product-mgmt-card');
+  const label = card.querySelector('.active-toggle-label');
+
+  // optimistic update
+  togEl.classList.toggle('on', !wasActive);
+  togEl.classList.add('loading');
+  card.classList.toggle('inactive', wasActive);
+  label.textContent = wasActive ? 'לא פעיל' : 'פעיל';
+
   try {
     const res = await apiCall('updateProduct', {
       name: p.name, price: p.price, emoji: p.emoji || '🍽️',
@@ -366,10 +374,24 @@ async function toggleProductActive(name) {
       active: newActive
     });
     if (res.success) {
+      p.active = newActive === 'true' ? 'כן' : 'לא';
       showToast(newActive === 'true' ? '✓ מוצר הופעל' : 'מוצר הושבת', newActive === 'true' ? 'success' : 'warning');
-      loadProducts();
-    } else { showToast('שגיאה: ' + (res.message || ''), 'error'); }
-  } catch (_) { showToast('שגיאת חיבור', 'error'); }
+    } else {
+      // revert
+      togEl.classList.toggle('on', wasActive);
+      card.classList.toggle('inactive', !wasActive);
+      label.textContent = wasActive ? 'פעיל' : 'לא פעיל';
+      showToast('שגיאה: ' + (res.message || ''), 'error');
+    }
+  } catch (_) {
+    // revert
+    togEl.classList.toggle('on', wasActive);
+    card.classList.toggle('inactive', !wasActive);
+    label.textContent = wasActive ? 'פעיל' : 'לא פעיל';
+    showToast('שגיאת חיבור', 'error');
+  } finally {
+    togEl.classList.remove('loading');
+  }
 }
 
 // ── Emoji picker ───────────────────────────────────────────
