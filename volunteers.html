@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ערב מתנדבים בפרתיה · 12.7.26</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <meta property="og:title" content="ערב מתנדבים בפרתיה 🦌">
+    <meta property="og:description" content="12.7.26 בשעה 21:00 · באים לשתות, ליהנות, להכיר וללמוד. הכניסה חופשית!">
+    <meta property="og:image" content="logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --night-1: #0e1a2e;
+            --night-2: #16263f;
+            --night-3: #1d3050;
+            --orange: #E8873B;
+            --orange-deep: #D35400;
+            --cream: #F2E8D5;
+            --cream-dim: #cfc4ad;
+        }
+
+        body {
+            font-family: 'Heebo', 'Segoe UI', Tahoma, sans-serif;
+            background: linear-gradient(180deg, var(--night-1) 0%, var(--night-2) 55%, var(--night-3) 100%);
+            min-height: 100vh;
+            color: var(--cream);
+            overflow-x: hidden;
+        }
+
+        /* ===== נורות תלויות ===== */
+        .lights {
+            display: flex;
+            justify-content: space-between;
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 14px 18px 0;
+        }
+
+        .bulb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ffd98a;
+            box-shadow: 0 0 12px 3px rgba(255, 200, 100, 0.55);
+            animation: flicker 3.2s ease-in-out infinite;
+            position: relative;
+        }
+
+        .bulb::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            right: 3px;
+            width: 3px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+        }
+
+        .bulb:nth-child(odd) { transform: translateY(9px); }
+        .bulb:nth-child(2n) { animation-delay: .7s; }
+        .bulb:nth-child(3n) { animation-delay: 1.4s; }
+        .bulb:nth-child(4n) { animation-delay: 2.1s; }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; box-shadow: 0 0 12px 3px rgba(255, 200, 100, 0.55); }
+            50% { opacity: .75; box-shadow: 0 0 7px 2px rgba(255, 200, 100, 0.35); }
+        }
+
+        /* ===== מבנה ===== */
+        .wrap {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 26px 22px 60px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 108px;
+            height: 108px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 0 0 4px rgba(232, 135, 59, 0.35), 0 14px 34px rgba(0, 0, 0, 0.45);
+            margin-bottom: 6px;
+        }
+
+        .brand {
+            font-size: 15px;
+            letter-spacing: 3px;
+            color: var(--orange);
+            font-weight: 500;
+            margin-bottom: 26px;
+        }
+
+        .big-date {
+            font-size: clamp(64px, 18vw, 96px);
+            font-weight: 900;
+            color: var(--orange);
+            line-height: 1.05;
+            text-shadow: 0 6px 24px rgba(232, 135, 59, 0.25);
+            direction: ltr;
+        }
+
+        .event-time {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--cream);
+            letter-spacing: 2px;
+            margin-top: 2px;
+        }
+
+        h1 {
+            font-size: clamp(26px, 7vw, 34px);
+            font-weight: 900;
+            margin-top: 10px;
+        }
+
+        .cta-btn {
+            display: inline-block;
+            margin-top: 22px;
+            padding: 15px 44px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+            color: #fff;
+            font-family: inherit;
+            font-size: 19px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 10px 26px rgba(211, 84, 0, 0.4);
+            transition: transform .12s, box-shadow .2s;
+        }
+
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(211, 84, 0, 0.5); }
+        .cta-btn:active { transform: translateY(0); }
+
+        .sub {
+            font-size: 17px;
+            color: var(--cream-dim);
+            margin-top: 8px;
+        }
+
+        .intro {
+            font-size: 16.5px;
+            line-height: 1.75;
+            margin: 30px 0 8px;
+            color: var(--cream);
+        }
+
+        .intro strong { color: var(--orange); }
+
+        /* ===== מה בערב ===== */
+        .cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 26px 0;
+            text-align: right;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(242, 232, 213, 0.12);
+            border-radius: 16px;
+            padding: 16px 15px;
+            backdrop-filter: blur(4px);
+        }
+
+        .card .emoji {
+            font-size: 26px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .card h3 {
+            font-size: 15.5px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--cream);
+        }
+
+        .card p {
+            font-size: 13.5px;
+            line-height: 1.5;
+            color: var(--cream-dim);
+        }
+
+        .free-line {
+            font-size: 15.5px;
+            line-height: 1.7;
+            color: var(--cream-dim);
+            margin-bottom: 34px;
+        }
+
+        .free-line b { color: var(--orange); font-weight: 700; }
+
+        .free-line a, .footer a {
+            color: var(--orange);
+            font-weight: 700;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        /* ===== כפתורי קישורים ===== */
+        .links-row {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .ghost-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            border: 1.5px solid rgba(232, 135, 59, 0.55);
+            border-radius: 16px;
+            background: rgba(232, 135, 59, 0.08);
+            color: var(--orange);
+            font-family: inherit;
+            font-size: 16.5px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: background .15s, transform .12s;
+        }
+
+        .ghost-btn:hover { background: rgba(232, 135, 59, 0.2); transform: translateY(-1px); }
+        .ghost-btn:active { transform: translateY(0); }
+
+        /* ===== טופס ===== */
+        .form-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(232, 135, 59, 0.35);
+            border-radius: 22px;
+            padding: 28px 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+            text-align: right;
+        }
+
+        .form-card h2 {
+            font-size: 21px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .form-card .form-sub {
+            font-size: 14px;
+            color: var(--cream-dim);
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        label {
+            display: block;
+            font-size: 14.5px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--cream);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            font-family: inherit;
+            font-size: 16px;
+            color: var(--cream);
+            background: rgba(14, 26, 46, 0.6);
+            border: 1.5px solid rgba(242, 232, 213, 0.2);
+            border-radius: 14px;
+            outline: none;
+            transition: border-color .2s;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"]::placeholder { color: rgba(207, 196, 173, 0.5); }
+
+        input[type="text"]:focus { border-color: var(--orange); }
+
+        /* בורר כמות */
+        .stepper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 22px;
+            background: rgba(14, 26, 46, 0.6);
+            border: 1.5px solid rgba(242, 232, 213, 0.2);
+            border-radius: 14px;
+            padding: 10px;
+            margin-bottom: 22px;
+        }
+
+        .step-btn {
+            width: 46px;
+            height: 46px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(232, 135, 59, 0.18);
+            color: var(--orange);
+            font-size: 26px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+            font-family: inherit;
+            line-height: 1;
+        }
+
+        .step-btn:active { transform: scale(0.92); }
+        .step-btn:hover { background: rgba(232, 135, 59, 0.32); }
+
+        .guest-count {
+            font-size: 30px;
+            font-weight: 900;
+            color: var(--cream);
+            min-width: 44px;
+            text-align: center;
+        }
+
+        .stepper-hint {
+            font-size: 12.5px;
+            color: var(--cream-dim);
+            text-align: center;
+            margin-bottom: 22px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 17px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--orange) 0%, var(--orange-deep) 100%);
+            color: #fff;
+            font-family: inherit;
+            font-size: 19px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: transform .12s, box-shadow .2s;
+            box-shadow: 0 10px 26px rgba(211, 84, 0, 0.4);
+        }
+
+        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(211, 84, 0, 0.5); }
+        .submit-btn:active { transform: translateY(0); }
+        .submit-btn:disabled {
+            opacity: .65;
+            cursor: wait;
+            transform: none;
+        }
+
+        .error-msg {
+            display: none;
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(220, 53, 69, 0.15);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            color: #ffb3bb;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .error-msg.show { display: block; }
+
+        /* ===== הצלחה ===== */
+        .success-card {
+            display: none;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(232, 135, 59, 0.35);
+            border-radius: 22px;
+            padding: 44px 26px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        }
+
+        .success-card.show { display: block; animation: pop .45s cubic-bezier(.2, 1.4, .4, 1); }
+
+        @keyframes pop {
+            0% { transform: scale(.85); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .success-card .deer {
+            font-size: 58px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .success-card h2 {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--orange);
+            margin-bottom: 10px;
+        }
+
+        .success-card p {
+            font-size: 16px;
+            line-height: 1.7;
+            color: var(--cream-dim);
+        }
+
+        .success-card .motto {
+            margin-top: 20px;
+            font-size: 15px;
+            color: var(--cream);
+            font-weight: 500;
+        }
+
+        .footer {
+            margin-top: 44px;
+            font-size: 13.5px;
+            color: rgba(207, 196, 173, 0.55);
+            line-height: 1.7;
+        }
+
+        @media (max-width: 400px) {
+            .cards { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="lights" aria-hidden="true">
+        <div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div>
+    </div>
+
+    <div class="wrap">
+        <img src="logo.png" alt="הפרתיה" class="logo">
+        <div class="brand">NOFEY PARTYING</div>
+
+        <div class="big-date">12.7.26</div>
+        <div class="event-time">🕘 21:00</div>
+        <h1>ערב מתנדבים בפרתיה 🦌</h1>
+        <div class="sub">(באים לשתות, ליהנות, להכיר וללמוד — בערך בסדר הזה)</div>
+
+        <button type="button" class="cta-btn" onclick="scrollToForm()">תרשמו אותי 🍻</button>
+
+        <p class="intro">
+            קצת יותר משנה שהפרתיה באוויר,<br>
+            ומגיע לעצור רגע, להרים כוסית,<br>
+            ולהגיד <strong>תודה ענקית</strong> לכל מי שמתנדב.<br>
+            עוד לא יצא לך להתנדב, אבל את/ה בעניין<br>
+            ורוצה להבין מה זה בכלל אומר? מושלם, זה בדיוק בשבילך.
+        </p>
+
+        <div class="cards">
+            <div class="card">
+                <span class="emoji">🍸</span>
+                <h3>סדנת קוקטיילים</h3>
+                <p>תלמדו להכין קוקטייל שגורם לאנשים לשאול "רגע, אתם הכנתם את זה?!"</p>
+            </div>
+            <div class="card">
+                <span class="emoji">🛠️</span>
+                <h3>סיור עמדות</h3>
+                <p>מה זה בעצם אומר להתנדב בערב של הפרתיה (ספוילר: כיף)</p>
+            </div>
+            <div class="card">
+                <span class="emoji">🙏</span>
+                <h3>תודה גדולה</h3>
+                <p>כי בלעדיכם — אין פרתיה. פשוטו כמשמעו</p>
+            </div>
+            <div class="card">
+                <span class="emoji">🎉</span>
+                <h3>וגם סתם ליהנות</h3>
+                <p>כי בסוף בשביל זה התכנסנו, לא?</p>
+            </div>
+        </div>
+
+        <p class="free-line">
+            יש לכם חברים שעדיין לא בקבוצת המתנדבים אבל בעניין?
+            תביאו אותם <a href="https://chat.whatsapp.com/DBGKCCI6bTmHxv0fLobNqA" target="_blank" rel="noopener">לקבוצה</a> וגם לערב הזה. <b>הכניסה חופשית 🧡</b>
+        </p>
+
+        <form class="form-card" id="regForm">
+            <h2>תרשמו אותי ✍️</h2>
+
+            <label for="nameInput">איך קוראים לך?</label>
+            <input type="text" id="nameInput" placeholder="נופית פרתוש" autocomplete="name" required>
+
+            <label>כמה אתם באים?</label>
+            <div class="stepper">
+                <button type="button" class="step-btn" id="minusBtn" aria-label="פחות אחד">−</button>
+                <div class="guest-count" id="guestCount">1</div>
+                <button type="button" class="step-btn" id="plusBtn" aria-label="עוד אחד">+</button>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">יאללה, שריינו לי מקום 🍻</button>
+            <div class="error-msg" id="errorMsg"></div>
+        </form>
+
+        <div class="success-card" id="successCard">
+            <span class="deer">🦌</span>
+            <h2>סגור, נתראה ב־12.7!</h2>
+            <p id="successText">שמרנו לכם מקום ליד הבר.<br>עכשיו רק נשאר להגיע במצב רוח טוב.</p>
+            <p class="motto">מקום טוב · אנשים טובים · עשייה טובה ♡</p>
+        </div>
+
+        <div class="links-row">
+            <button type="button" class="ghost-btn" id="shareBtn" onclick="sharePage()">מכירים עוד מישהו ששווה שיבוא? שתפו 📤</button>
+            <a class="ghost-btn" href="https://chat.whatsapp.com/DBGKCCI6bTmHxv0fLobNqA" target="_blank" rel="noopener">לקבוצת המתנדבים בוואטסאפ 💬</a>
+            <a class="ghost-btn" href="https://bit.ly/whatsappub" target="_blank" rel="noopener">לקבוצת העדכונים של הפרתיה 📢</a>
+        </div>
+
+        <div class="footer">
+            הפרתיה · ערב מתנדבים · 12.7.26 · 21:00<br>
+            שאלות? תפסו אותנו ב<a href="https://chat.whatsapp.com/DBGKCCI6bTmHxv0fLobNqA" target="_blank" rel="noopener">קבוצה</a> 💬
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        const GOOGLE_SCRIPT_URL = CONFIG.SCRIPT_URL;
+
+        const MIN_GUESTS = 1;
+        const MAX_GUESTS = 20;
+        let guests = 1;
+
+        const guestCountEl = document.getElementById('guestCount');
+        const form = document.getElementById('regForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMsg = document.getElementById('errorMsg');
+
+        document.getElementById('minusBtn').addEventListener('click', () => {
+            if (guests > MIN_GUESTS) guests--;
+            guestCountEl.textContent = guests;
+        });
+
+        document.getElementById('plusBtn').addEventListener('click', () => {
+            if (guests < MAX_GUESTS) guests++;
+            guestCountEl.textContent = guests;
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.classList.remove('show');
+
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) {
+                showError('רק צריך שם ואנחנו מסודרים 🙂');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'שומרים לכם מקום...';
+
+            try {
+                const params = new URLSearchParams({
+                    action: 'registerVolunteerEvent',
+                    name: name,
+                    guests: guests
+                });
+
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params
+                });
+
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+
+                const result = JSON.parse(await response.text());
+
+                if (result.success) {
+                    form.style.display = 'none';
+                    document.getElementById('successText').innerHTML =
+                        guests === 1
+                            ? 'שמרנו לך מקום ליד הבר, ' + escapeHtml(name) + '.<br>עכשיו רק נשאר להגיע במצב רוח טוב.'
+                            : 'שמרנו ' + guests + ' מקומות ליד הבר.<br>עכשיו רק נשאר להגיע במצב רוח טוב.';
+                    document.getElementById('successCard').classList.add('show');
+                    document.getElementById('successCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    throw new Error(result.message || 'שגיאה בשרת');
+                }
+            } catch (err) {
+                console.error('שגיאה ברישום:', err);
+                showError('משהו השתבש בדרך 😅 נסו שוב עוד רגע, ואם זה ממשיך — כתבו לנו בקבוצה.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'שריינו לי מקום 🍻';
+            }
+        });
+
+        function showError(text) {
+            errorMsg.textContent = text;
+            errorMsg.classList.add('show');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function scrollToForm() {
+            const target = form.style.display === 'none'
+                ? document.getElementById('successCard')
+                : form;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (target === form) {
+                setTimeout(() => document.getElementById('nameInput').focus({ preventScroll: true }), 500);
+            }
+        }
+
+        async function sharePage() {
+            const shareBtn = document.getElementById('shareBtn');
+            const shareData = {
+                title: 'ערב מתנדבים בפרתיה 🦌',
+                text: 'ערב מתנדבים בפרתיה! 12.7.26 בשעה 21:00 — באים לשתות, ליהנות, להכיר וללמוד. הכניסה חופשית 🧡',
+                url: window.location.href
+            };
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else {
+                    await navigator.clipboard.writeText(shareData.text + '\n' + shareData.url);
+                    const original = shareBtn.textContent;
+                    shareBtn.textContent = 'הקישור הועתק! עכשיו תורכם 😉';
+                    setTimeout(() => { shareBtn.textContent = original; }, 2500);
+                }
+            } catch (err) {
+                // המשתמש ביטל את השיתוף — לא צריך לעשות כלום
+            }
+        }
+    </script>
+</body>
+</html>

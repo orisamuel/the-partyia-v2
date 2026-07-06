@@ -1,6 +1,6 @@
 // ============================================================
-// הפרתיה v3 — Google Apps Script Backend
-// Last updated: 2026-03-26 — note support for orders + active items
+// הפרתיה v4 — Google Apps Script Backend
+// Last updated: 2026-07-05 — volunteer event registration
 // ============================================================
 // הגדר כאן את ה-ID של ה-Spreadsheet החדש שלך:
 const SHEET_ID = '1ANaiZRPldIIK_hTZiw3m0fULzaEbwUbwC3OtCFzaJmM';
@@ -835,6 +835,44 @@ function validateCredentials(username, password) {
 }
 
 // ============================================================
+// VOLUNTEER EVENT
+// Schema: תאריך(0), שעה(1), שם(2), כמות אנשים(3)
+// ============================================================
+
+function registerVolunteerEvent(name, guests) {
+  try {
+    if (!name || !String(name).trim()) {
+      return { success: false, message: 'חסר שם' };
+    }
+
+    const sheet = ensureVolunteerEventSheet_();
+    const now = new Date();
+    const date = fmtDate(now);
+    const time = fmtTime(now);
+    const guestCount = Math.max(1, Math.min(20, parseInt(guests, 10) || 1));
+
+    sheet.appendRow([date, time, String(name).trim(), guestCount]);
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+function ensureVolunteerEventSheet_() {
+  const ss = getSpreadsheet();
+
+  let sheet = ss.getSheetByName('ערב מתנדבים');
+  if (!sheet) {
+    sheet = ss.insertSheet('ערב מתנדבים');
+    sheet.appendRow(['תאריך', 'שעה', 'שם', 'כמות אנשים']);
+    sheet.getRange(1, 1, 1, 4).setFontWeight('bold');
+    sheet.setRightToLeft(true);
+  }
+  return sheet;
+}
+
+// ============================================================
 // MAINTENANCE
 // ============================================================
 
@@ -880,7 +918,7 @@ function doPost(e) {
     switch (action) {
 
       case 'ping':
-        return jsonResponse({ success: true, version: 'v3-notes-2026-03-26' });
+        return jsonResponse({ success: true, version: 'v4-volunteers-2026-07-05' });
 
       case 'debugEcho':
         return jsonResponse({ success: true, received: { action: p.action, note: p.note, customerName: p.customerName, products: p.products } });
@@ -965,6 +1003,10 @@ function doPost(e) {
 
       case 'seedBeerTypes':
         return jsonResponse(seedBeerTypes());
+
+      // ── Volunteer Event ───────────────────────────────────
+      case 'registerVolunteerEvent':
+        return jsonResponse(registerVolunteerEvent(p.name, p.guests));
 
       default:
         return jsonResponse({ success: false, message: 'פעולה לא מוכרת: ' + action });
