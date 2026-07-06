@@ -265,6 +265,7 @@ let recentPollTimer = null;
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
+  requireAuth();
   warmupServer();
   document.getElementById('appTitle').textContent    = CONFIG.APP_NAME    || 'הפרתיה';
   document.getElementById('appSubtitle').textContent = CONFIG.APP_SUBTITLE || '';
