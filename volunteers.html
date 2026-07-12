@@ -457,6 +457,47 @@
             opacity: .9;
             margin-top: 2px;
         }
+
+        /* ===== טופס מושבת ===== */
+        .form-card.is-disabled .closed-note {
+            display: block;
+        }
+
+        .closed-note {
+            display: none;
+            background: rgba(192, 57, 43, 0.15);
+            border: 1px solid rgba(192, 57, 43, 0.45);
+            color: #ffb3ab;
+            border-radius: 14px;
+            padding: 13px 15px;
+            font-size: 14.5px;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.55;
+            margin-bottom: 22px;
+        }
+
+        .form-card.is-disabled h2,
+        .form-card.is-disabled label,
+        .form-card.is-disabled .stepper,
+        .form-card.is-disabled input,
+        .form-card.is-disabled .submit-btn {
+            opacity: .45;
+            filter: grayscale(0.4);
+        }
+
+        .form-card.is-disabled input,
+        .form-card.is-disabled .step-btn,
+        .form-card.is-disabled .submit-btn {
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .form-card.is-disabled .submit-btn {
+            background: #555;
+            box-shadow: none;
+            transform: none;
+        }
     </style>
 </head>
 <body>
@@ -477,7 +518,6 @@
         <h1>ערב מתנדבים בפרתיה 🦌</h1>
         <div class="sub">(באים לשתות, ליהנות, להכיר וללמוד — בערך בסדר הזה)</div>
 
-        <button type="button" class="cta-btn" onclick="scrollToForm()">תרשמו אותי 🍻</button>
 
         <p class="intro">
             קצת יותר משנה שהפרתיה באוויר,<br>
@@ -515,20 +555,21 @@
             תביאו אותם <a href="https://chat.whatsapp.com/DBGKCCI6bTmHxv0fLobNqA" target="_blank" rel="noopener">לקבוצה</a> וגם לערב הזה. <b>הכניסה חופשית 🧡</b>
         </p>
 
-        <form class="form-card" id="regForm">
+        <form class="form-card is-disabled" id="regForm">
+            <div class="closed-note">הרישום סגור כרגע — האירוע נדחה. נעדכן כשייקבע מועד חדש 🧡</div>
             <h2>תרשמו אותי ✍️</h2>
 
             <label for="nameInput">איך קוראים לך?</label>
-            <input type="text" id="nameInput" placeholder="נופית פרתוש" autocomplete="name" required>
+            <input type="text" id="nameInput" placeholder="נופית פרתוש" autocomplete="name" required disabled>
 
             <label>כמה אתם באים?</label>
             <div class="stepper">
-                <button type="button" class="step-btn" id="minusBtn" aria-label="פחות אחד">−</button>
+                <button type="button" class="step-btn" id="minusBtn" aria-label="פחות אחד" disabled>−</button>
                 <div class="guest-count" id="guestCount">1</div>
-                <button type="button" class="step-btn" id="plusBtn" aria-label="עוד אחד">+</button>
+                <button type="button" class="step-btn" id="plusBtn" aria-label="עוד אחד" disabled>+</button>
             </div>
 
-            <button type="submit" class="submit-btn" id="submitBtn">יאללה, שריינו לי מקום 🍻</button>
+            <button type="submit" class="submit-btn" id="submitBtn" disabled>הרישום סגור</button>
             <div class="error-msg" id="errorMsg"></div>
         </form>
 
@@ -576,6 +617,7 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (form.classList.contains('is-disabled')) return; // הרישום סגור — האירוע נדחה
             errorMsg.classList.remove('show');
 
             const name = document.getElementById('nameInput').value.trim();
