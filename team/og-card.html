@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<!-- מקור לתמונת התצוגה בוואטסאפ (team/og.jpg, 1122x1402). צילום: shot מקומי ברוחב 1122 -->
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand.css">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: var(--night-1); }
+    .card {
+        width: 1122px; height: 1402px; overflow: hidden;
+        font-family: var(--font);
+        background: radial-gradient(circle at 50% 44%, #2a3c5e 0%, var(--night-2) 38%, var(--night-1) 75%);
+        color: var(--cream);
+        text-align: center;
+        position: relative;
+    }
+    .lights { position: absolute; top: 0; left: 0; right: 0; height: 120px; }
+    .lights span {
+        position: absolute; width: 26px; height: 26px; border-radius: 50%;
+        background: #ffd98a; box-shadow: 0 0 30px 10px rgba(255, 200, 100, 0.5);
+    }
+    .lights svg { position: absolute; inset: 0; }
+    .presents { position: absolute; top: 150px; width: 100%; font-size: 44px; font-weight: 700; letter-spacing: 10px; color: var(--cream-dim); }
+    .sun {
+        position: absolute; left: 50%; top: 560px; width: 540px; height: 540px; transform: translate(-50%, -50%);
+        border-radius: 50%; background: radial-gradient(circle, #f2a25a 0%, var(--orange) 55%, #d9732c 100%);
+        box-shadow: 0 0 120px 30px rgba(232, 135, 59, 0.35);
+    }
+    .deer-wrap { position: absolute; left: 50%; top: 320px; width: 400px; transform: translateX(-50%); }
+    .deer-wrap .deer { width: 100%; height: auto; display: block; }
+    .deer-wrap .deer .deer-eye { animation: none; }
+    .spark { position: absolute; }
+    h1 { position: absolute; top: 850px; width: 100%; font-size: 180px; font-weight: 900; line-height: 1; color: var(--orange); text-shadow: 0 10px 50px rgba(232, 135, 59, 0.35); letter-spacing: -3px; }
+    .open { position: absolute; top: 1050px; width: 100%; font-size: 90px; font-weight: 900; color: var(--cream); }
+    .sub { position: absolute; top: 1178px; width: 100%; font-size: 46px; font-weight: 500; color: var(--cream-dim); }
+    .badge {
+        position: absolute; top: 1262px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+        font-size: 38px; font-weight: 900; color: #fff; padding: 14px 44px; border-radius: 999px;
+        background: linear-gradient(135deg, var(--orange), var(--orange-deep));
+    }
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="lights" id="lights"></div>
+    <div class="presents">הפרתיה גאה להציג</div>
+    <div class="sun"></div>
+    <div class="deer-wrap" id="deer"></div>
+    <span class="spark" style="top:330px;right:230px" id="s1"></span>
+    <span class="spark" style="top:640px;left:190px" id="s2"></span>
+    <span class="spark" style="top:300px;left:290px" id="s3"></span>
+    <h1>צוות הפרתיה</h1>
+    <div class="open">ההרשמה פתוחה</div>
+    <div class="sub">ערב אחד בערך כל חודשיים. וצבי אחד.</div>
+    <div class="badge">▶ טריילר, משחקים ושאלון</div>
+</div>
+    <script src="deer.js"></script>
+    <script>
+        document.getElementById('deer').innerHTML = Deer.svg({ body: true });
+        document.getElementById('s1').innerHTML = Deer.sparkle(70, '#FBEBCB');
+        document.getElementById('s2').innerHTML = Deer.sparkle(44, '#FBEBCB');
+        document.getElementById('s3').innerHTML = Deer.sparkle(34, '#E8873B');
+        const L = document.getElementById('lights');
+        let wire = '<svg viewBox="0 0 1122 120" preserveAspectRatio="none"><path d="M0 20 Q561 110 1122 20" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="3"/></svg>';
+        for (let i = 0; i < 13; i++) {
+            const x = 40 + i * 87;
+            const t = (x - 561) / 561;
+            const y = 20 + 90 * (1 - t * t) * 0.5 + 6;
+            wire += `<span style="left:${x - 13}px;top:${y}px"></span>`;
+        }
+        L.innerHTML = wire;
+    </script>
+</body>
+</html>

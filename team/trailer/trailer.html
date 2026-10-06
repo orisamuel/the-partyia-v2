@@ -1,0 +1,1198 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>טריילר צוות הפרתיה</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@700;900&display=block">
+<link rel="stylesheet" href="../brand.css">
+<style>
+/*
+ * trailer.html: טריילר "צוות הפרתיה", במה של 1080x1920.
+ * כל תנועה יושבת על timeline אחד של GSAP שנבנה מתוך cues.json.
+ * דטרמיניסטי: בלי אנימציות CSS ובלי transitions (גם המצמוץ של brand.css כבוי כאן), בלי Math.random ובלי Date.
+ *   ?render   מצב צילום (render.mjs קורא ל-window.__seek(t) לכל פריים)
+ *   ?preview  מצב צפייה: הקשה מנגנת את הטיימליין בזמן אמת עם audio/mix.wav  (&t=12 מתחיל משנייה 12)
+ */
+*, *::before, *::after { animation: none !important; transition: none !important; }
+html, body { margin: 0; height: 100%; background: #04070d; overflow: hidden; }
+body { -webkit-font-smoothing: antialiased; }
+#stage { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; transform-origin: 0 0;
+  background: var(--night-1); font-family: 'Heebo', sans-serif; direction: rtl; color: var(--cream); }
+#world, .scene, .cam, .mid, .fg, .ovl { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+.scene { visibility: hidden; }
+.bg { position: absolute; left: -110px; top: -110px; width: 1300px; height: 2140px; }
+.abs { position: absolute; }
+.title { position: absolute; left: 0; top: 0; white-space: nowrap; text-align: center; }
+.ink { font-weight: 900; line-height: 1.05; padding: .22em .32em; letter-spacing: 0;
+  -webkit-mask-image: var(--speckle); mask-image: var(--speckle);
+  -webkit-mask-size: 560px 560px; mask-size: 560px 560px; }
+.ovl { pointer-events: none; }
+#grain { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; mix-blend-mode: overlay; opacity: .15; pointer-events: none; }
+#scratch { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; pointer-events: none; }
+svg { overflow: visible; }
+/* preview UI (לא חלק מהסרטון) */
+#ui { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10; cursor: pointer;
+  background: rgba(4, 7, 13, .35); font-family: 'Heebo', sans-serif; }
+#ui .play { width: 96px; height: 96px; border-radius: 50%; background: linear-gradient(135deg, #E8873B, #D35400);
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 40px rgba(211, 84, 0, .5); }
+#ui .play::after { content: ''; margin-right: -8px; border-style: solid; border-width: 20px 0 20px 32px; border-color: transparent transparent transparent #fff; }
+#bar { position: fixed; left: 0; right: 0; bottom: 0; height: 6px; background: rgba(255,255,255,.12); z-index: 11; display: none; cursor: pointer; }
+#bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: #E8873B; }
+#tc { position: fixed; left: 10px; bottom: 12px; z-index: 11; font: 700 12px/1 'Heebo', monospace; color: rgba(242,232,213,.6); display: none; direction: ltr; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="../deer.js"></script>
+</head>
+<body>
+<div id="stage">
+  <div id="world"></div>
+  <div class="ovl" id="whiteout" style="background:radial-gradient(circle at 50% 50%, #FFF4DE 0%, #FFE2B4 55%, #FFD08E 100%);opacity:0"></div>
+  <div class="ovl" id="amber" style="background:radial-gradient(circle at 50% 38%, #FFD9A0 0%, #F2A04E 45%, #D35400 100%);mix-blend-mode:screen;opacity:0"></div>
+  <div class="ovl" id="flash" style="background:#FFF6E8;opacity:0"></div>
+  <div class="ovl" id="fade" style="background:#060b15;opacity:0"></div>
+  <div class="ovl" id="vignette" style="background:radial-gradient(ellipse 78% 62% at 50% 46%, rgba(0,0,0,0) 55%, rgba(0,0,0,.5) 100%)"></div>
+  <canvas id="grain" width="360" height="640"></canvas>
+  <canvas id="scratch" width="540" height="960"></canvas>
+  <div class="ovl" id="flicker" style="background:#000;opacity:0"></div>
+</div>
+<div id="ui"><div class="play"></div></div>
+<div id="bar"><i></i></div>
+<div id="tc"></div>
+<script>
+(async () => {
+'use strict';
+const P = new URLSearchParams(location.search);
+const RENDER = P.has('render');
+const FPS = 30;
+const NS = 'http://www.w3.org/2000/svg';
+const BR = '#3a1a10', OR = '#E8873B', OD = '#D35400', OM = '#DE7A33', CR = '#F2E8D5', CL = '#FBEBCB', CD = '#cfc4ad';
+const N1 = '#0e1a2e', N2 = '#16263f', N3 = '#1d3050', WARM = '#FFD38A', SUN = '#EF8B2F', EYE = '#2a120a';
+const SPARK = 'M0 -10 C 1.2 -2.2, 2.2 -1.2, 10 0 C 2.2 1.2, 1.2 2.2, 0 10 C -1.2 2.2, -2.2 1.2, -10 0 C -2.2 -1.2, -1.2 -2.2, 0 -10 Z';
+const SH_DARK = '0 5px 0 rgba(6,11,22,.42), 0 18px 44px rgba(0,0,0,.55)';
+const SH_LIGHT = '0 4px 0 rgba(58,26,16,.10), 0 14px 34px rgba(58,26,16,.16)';
+const SH_GLOW = '0 0 50px rgba(232,135,59,.55), 0 6px 0 rgba(58,26,16,.55), 0 18px 44px rgba(0,0,0,.5)';
+
+/* ---------- דטרמיניזם ---------- */
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function hash(n) { n = n | 0; n = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b); n ^= n >>> 13; n = Math.imul(n, 0xc2b2ae35); n ^= n >>> 16; return (n >>> 0) / 4294967296; }
+const rnd = mulberry32(20261006);
+const R = (a, b) => a + (b - a) * rnd();
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+
+/* ---------- טעינה ---------- */
+const cues = await fetch('cues.json', { cache: 'no-store' }).then(r => r.json());
+const DUR = cues.duration;
+const Q = {}, TX = {};
+cues.titles.forEach(c => { Q[c.id] = c.t; TX[c.id] = c.text; });
+const CARD_END = (cues.titles.find(c => c.id === 'card') || {}).end || 3.0;
+const sfxNear = (name, t) => { let best = null; for (const s of cues.sfx) if (s.file.includes(name) && (best === null || Math.abs(s.t - t) < Math.abs(best - t))) best = s.t; return best === null ? t : best; };
+
+const HEB = 'אבגדהוזחטיכךלמםנןסעפףצץקרשת.,?';
+await Promise.all([document.fonts.load('900 100px Heebo', HEB), document.fonts.load('700 100px Heebo', HEB)]);
+await document.fonts.ready;
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => i.decode().then(() => res(i), () => res(i)); i.onerror = rej; i.src = src; });
+
+function makeSpeckle() {
+  const c = document.createElement('canvas'); c.width = c.height = 560;
+  const x = c.getContext('2d'); const r = mulberry32(7);
+  x.fillStyle = '#000'; x.fillRect(0, 0, 560, 560);
+  x.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 1700; i++) {
+    const big = r() < .08; x.globalAlpha = .3 + r() * .7;
+    x.beginPath(); x.arc(r() * 560, r() * 560, big ? 1.6 + r() * 2.6 : .5 + r() * 1.2, 0, 7); x.fill();
+  }
+  x.lineCap = 'round';
+  for (let i = 0; i < 18; i++) {
+    x.globalAlpha = .35 + r() * .4; x.lineWidth = .6 + r() * 1.3;
+    const px = r() * 560, py = r() * 560, a = r() * 6.28, l = 10 + r() * 50;
+    x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke();
+  }
+  return c.toDataURL('image/png');
+}
+const speckleURL = makeSpeckle();
+const [emblemImg, wordImg] = await Promise.all([loadImg('assets/emblem.webp'), loadImg('assets/wordmark.webp'), loadImg(speckleURL)]);
+document.documentElement.style.setProperty('--speckle', `url(${speckleURL})`);
+
+/* ---------- עזרים ---------- */
+const stage = document.getElementById('stage');
+const world = document.getElementById('world');
+const flashEl = document.getElementById('flash');
+const whiteEl = document.getElementById('whiteout');
+const amberEl = document.getElementById('amber');
+const fadeEl = document.getElementById('fade');
+const vigEl = document.getElementById('vignette');
+const flickerEl = document.getElementById('flicker');
+const grainEl = document.getElementById('grain');
+const scratchEl = document.getElementById('scratch');
+
+const tl = gsap.timeline({ paused: true });
+const ft = (t, a, b, at) => tl.fromTo(t, a, Object.assign({ immediateRender: false }, b), at);
+const to = (t, v, at) => tl.to(t, v, at);
+const set = (t, v, at) => tl.set(t, v, at);
+
+function el(tag, cls, css, parent) { const e = document.createElement(tag); if (cls) e.className = cls; if (css) e.style.cssText = css; if (parent) parent.appendChild(e); return e; }
+function html(parent, s) { const t = document.createElement('template'); t.innerHTML = s.trim(); const nodes = [...t.content.children]; nodes.forEach(n => parent.appendChild(n)); return nodes.length === 1 ? nodes[0] : nodes; }
+function svgBox(parent, css) {
+  const s = document.createElementNS(NS, 'svg'); s.setAttribute('viewBox', '0 0 1080 1920');
+  s.style.cssText = 'position:absolute;left:0;top:0;width:1080px;height:1920px;' + (css || ''); parent.appendChild(s); return s;
+}
+const measureCtx = document.createElement('canvas').getContext('2d');
+function textW(txt, size, weight = 900) { measureCtx.font = `${weight} ${size}px Heebo`; return measureCtx.measureText(txt).width; }
+
+const scenes = [];
+function makeScene(id, bgCss, a, b) {
+  const e = el('div', 'scene', '', world); e.id = 's-' + id;
+  const bg = el('div', 'bg', `background:${bgCss}`, e);
+  const cam = el('div', 'cam', '', e);
+  const mid = el('div', 'mid', '', e);
+  const fg = el('div', 'fg', '', e);
+  gsap.set(e, { autoAlpha: a <= 0 ? 1 : 0 });
+  if (a > 0) set(e, { autoAlpha: 1 }, a);
+  set(e, { autoAlpha: 0 }, b);
+  const s = { id, el: e, bg, cam, mid, fg, a, b };
+  scenes.push(s);
+  return s;
+}
+
+/* כותרות: טקסט מדויק מ-cues.json. split מחלק לשורות רק אם החיבור שווה בדיוק לטקסט */
+const titles = {};
+function makeTitle(parent, id, o) {
+  const text = TX[id];
+  if (text === undefined) throw new Error('missing cue ' + id);
+  let lines = [text];
+  if (o.split) { const parts = o.split.split('|'); if (parts.join(' ') === text) lines = parts; else console.warn('split mismatch', id); }
+  const wrap = el('div', 'title', '', parent);
+  const ink = el('div', 'ink', `font-size:${o.size}px;color:${o.color || CR};line-height:${o.lh || 1.04};font-weight:${o.weight || 900};text-shadow:${o.shadow || SH_DARK};-webkit-mask-position:${(rnd() * 560) | 0}px ${(rnd() * 560) | 0}px`, wrap);
+  lines.forEach(l => { el('div', '', '', ink).textContent = l; });
+  const t = { id, wrap, ink, o, x: o.x === undefined ? 540 : o.x, y: o.y, lines };
+  const maxW = o.maxW || 900;
+  const pad = parseFloat(getComputedStyle(ink).paddingLeft) * 2;
+  const w = ink.offsetWidth - pad;
+  if (w > maxW) ink.style.fontSize = (o.size * maxW / w).toFixed(1) + 'px';
+  gsap.set(wrap, { x: t.x, y: t.y, xPercent: -50, yPercent: -50, autoAlpha: 0 });
+  titles[id] = t;
+  return t;
+}
+function tIn(t, at, style = 'fade', d) {
+  const w = t.wrap;
+  set(w, { autoAlpha: 1 }, at);
+  if (style === 'fade') ft(w, { opacity: .42, y: t.y + 28 }, { opacity: 1, y: t.y, duration: d || .5, ease: 'power3.out' }, at);
+  else if (style === 'slam') {
+    // הפריים הראשון של הסלאם לא יוצא מהמסגרת: הגודל ההתחלתי מוגבל לפי רוחב הכותרת
+    const pad = parseFloat(getComputedStyle(t.ink).paddingLeft) * 2;
+    const s0 = Math.max(1.12, Math.min(1.42, 1040 / Math.max(1, t.ink.offsetWidth - pad)));
+    ft(w, { scale: s0 }, { scale: 1, duration: d || .26, ease: 'expo.out' }, at);
+  }
+  else if (style === 'pop') ft(w, { scale: .5 }, { scale: 1, duration: d || .45, ease: 'back.out(2.3)' }, at);
+  else if (style === 'right') ft(w, { opacity: .25, x: t.x + 150 }, { opacity: 1, x: t.x, duration: d || .55, ease: 'power3.out' }, at);
+  else if (style === 'spacing') {
+    const dd = d || 1.4;
+    ft(t.ink, { letterSpacing: '64px', filter: 'blur(12px)' }, { letterSpacing: '0px', filter: 'blur(0px)', duration: dd, ease: 'power3.out' }, at);
+    ft(w, { opacity: .3 }, { opacity: 1, duration: .55, ease: 'power1.out' }, at);
+    set(t.ink, { filter: 'none' }, at + dd + .02);
+  }
+}
+function tOut(t, at, d = .16) { to(t.wrap, { autoAlpha: 0, duration: d, ease: 'power1.in' }, at); }
+
+/* מצלמה: רעידות (רכיב לכל אירוע, הסכום מחושב בכל פריים) */
+const shakes = [];
+function shake(at, amp, dur = .6) { const s = { a: 0, k: shakes.length * 977 + 13 }; shakes.push(s); ft(s, { a: amp }, { a: 0, duration: dur, ease: 'power2.out' }, at); }
+function flash(at, op = .75, d = .16) { ft(flashEl, { opacity: op }, { opacity: 0, duration: d, ease: 'power2.out' }, at); }
+function push(target, a, b, s0, s1, origin) { if (origin) gsap.set(target, { transformOrigin: origin }); ft(target, { scale: s0 }, { scale: s1, duration: b - a, ease: 'none' }, a); }
+
+function dust(parent, at, cx, cy, n = 26, spread = 420, w = 500, color = CL) {
+  for (let i = 0; i < n; i++) {
+    const s = R(5, 15);
+    const d = el('div', 'abs', `left:${cx - s / 2}px;top:${cy - s / 2}px;width:${s}px;height:${s}px;border-radius:50%;background:${color};`, parent);
+    gsap.set(d, { autoAlpha: 0 });
+    const ang = R(Math.PI * 1.04, Math.PI * 1.96), dist = R(spread * .3, spread), x0 = R(-w / 2, w / 2);
+    ft(d, { autoAlpha: R(.55, .95), x: x0, y: R(-10, 20), scale: R(.6, 1.3) },
+      { x: x0 + Math.cos(ang) * dist, y: Math.sin(ang) * dist * .5 + R(40, 120), autoAlpha: 0, scale: R(.2, .5), duration: R(.8, 1.4), ease: 'power3.out' }, at);
+  }
+}
+function sparkleEl(parent, size, color) {
+  const e = el('div', 'abs', `left:${-size / 2}px;top:${-size / 2}px;width:${size}px;height:${size}px`, parent);
+  e.innerHTML = `<svg viewBox="-10 -10 20 20" width="${size}" height="${size}"><path d="${SPARK}" fill="${color}"/></svg>`;
+  return e;
+}
+function burst(parent, at, cx, cy, n = 14, spread = 380, colors = [CL, WARM, OR]) {
+  for (let i = 0; i < n; i++) {
+    const sz = R(40, 92), e = sparkleEl(parent, sz, colors[i % colors.length]);
+    gsap.set(e, { x: cx, y: cy, autoAlpha: 0 });
+    const ang = (i / n) * Math.PI * 2 + R(-.25, .25), dist = R(spread * .45, spread), dur = R(.75, 1.15);
+    set(e, { autoAlpha: 1 }, at);
+    ft(e, { x: cx, y: cy, scale: .15, rotation: 0 }, { x: cx + Math.cos(ang) * dist, y: cy + Math.sin(ang) * dist, scale: R(.8, 1.3), rotation: R(-100, 100), duration: dur, ease: 'power3.out' }, at);
+    to(e, { autoAlpha: 0, duration: .3, ease: 'power1.in' }, at + dur - .3);
+  }
+}
+
+/* נצנוץ כוכבים: מחושב לכל פריים מזמן ה-timeline */
+const twinkles = [];
+const procs = [];
+function stars(parent, n, area, seed, win, opts = {}) {
+  const r = mulberry32(seed);
+  const svg = svgBox(parent);
+  let s = '';
+  const meta = [];
+  for (let i = 0; i < n; i++) {
+    const x = area.x0 + r() * (area.x1 - area.x0), y = area.y0 + Math.pow(r(), opts.pow || 1.25) * (area.y1 - area.y0);
+    if (r() < (opts.big || .28)) { const sz = 6 + r() * 13; s += `<path transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${(sz / 10).toFixed(2)})" d="${SPARK}" fill="${r() < .22 ? WARM : CL}"/>`; }
+    else s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(1.3 + r() * 2.4).toFixed(1)}" fill="${CL}"/>`;
+    meta.push({ base: .35 + r() * .4, amp: .2 + r() * .35, sp: 1.1 + r() * 3, ph: r() * 6.28 });
+  }
+  svg.innerHTML = s;
+  [...svg.children].forEach((node, i) => twinkles.push(Object.assign({ el: node, sc: win[0], se: win[1], mul: opts.mul || 1 }, meta[i])));
+  return svg;
+}
+
+/* שרשרת נורות (המוטיב של האתר) */
+let gid = 0;
+function strand(parent, o) {
+  const { x0, y0, x1, y1, sag, n } = o; const br = o.r || 15;
+  const my = (y0 + y1) / 2 + sag, cx = (x0 + x1) / 2, cy = 2 * my - (y0 + y1) / 2;
+  const id = 'bgl' + (gid++);
+  const svg = svgBox(parent);
+  let s = `<defs><radialGradient id="${id}"><stop offset="0" stop-color="#FFE1A8" stop-opacity=".9"/><stop offset=".3" stop-color="#FFB45A" stop-opacity=".38"/><stop offset="1" stop-color="#E8873B" stop-opacity="0"/></radialGradient></defs>`;
+  s += `<path d="M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}" fill="none" stroke="${o.wire || '#2a3a56'}" stroke-width="4"/>`;
+  for (let i = 0; i < n; i++) {
+    const u = (i + .5) / n;
+    const px = (1 - u) * (1 - u) * x0 + 2 * u * (1 - u) * cx + u * u * x1, py = (1 - u) * (1 - u) * y0 + 2 * u * (1 - u) * cy + u * u * y1;
+    s += `<g class="bulb" transform="translate(${px.toFixed(1)} ${py.toFixed(1)}) rotate(${R(-9, 9).toFixed(1)})">
+      <circle class="glow" cx="0" cy="${br * 2.2}" r="${br * 4.4}" fill="url(#${id})" opacity="0"/>
+      <rect x="-6" y="-2" width="12" height="${br * .95}" rx="2" fill="#1a2436"/>
+      <ellipse cx="0" cy="${br * 2.1}" rx="${br * .78}" ry="${br}" fill="#3b4760"/>
+      <g class="lit" opacity="0"><ellipse cx="0" cy="${br * 2.1}" rx="${br * .78}" ry="${br}" fill="#FFDCA6"/><ellipse cx="${-br * .25}" cy="${br * 1.75}" rx="${br * .2}" ry="${br * .38}" fill="#fff" opacity=".85"/></g></g>`;
+  }
+  svg.innerHTML = s;
+  const bulbs = [...svg.querySelectorAll('.bulb')].map(b => ({ g: b, glow: b.querySelector('.glow'), lit: b.querySelector('.lit') }));
+  return { svg, bulbs };
+}
+function bulbOn(b, at, d = .05) { ft([b.glow, b.lit], { opacity: 0 }, { opacity: 1, duration: d }, at); }
+
+/* ---------- הצבי ---------- */
+const S5 = `stroke="${BR}" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"`;
+const PROP = {
+  phone: `<g ${S5}><rect x="-21" y="-64" width="42" height="88" rx="10" fill="${N3}"/><rect x="-14" y="-55" width="28" height="62" rx="4" fill="#BFE3FF" stroke="none"/><rect x="-6" y="-60" width="12" height="3" rx="1.5" fill="${N1}" stroke="none"/></g>`,
+  chair: `<g ${S5}><path d="M6 -4 V136 M66 -4 V136" fill="none" stroke-width="7"/><rect x="-2" y="-8" width="76" height="40" rx="9" fill="${OR}"/><path d="M-6 64 H78 L72 82 H0 Z" fill="${OM}"/><path d="M2 82 L-8 136 M70 82 L80 136" fill="none" stroke-width="7"/><path d="M-2 114 H74" fill="none" stroke-width="4"/></g>`,
+  beer: `<g ${S5}><path d="M26 -52 C 50 -52, 50 -14, 26 -14" fill="none" stroke-width="11"/><path d="M26 -52 C 46 -52, 46 -14, 26 -14" fill="none" stroke="#F4A24A" stroke-width="3"/><rect x="-28" y="-66" width="56" height="70" rx="9" fill="#F4A24A"/><rect x="-18" y="-52" width="8" height="46" rx="4" fill="#FFD9A0" stroke="none"/><circle cx="8" cy="-28" r="3.2" fill="#FFE2B0" stroke="none"/><circle cx="-1" cy="-14" r="2.4" fill="#FFE2B0" stroke="none"/><circle cx="12" cy="-48" r="2.2" fill="#FFE2B0" stroke="none"/><path d="M-34 -62 C -38 -82, -16 -90, -8 -78 C 0 -94, 22 -90, 22 -76 C 36 -86, 46 -64, 32 -60 Z" fill="${CL}"/></g>`,
+  mug: `<g ${S5}><path d="M-22 -44 C -40 -44, -40 -18, -22 -18" fill="none" stroke-width="10"/><rect x="-24" y="-58" width="48" height="56" rx="10" fill="${CR}"/><rect x="-22" y="-38" width="44" height="12" fill="${OR}" stroke="none"/><rect x="-24" y="-58" width="48" height="56" rx="10" fill="none"/></g>`,
+  calc: `<g ${S5}><rect x="-32" y="-100" width="64" height="96" rx="10" fill="${CR}"/><rect x="-22" y="-89" width="44" height="22" rx="4" fill="#A7CBA0"/>${[0, 1, 2].map(r => [0, 1, 2].map(c => `<rect x="${-22 + c * 16}" y="${-58 + r * 16}" width="12" height="11" rx="3" fill="${(r + c) % 3 === 2 ? OR : BR}" stroke="none"/>`).join('')).join('')}</g>`,
+  mega: `<g ${S5}><path d="M2 -6 L-4 -34" fill="none" stroke-width="10"/><path d="M-16 -50 L48 -88 L48 -10 L-16 -34 Z" fill="${OR}"/><rect x="-34" y="-52" width="20" height="20" rx="5" fill="${OD}"/><ellipse cx="48" cy="-49" rx="11" ry="39" fill="${OD}"/><path d="M60 -70 Q72 -50 60 -28 M72 -80 Q90 -50 72 -18" fill="none" stroke="${CL}" stroke-width="4" opacity=".9"/></g>`,
+  house: `<g ${S5}><path d="M-38 -54 L38 -54 L38 -2 L-38 -2 Z" fill="${CR}"/><path d="M-50 -50 L0 -100 L50 -50 Z" fill="${OD}"/><path d="M0 -12 C -24 -26, -20 -48, -6 -46 C -2 -46, 0 -42, 0 -40 C 0 -42, 2 -46, 6 -46 C 20 -48, 24 -26, 0 -12 Z" fill="${OD}" stroke-width="3.5"/></g>`,
+  box: `<g ${S5}><path d="M-44 -72 L36 -72 L36 -2 L-44 -2 Z" fill="#C98A4B"/><path d="M-44 -72 L-30 -92 L50 -92 L36 -72 Z" fill="#DDA466"/><path d="M36 -72 L50 -92 L50 -22 L36 -2 Z" fill="#A86D36"/><path d="M-12 -72 L2 -92 L16 -92 L2 -72 Z M-12 -72 H2 V-40 H-12 Z" fill="#F0D79A" stroke="none" opacity=".9"/></g>`,
+  brush: `<g ${S5}><rect x="-7" y="-46" width="14" height="58" rx="6" fill="#8a4a22"/><rect x="-10" y="-64" width="20" height="20" rx="3" fill="#C9CFD8"/><path d="M-11 -64 C -13 -84, -4 -102, 0 -110 C 4 -102, 13 -84, 11 -64 Z" fill="${OD}"/><path d="M14 -96 C 40 -120, 70 -110, 82 -84" fill="none" stroke="${OR}" stroke-width="9" opacity=".95"/></g>`,
+  // גליל סלוטייפ חום: רצועה תלויה עם קצה משונן, ליבת קרטון (לא נראה כמו זכוכית מגדלת)
+  tape: `<g ${S5}><path d="M-35 -46 L-13 -46 L-13 10 L-18.5 4 L-24 10 L-29.5 4 L-35 10 Z" fill="#EDCB7E"/><circle cx="0" cy="-46" r="35" fill="#E2B060"/><circle cx="0" cy="-46" r="27" fill="none" stroke="#C48F3E" stroke-width="2.5"/><circle cx="0" cy="-46" r="17" fill="#B9813F" stroke-width="3.5"/><circle cx="0" cy="-46" r="9" fill="${EYE}" stroke="none"/><path d="M-20 -70 Q-8 -78 6 -76" fill="none" stroke="#FFF1C9" stroke-width="4" opacity=".8"/></g>`,
+  broom: `<g ${S5}><path d="M-12 -118 L5 42" stroke-width="15"/><path d="M-12 -118 L5 42" stroke="#9a5a2c" stroke-width="7"/><rect x="-6" y="32" width="21" height="13" rx="3" fill="#C9CFD8"/><path d="M-13 44 L23 44 L37 74 L-27 74 Z" fill="#E8C26A"/><path d="M-6 52 L-13 72 M4 52 L2 72 M14 52 L17 72 M22 52 L30 72" stroke-width="3" opacity=".7"/></g>`,
+  glass: `<g ${S5}><path d="M-22 -74 L22 -74 L17 0 L-17 0 Z" fill="rgba(210,230,255,.32)" stroke="${CR}" stroke-width="4"/><path d="M-12 -62 L-9 -12" stroke="#fff" stroke-width="5" opacity=".75"/><path d="M-18 -20 L18 -20" stroke="${CR}" stroke-width="2.5" opacity=".6"/></g>`,
+  towel: `<g ${S5}><path d="M-28 -6 C -24 -42, 12 -48, 28 -30 C 34 -8, 22 16, 0 22 C -18 24, -30 12, -28 -6 Z" fill="${CL}"/><path d="M-20 -18 C -6 -30, 10 -30, 22 -20" stroke="${OR}" stroke-width="5" fill="none"/></g>`,
+};
+
+function makeDeer(parent, o) {
+  const body = o.body !== false;
+  const holder = document.createElement('div');
+  holder.innerHTML = Deer.svg({ body, mood: o.mood || 'happy' });
+  const src = holder.firstElementChild;
+  const vh = body ? 250 : 192;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 200 ${vh}`);
+  svg.style.cssText = `position:absolute;left:${o.x}px;top:${o.y}px;width:${o.w}px;height:${(o.w * vh / 200).toFixed(1)}px;overflow:visible;`;
+  parent.appendChild(svg);
+  const g = cls => { const e = document.createElementNS(NS, 'g'); if (cls) e.setAttribute('class', cls); return e; };
+  const behind = g('d-behind'); svg.appendChild(behind);
+  const bodyG = src.querySelector('.deer-body'), hooves = src.querySelector('.deer-hooves');
+  if (bodyG) svg.appendChild(bodyG);
+  if (hooves) svg.appendChild(hooves);
+  const mid = g('d-mid'); svg.appendChild(mid);
+  const head = g('d-head'); svg.appendChild(head);
+  ['.deer-antlers', '.deer-ear-l', '.deer-ear-r', '.deer-head'].forEach(s => { const n = src.querySelector(s); if (n) { n.removeAttribute('style'); head.appendChild(n); } });
+  const front = g('d-front'); svg.appendChild(front);
+  const eyes = [...svg.querySelectorAll('.deer-eye')].map(e => { const cx = +e.querySelector('ellipse').getAttribute('cx'); gsap.set(e, { svgOrigin: `${cx} 118` }); return e; });
+  const d = { svg, head, eyes, eyesG: svg.querySelector('.deer-eyes'), earL: svg.querySelector('.deer-ear-l'), earR: svg.querySelector('.deer-ear-r'),
+    hooves, hoofL: hooves ? hooves.children[0] : null, hoofR: hooves ? hooves.children[1] : null, mid, front, behind, arms: {}, props: {}, k: o.w / 200 };
+  gsap.set(head, { svgOrigin: '100 182' });
+  if (d.earL) gsap.set(d.earL, { svgOrigin: '68 104' });
+  if (d.earR) gsap.set(d.earR, { svgOrigin: '132 104' });
+  (o.hide || []).forEach(s => { const h = s === 'L' ? d.hoofL : d.hoofR; if (h) h.style.display = 'none'; });
+  return d;
+}
+/* זרוע: נבנית לאורך ציר x מהכתף, ומסתובבת סביב הכתף. אביזרים נאחזים בפרסה וזקופים בתנוחת הבסיס */
+function addArm(d, a) {
+  const [sx, sy] = a.side === 'L' ? [80, 208] : [120, 208];
+  const layer = a.layer === 'mid' ? d.mid : (a.layer === 'behind' ? d.behind : (a.into || d.front));
+  const outer = document.createElementNS(NS, 'g');
+  outer.setAttribute('transform', `translate(${a.sx === undefined ? sx : a.sx} ${a.sy === undefined ? sy : a.sy})`);
+  const arm = document.createElementNS(NS, 'g'); arm.setAttribute('class', 'arm');
+  const L = a.len || 60, bend = a.bend === undefined ? -10 : a.bend;
+  const p = `M0 0 Q ${L / 2} ${bend} ${L} 0`;
+  let props = '';
+  for (const [name, pp] of Object.entries(a.props || {})) props += `<g class="prop" data-prop="${name}"><g transform="translate(${pp.dx || 0} ${pp.dy || 0}) rotate(${pp.rot || 0}) scale(${pp.s || 1})"><g class="pin">${PROP[name]}</g></g></g>`;
+  arm.innerHTML = `<path d="${p}" fill="none" stroke="${BR}" stroke-width="26" stroke-linecap="round"/>
+    <path d="${p}" fill="none" stroke="${OM}" stroke-width="16" stroke-linecap="round"/>
+    <g transform="translate(${L + (a.grip === undefined ? 6 : a.grip)} 0)"><g class="cr" transform="rotate(${-a.angle})">${props}</g></g>
+    <g transform="translate(${L} 0)"><rect x="-8" y="-13.5" width="25" height="27" rx="10" fill="${BR}"/><path d="M16 0 H7" stroke="${CL}" stroke-width="2.6" stroke-linecap="round" opacity=".5"/></g>`;
+  outer.appendChild(arm); layer.appendChild(outer);
+  gsap.set(arm, { rotation: a.angle, svgOrigin: '0 0' });
+  const cr = arm.querySelector('.cr'); gsap.set(cr, { rotation: -a.angle, svgOrigin: '0 0' });
+  const res = { arm, outer, cr, props: {} };
+  arm.querySelectorAll('.prop').forEach(pe => { res.props[pe.dataset.prop] = pe; d.props[pe.dataset.prop] = pe; });
+  d.arms[a.id || a.side] = res;
+  return res;
+}
+function blink(d, at, eyes) {
+  (eyes || d.eyes).forEach(e => ft(e, { scaleY: 1 }, { scaleY: .08, duration: .065, repeat: 1, yoyo: true, ease: 'power1.inOut' }, at));
+}
+function eyesShut(d, at, hold, eyes) {
+  (eyes || d.eyes).forEach(e => { ft(e, { scaleY: 1 }, { scaleY: .1, duration: .14, ease: 'power2.inOut' }, at); ft(e, { scaleY: .1 }, { scaleY: 1, duration: .16, ease: 'power2.inOut' }, at + hold); });
+}
+function earWiggle(d, at, n = 3, amp = 14) {
+  if (d.earL) ft(d.earL, { rotation: 0 }, { rotation: -amp, duration: .1, repeat: n * 2 - 1, yoyo: true, ease: 'sine.inOut' }, at);
+  if (d.earR) ft(d.earR, { rotation: 0 }, { rotation: amp, duration: .1, repeat: n * 2 - 1, yoyo: true, ease: 'sine.inOut' }, at + .03);
+}
+function look(d, at, x, y, dur = .2) { to(d.eyesG, { x, y, duration: dur, ease: 'power2.inOut' }, at); }
+
+/* =====================================================================
+   סצנות
+   ===================================================================== */
+const T = id => Q[id];
+
+/* ---------- 0.0 כרטיס ירוק ---------- */
+let cardScene;
+{
+  const s = makeScene('card', 'radial-gradient(ellipse 90% 62% at 50% 46%, #1f8149 0%, #146a3d 50%, #0b4a2a 100%)', 0, CARD_END);
+  cardScene = s;
+  html(s.cam, `<div class="abs" style="left:62px;top:62px;width:956px;height:1796px;box-sizing:border-box;border:5px solid rgba(242,232,213,.88);border-radius:12px"></div>`);
+  html(s.cam, `<div class="abs" style="left:82px;top:82px;width:916px;height:1756px;box-sizing:border-box;border:2px solid rgba(242,232,213,.5);border-radius:8px"></div>`);
+  const parts = ['הטריילר הבא מותר', 'לכל הגילאים', 'ולכל קבוצות הוואטסאפ', 'ביישוב.'];
+  const ok = parts.join(' ') === TX.card;
+  const wrap = el('div', 'title', '', s.fg);
+  const ink = el('div', 'ink', `color:${CR};text-shadow:0 4px 0 rgba(0,0,0,.16), 0 10px 30px rgba(0,0,0,.22);-webkit-mask-position:120px 40px`, wrap);
+  const bigSize = Math.min(176, 176 * 820 / textW(parts[1], 176));
+  let rule1 = null;
+  if (ok) {
+    const L = (txt, fs, fw, extra = '') => { const d = el('div', '', `font-size:${fs}px;font-weight:${fw};line-height:1.14;${extra}`, ink); d.textContent = txt; return d; };
+    L(parts[0], 80, 700);
+    rule1 = el('div', '', 'height:5px;width:660px;margin:36px auto 30px;background:rgba(242,232,213,.85)', ink);
+    L(parts[1], bigSize, 900, 'line-height:1.02');
+    el('div', '', 'height:5px;width:660px;margin:30px auto 36px;background:rgba(242,232,213,.85)', ink);
+    L(parts[2], 74, 700);
+    L(parts[3], 74, 700);
+  } else { el('div', '', 'font-size:80px;font-weight:900;white-space:normal;width:800px', ink).textContent = TX.card; }
+  gsap.set(wrap, { x: 540, y: 920, xPercent: -50, yPercent: -50 });
+  // נצנץ קטן שמהבהב פעם אחת, בקצה הקו העליון (לא על המסגרת)
+  const ruleY = rule1 ? 920 - wrap.offsetHeight / 2 + rule1.offsetTop + 2.5 : 818;
+  const sp = sparkleEl(s.fg, 78, CL);
+  gsap.set(sp, { x: 540 - 330 - 46, y: ruleY, autoAlpha: 0 });
+  set(sp, { autoAlpha: 1 }, 1.3);
+  ft(sp, { scale: 0, rotation: -40 }, { scale: 1.15, rotation: 10, duration: .32, ease: 'back.out(3)' }, 1.3);
+  to(sp, { scale: 0, rotation: 70, duration: .34, ease: 'power2.in' }, 1.72);
+  push(s.cam, 0, CARD_END, 1, 1.025, '50% 48%');
+  push(wrap, 0, CARD_END, 1, 1.03);
+}
+
+/* ---------- 3.0 לילה: בעולם... שבו יש פאב אחד. ביישוב אחד. עם צבי אחד. ---------- */
+const WHOOSH = sfxNear('whoosh', 10.0);
+{
+  const A = CARD_END, B = WHOOSH + .26;
+  const s = makeScene('night', 'linear-gradient(180deg, #070f1c 0%, #0e1a2e 36%, #16263f 70%, #1d3050 100%)', A, B);
+  push(s.cam, A, B, 1, 1.1, '50% 64%');
+  stars(s.cam, 64, { x0: 30, x1: 1050, y0: 50, y1: 1190 }, 11, [A, B]);
+  const glow = el('div', 'abs', 'left:-300px;top:760px;width:1680px;height:1100px;background:radial-gradient(ellipse 50% 50% at 50% 50%, rgba(240,140,50,.6) 0%, rgba(211,84,0,.26) 32%, rgba(29,48,80,0) 70%)', s.cam);
+  const sun = el('div', 'abs', `left:210px;top:1262px;width:660px;height:660px;border-radius:50%;background:radial-gradient(circle at 50% 30%, #F8A858 0%, ${SUN} 55%, #D96A1A 100%);box-shadow:0 0 140px 40px rgba(239,139,47,.45)`, s.cam);
+  ft(sun, { y: 0 }, { y: -100, duration: B - A, ease: 'sine.inOut' }, A);
+  ft(glow, { opacity: .7 }, { opacity: 1, duration: B - A, ease: 'sine.inOut' }, A);
+  const farY = x => 1256 + 24 * Math.sin(x * .0062 + .4) + 12 * Math.sin(x * .013 + 1.8);
+  const midY = x => 1424 + 30 * Math.sin(x * .0048 + 2.2) + 12 * Math.sin(x * .011 + .3);
+  const nearY = x => 1618 + 38 * Math.sin(x * .004 + 4.0) + 15 * Math.sin(x * .009 + 2.5);
+  const hillD = f => { let d = `M-140 2140 L-140 ${f(-140).toFixed(1)}`; for (let x = -140; x <= 1220; x += 16) d += ` L${x} ${f(x).toFixed(1)}`; return d + ' L1220 2140 Z'; };
+  const ridgeD = f => { let d = `M-140 ${f(-140).toFixed(1)}`; for (let x = -124; x <= 1220; x += 16) d += ` L${x} ${f(x).toFixed(1)}`; return d; };
+  const houseStr = (x, base, w, h, fill) => {
+    const rh = h * .58, ww = Math.max(8, w * .17), wh = ww * 1.25, wy = base - h * .66;
+    let s2 = `<path d="M${x - w / 2} ${base + 40} L${x - w / 2} ${base - h} L${x} ${base - h - rh} L${x + w / 2} ${base - h} L${x + w / 2} ${base + 40} Z" fill="${fill}"/>`;
+    const wins = w > 44 ? [x - w * .24, x + w * .2] : [x];
+    wins.forEach(wx => { s2 += `<g class="win" opacity="0"><circle cx="${wx}" cy="${wy + wh / 2}" r="${ww * 2.6}" fill="url(#winglow)"/><rect x="${(wx - ww / 2).toFixed(1)}" y="${wy.toFixed(1)}" width="${ww.toFixed(1)}" height="${wh.toFixed(1)}" fill="#FFC86E"/></g>`; });
+    return s2;
+  };
+  const hs = svgBox(s.cam);
+  let h = `<defs>
+    <radialGradient id="winglow"><stop offset="0" stop-color="#FFC86E" stop-opacity=".55"/><stop offset="1" stop-color="#FFC86E" stop-opacity="0"/></radialGradient>
+    <radialGradient id="hutglow"><stop offset="0" stop-color="#FFB45A" stop-opacity=".55"/><stop offset=".45" stop-color="#E8873B" stop-opacity=".18"/><stop offset="1" stop-color="#E8873B" stop-opacity="0"/></radialGradient>
+    <linearGradient id="rim" x1="0" x2="1"><stop offset="0" stop-color="#F09A4E" stop-opacity="0"/><stop offset=".5" stop-color="#F09A4E" stop-opacity=".75"/><stop offset="1" stop-color="#F09A4E" stop-opacity="0"/></linearGradient>
+  </defs>`;
+  h += `<path d="${hillD(farY)}" fill="${N3}"/><path d="${ridgeD(farY)}" fill="none" stroke="url(#rim)" stroke-width="4"/>`;
+  [[60, 40], [150, 34], [250, 46], [345, 36], [790, 38], [880, 48], [985, 36]].forEach(([x, w]) => { h += houseStr(x, farY(x) + 6, w, w * .72, '#14223a'); });
+  h += `<path d="${hillD(midY)}" fill="${N2}"/>`;
+  [[110, 62], [255, 54], [420, 66], [905, 58], [1025, 52]].forEach(([x, w]) => { h += houseStr(x, midY(x) + 8, w, w * .7, '#0d1828'); });
+  // הפאב: בקתה קטנה עם שרשרת נורות על הגבעה
+  const hx = 680, hb = midY(680) + 6;
+  let hut = `<circle class="hutglow" cx="${hx + 20}" cy="${hb - 60}" r="230" fill="url(#hutglow)" opacity="0"/>`;
+  hut += `<path d="M${hx - 82} ${hb + 40} L${hx - 82} ${hb - 66} L${hx - 98} ${hb - 66} L${hx - 8} ${hb - 132} L${hx + 98} ${hb - 74} L${hx + 82} ${hb - 74} L${hx + 82} ${hb + 40} Z" fill="#09121f"/>`;
+  hut += `<rect x="${hx + 128}" y="${hb - 120}" width="7" height="160" fill="#09121f"/>`;
+  hut += `<rect class="hutwin" x="${hx - 60}" y="${hb - 50}" width="36" height="28" rx="2" fill="#FFC86E" opacity="0"/>`;
+  hut += `<rect class="hutwin" x="${hx + 14}" y="${hb - 56}" width="42" height="58" rx="3" fill="#FFB45A" opacity="0"/>`;
+  const sx0 = hx - 8, sy0 = hb - 132, sx1 = hx + 131, sy1 = hb - 118;
+  hut += `<path d="M${sx0} ${sy0} Q${(sx0 + sx1) / 2} ${sy0 + 34} ${sx1} ${sy1}" fill="none" stroke="#09121f" stroke-width="3"/>`;
+  for (let i = 0; i < 6; i++) { const u = (i + .5) / 6; const px = (1 - u) * (1 - u) * sx0 + 2 * u * (1 - u) * ((sx0 + sx1) / 2) + u * u * sx1; const py = (1 - u) * (1 - u) * sy0 + 2 * u * (1 - u) * (sy0 + 34) + u * u * sy1; hut += `<g class="hutbulb" opacity="0"><circle cx="${px}" cy="${py + 7}" r="16" fill="url(#winglow)"/><circle cx="${px}" cy="${py + 7}" r="5.5" fill="#FFDCA6"/></g>`; }
+  h += `<g class="hut">${hut}</g>`;
+  h += `<path d="${hillD(nearY)}" fill="#0a1424"/>`;
+  hs.innerHTML = h;
+  const hutG = hs.querySelector('.hut');
+  gsap.set(hutG, { svgOrigin: `${hx} ${hb}` });
+  gsap.set(hutG, { scale: 0 });
+  const tHit = T('T01b');
+  ft(hutG, { scale: 0 }, { scale: 1, duration: .42, ease: 'back.out(2)' }, tHit);
+  ft(hs.querySelector('.hutglow'), { opacity: 0 }, { opacity: 1, duration: .5 }, tHit + .12);
+  hs.querySelectorAll('.hutwin').forEach((w, i) => ft(w, { opacity: 0 }, { opacity: 1, duration: .06 }, tHit + .14 + i * .08));
+  hs.querySelectorAll('.hutbulb').forEach((b, i) => ft(b, { opacity: 0 }, { opacity: 1, duration: .05 }, tHit + .3 + i * .07));
+  const wins = [...hs.querySelectorAll('.win')];
+  const order = wins.map((w, i) => [hash(i * 31 + 5), w]).sort((a, b) => a[0] - b[0]);
+  order.forEach(([, w], i) => ft(w, { opacity: 0 }, { opacity: 1, duration: .07 }, T('T02a') + .05 + i * (1.0 / order.length)));
+
+  const t1a = makeTitle(s.fg, 'T01a', { y: 520, size: 160 });
+  const t1b = makeTitle(s.fg, 'T01b', { y: 720, size: 150, color: OR });
+  const t2a = makeTitle(s.fg, 'T02a', { y: 520, size: 160 });
+  const t2b = makeTitle(s.fg, 'T02b', { y: 720, size: 160, color: OR });
+  tIn(t1a, T('T01a'), 'spacing', 1.35);
+  tIn(t1b, tHit, 'slam');
+  shake(tHit, 24, .6); flash(tHit, .32, .18); dust(s.fg, tHit, 540, 760, 34, 520, 760);
+  tOut(t1a, T('T02a'), .14); tOut(t1b, T('T02a'), .14);
+  tIn(t2a, T('T02a'), 'fade', .45);
+  tIn(t2b, T('T02b'), 'pop');
+
+  // הצבי מציץ מלמטה: קודם הקרניים והאוזניים, אחר כך העיניים, מצמוץ כפול
+  const d = makeDeer(s.mid, { x: 240, y: 1180, w: 600 });
+  gsap.set(d.svg, { y: 800 });
+  const tp = T('T02b');
+  ft(d.svg, { y: 800 }, { y: 370, duration: .26, ease: 'back.out(1.8)' }, tp);
+  earWiggle(d, tp + .3, 2, 16);
+  ft(d.svg, { y: 370 }, { y: 0, duration: .4, ease: 'power3.out' }, tp + .38);
+  blink(d, tp + .86); blink(d, tp + 1.08);
+  // מעבר whoosh
+  ft(s.el, { y: 0, filter: 'blur(0px)' }, { y: -420, filter: 'blur(18px)', duration: .26, ease: 'power2.in' }, WHOOSH - .02);
+}
+
+/* ---------- 10.0 לוח שנה: פעם בחודשיים... יש ערב אחד. שלכם. ---------- */
+{
+  const A = WHOOSH - .03, B = T('T04a');
+  const s = makeScene('cal', 'radial-gradient(ellipse 72% 50% at 50% 58%, #22385c 0%, #16263f 50%, #0b1526 100%)', A, B);
+  ft(s.el, { y: 560, filter: 'blur(18px)' }, { y: 0, filter: 'blur(0px)', duration: .34, ease: 'power3.out' }, A);
+  set(s.el, { filter: 'none' }, A + .36);
+  const glow = el('div', 'abs', 'left:-160px;top:500px;width:1400px;height:1200px;background:radial-gradient(ellipse 50% 50% at 50% 50%, rgba(232,135,59,.42) 0%, rgba(232,135,59,.12) 40%, rgba(232,135,59,0) 70%);opacity:0', s.cam);
+  const PX = 190, PY = 760, HOT = { row: 2, col: 4 };
+  const hotX = PX + 38 + HOT.col * 90 + 39, hotY = PY + 192 + HOT.row * 92 + 40;
+  push(s.cam, A, T('T03c'), 1, 1.07, `${hotX}px ${hotY}px`);
+  function calPage(seed, withHot) {
+    const r = mulberry32(seed);
+    const p = el('div', 'abs', `left:${PX}px;top:${PY}px;width:700px;height:700px;border-radius:26px;background:${CR};box-shadow:0 30px 70px rgba(0,0,0,.5), inset 0 -8px 0 rgba(58,26,16,.07)`, s.cam);
+    html(p, `<div class="abs" style="left:0;top:0;width:700px;height:136px;border-radius:26px 26px 0 0;background:linear-gradient(180deg,#E57A2C,#D35400)"></div>`);
+    [150, 550].forEach(rx => {
+      html(p, `<div class="abs" style="left:${rx - 13}px;top:34px;width:26px;height:26px;border-radius:50%;background:${N1};opacity:.85"></div>`);
+      html(p, `<div class="abs" style="left:${rx - 15}px;top:-42px;width:30px;height:92px;border-radius:15px;border:8px solid ${BR};box-sizing:border-box"></div>`);
+    });
+    makeDeer(p, { body: false, x: 296, y: 16, w: 108 });
+    for (let c = 0; c < 7; c++) html(p, `<div class="abs" style="left:${38 + c * 90 + 24}px;top:160px;width:30px;height:9px;border-radius:5px;background:rgba(58,26,16,.38)"></div>`);
+    const off = Math.floor(r() * 6), days = 28 + Math.floor(r() * 4);
+    let hot = null;
+    for (let i = 0; i < 35; i++) {
+      const row = Math.floor(i / 7), col = i % 7, day = i - off;
+      const blank = day < 0 || day >= days;
+      const x = 38 + col * 90, y = 192 + row * 92;
+      if (blank) html(p, `<div class="abs" style="left:${x}px;top:${y}px;width:78px;height:80px;border-radius:14px;border:3px dashed rgba(58,26,16,.13);box-sizing:border-box"></div>`);
+      else html(p, `<div class="abs" style="left:${x}px;top:${y}px;width:78px;height:80px;border-radius:14px;background:#E6D6B6"><div class="abs" style="right:9px;top:10px;width:${18 + (day % 3) * 6}px;height:8px;border-radius:4px;background:rgba(58,26,16,.3)"></div></div>`);
+      if (withHot && row === HOT.row && col === HOT.col) {
+        hot = html(p, `<div class="abs" style="left:${x}px;top:${y}px;width:78px;height:80px;border-radius:14px;background:radial-gradient(circle at 50% 40%, #FFB45A, ${OR} 60%, ${OD});box-shadow:0 0 0 6px rgba(232,135,59,.35), 0 0 70px 26px rgba(255,170,80,.6);opacity:0"></div>`);
+        const sp = sparkleEl(hot, 54, CL); gsap.set(sp, { x: 39, y: 40 });
+      }
+    }
+    return { p, hot };
+  }
+  const fin = calPage(901, true);
+  const pages = [];
+  for (let i = 0; i < 12; i++) { const pg = calPage(100 + i * 17, false); gsap.set(pg.p, { rotation: R(-2.5, 2.5) }); pages.push(pg.p); }
+  pages.reverse(); // העליון נקרע ראשון
+  const gaps = [.1, .1, .11, .11, .12, .13, .14, .16, .18, .22, .27, 0];
+  let tt = A + .04;
+  pages.forEach((p, i) => {
+    const dir = i % 3 === 1 ? 1 : -1;
+    ft(p, { x: 0, y: 0, rotation: gsap.getProperty(p, 'rotation'), scale: 1 },
+      { x: dir * R(900, 1250), y: R(-760, -320), rotation: dir * R(40, 95), scale: 1.08, duration: .42, ease: 'power2.in' }, tt);
+    set(p, { autoAlpha: 0 }, tt + .43);
+    tt += gaps[i];
+  });
+  const tHot = T('T03b');
+  ft(fin.hot, { opacity: 0, scale: .6 }, { opacity: 1, scale: 1.22, duration: .3, ease: 'back.out(2.6)' }, tHot);
+  to(fin.hot, { scale: 1.1, duration: .5, ease: 'sine.inOut' }, tHot + .32);
+  ft(glow, { opacity: 0 }, { opacity: 1, duration: .6 }, tHot);
+  const t3a = makeTitle(s.fg, 'T03a', { y: 300, size: 140 });
+  const t3b = makeTitle(s.fg, 'T03b', { y: 480, size: 140, color: OR });
+  const t3c = makeTitle(s.fg, 'T03c', { y: 860, size: 220, color: OR, shadow: SH_GLOW });
+  tIn(t3a, T('T03a'), 'right');
+  tIn(t3b, tHot, 'fade', .4);
+  const tc = T('T03c');
+  tOut(t3a, tc, .1); tOut(t3b, tc, .1);
+  const dim = el('div', 'abs', 'left:-110px;top:-110px;width:1300px;height:2140px;background:radial-gradient(ellipse 60% 45% at 50% 50%, rgba(20,14,20,.82), rgba(6,11,21,.94));opacity:0', s.mid);
+  const big = el('div', 'abs', `left:${hotX - 39}px;top:${hotY - 40}px;width:78px;height:80px;border-radius:14px;background:radial-gradient(circle at 50% 40%, #FFB45A, ${OR} 60%, ${OD});box-shadow:0 0 0 5px rgba(232,135,59,.35), 0 0 50px 18px rgba(255,170,80,.55);opacity:0`, s.mid);
+  const bsp = sparkleEl(big, 54, CL); gsap.set(bsp, { x: 39, y: 40 });
+  ft(s.cam, { scale: 1.07 }, { scale: 1.9, duration: .5, ease: 'expo.out' }, tc);
+  ft(dim, { opacity: 0 }, { opacity: 1, duration: .18 }, tc);
+  ft(big, { opacity: 1, x: 0, y: 0, scale: 1.2 }, { opacity: 1, x: 540 - hotX, y: 1240 - hotY, scale: 3.2, duration: .5, ease: 'expo.out' }, tc);
+  ft(big, { rotation: 0 }, { rotation: 4, duration: B - tc - .5, ease: 'sine.inOut' }, tc + .5);
+  ft(bsp, { rotation: 0, scale: 1 }, { rotation: 90, scale: 1.25, duration: B - tc, ease: 'sine.inOut' }, tc);
+  tIn(t3c, tc, 'slam', .3);
+  shake(tc, 20, .5); flash(tc, .45, .14);
+  ft(t3c.wrap, { scale: 1 }, { scale: 1.06, duration: B - tc - .3, ease: 'none' }, tc + .3);
+}
+
+/* ---------- 14.8 ארבעה קאטים ---------- */
+{
+  const cuts = [
+    { id: 'T04a', bg: `radial-gradient(ellipse 70% 45% at 50% 78%, rgba(232,135,59,.35) 0%, rgba(232,135,59,0) 70%), linear-gradient(180deg, ${N2}, ${N1})`, color: CR, split: 'מגייסים|מתנדבים.', size: 200, y: 440 },
+    { id: 'T04b', bg: `radial-gradient(ellipse 80% 60% at 50% 60%, #FBF3E4 0%, ${CR} 55%, #E2CFAC 100%)`, color: BR, size: 230, y: 520, shadow: SH_LIGHT, rays: true },
+    { id: 'T04c', bg: `radial-gradient(ellipse 75% 50% at 50% 72%, #7a3a18 0%, #3a1a10 55%, #1c0c07 100%)`, color: OR, size: 230, y: 520 },
+    { id: 'T04d', bg: `radial-gradient(ellipse 45% 45% at 18% 10%, rgba(255,200,120,.32) 0%, rgba(255,200,120,0) 70%), linear-gradient(180deg, #101d33, #070d18)`, color: CR, size: 230, y: 520 },
+  ];
+  const ids = ['T04a', 'T04b', 'T04c', 'T04d', 'T05a'];
+  cuts.forEach((c, i) => {
+    const A = T(ids[i]), B = T(ids[i + 1]);
+    const s = makeScene('cut' + i, c.bg, A, B);
+    if (c.rays) {
+      const rays = el('div', 'abs', `left:-760px;top:-280px;width:2600px;height:2600px;background:repeating-conic-gradient(from 0deg at 50% 50%, rgba(232,135,59,.13) 0deg 9deg, rgba(232,135,59,0) 9deg 18deg)`, s.cam);
+      ft(rays, { rotation: 0 }, { rotation: 14, duration: B - A, ease: 'none' }, A);
+    }
+    const t = makeTitle(s.fg, c.id, { y: c.y, size: c.size, color: c.color, split: c.split, shadow: c.shadow, lh: 1.0 });
+    tIn(t, A, 'slam', .3);
+    ft(t.wrap, { scale: 1 }, { scale: 1.05, duration: B - A - .3, ease: 'none' }, A + .3);
+    flash(A, i === 0 ? .55 : .8, .13); shake(A, 14, .35);
+    const dy = 950;
+    let d;
+    if (i === 0) {
+      d = makeDeer(s.mid, { x: 140, y: dy, w: 800, hide: ['L'] });
+      addArm(d, { side: 'L', angle: -128, len: 64, layer: 'mid', props: { phone: { rot: -8 } } });
+      // בועות קטנות יוצאות מהטלפון
+      [0, 1, 2].forEach(k => {
+        const b = html(s.mid, `<div class="abs" style="left:0;top:0;width:${120 - k * 14}px;height:${78 - k * 8}px;border-radius:40px;background:${CR};box-shadow:0 10px 24px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;gap:10px">${'<i style="display:block;width:13px;height:13px;border-radius:50%;background:rgba(58,26,16,.55)"></i>'.repeat(3)}</div>`);
+        const bx = [44, 70, 30][k], by = [1250, 1090, 930][k];
+        gsap.set(b, { x: bx, y: by, autoAlpha: 0 });
+        set(b, { autoAlpha: 1 }, A + .35 + k * .38);
+        ft(b, { scale: 0 }, { scale: 1, duration: .3, ease: 'back.out(2.5)' }, A + .35 + k * .38);
+        ft(b, { y: by }, { y: by - 40, duration: 1.2, ease: 'sine.out' }, A + .35 + k * .38);
+      });
+      ft(d.head, { rotation: 0 }, { rotation: -6, duration: .35, ease: 'power2.out' }, A + .1);
+      look(d, A + .1, -3, 0);
+      blink(d, A + 1.05);
+    } else if (i === 1) {
+      d = makeDeer(s.mid, { x: 140, y: dy, w: 800, hide: ['R'] });
+      const arm = addArm(d, { side: 'R', angle: -58, len: 66, props: { chair: { s: .82, rot: 4 } } });
+      const ch = arm.props.chair.querySelector('.pin');
+      gsap.set(ch, { svgOrigin: '36 60' });
+      gsap.set(ch, { scaleX: .15 });
+      ft(ch, { scaleX: .15 }, { scaleX: 1, duration: .3, ease: 'back.out(2)' }, A + .08);
+      ft(arm.arm, { rotation: -40 }, { rotation: -58, duration: .35, ease: 'back.out(2)' }, A);
+      look(d, A + .2, 3, -2);
+      blink(d, A + .75);
+    } else if (i === 2) {
+      d = makeDeer(s.mid, { x: 140, y: dy, w: 800, hide: ['R'] });
+      const arm = addArm(d, { side: 'R', angle: -52, len: 70, props: { beer: { s: .95 } } });
+      ft(arm.arm, { rotation: -20 }, { rotation: -60, duration: .32, ease: 'back.out(2.2)' }, A);
+      to(arm.arm, { rotation: -52, duration: .25, ease: 'sine.inOut' }, A + .5);
+      to(arm.arm, { rotation: -60, duration: .2, ease: 'sine.inOut', repeat: 1, yoyo: true }, A + .8);
+      eyesShut(d, A + .5, .4, [d.eyes[1]]);
+      // בועות בבירה
+      for (let k = 0; k < 6; k++) {
+        const bb = el('div', 'abs', `left:0;top:0;width:${R(8, 16)}px;height:${R(8, 16)}px;border-radius:50%;background:${CL};opacity:0`, s.mid);
+        const bx = 140 + 4 * 195 + R(-30, 30), by = dy + 4 * 70;
+        ft(bb, { x: bx, y: by, opacity: .9 }, { x: bx + R(-30, 30), y: by - R(140, 260), opacity: 0, duration: R(.6, 1), ease: 'power1.out' }, A + .2 + k * .15);
+      }
+    } else {
+      d = makeDeer(s.mid, { x: 100, y: dy, w: 800, hide: ['R'] });
+      // מטאטא בפרסה אחת (הזרוע מטאטאת מצד לצד) + נורה תלויה למעלה
+      const lamp = html(s.cam, `<svg class="abs" viewBox="0 0 300 500" style="left:60px;top:-20px;width:300px;height:500px;overflow:visible"><defs><radialGradient id="lampg"><stop offset="0" stop-color="#FFE1A8" stop-opacity=".9"/><stop offset=".35" stop-color="#FFB45A" stop-opacity=".3"/><stop offset="1" stop-color="#FFB45A" stop-opacity="0"/></radialGradient></defs><g class="sw"><path d="M150 0 V230" stroke="#2a3a56" stroke-width="4"/><circle cx="150" cy="268" r="110" fill="url(#lampg)"/><rect x="141" y="226" width="18" height="18" rx="3" fill="#1a2436"/><ellipse cx="150" cy="264" rx="17" ry="22" fill="#FFDCA6"/></g></svg>`);
+      const sw = lamp.querySelector('.sw'); gsap.set(sw, { svgOrigin: '150 0' });
+      ft(sw, { rotation: -5 }, { rotation: 5, duration: .55, repeat: 1, yoyo: true, ease: 'sine.inOut' }, A);
+      // הכתף ב-(120,208), הפרסה ב-(184,170): המקל עובר מאחורי הפרסה, המברשת על הרצפה
+      const arm = addArm(d, { side: 'R', angle: -30.7, len: 74, grip: 0, props: { broom: {} } });
+      ft(arm.arm, { rotation: -30.7 }, { rotation: -21, duration: .22, repeat: 3, yoyo: true, ease: 'sine.inOut' }, A + .12);
+      look(d, A + .15, 4, 4);
+      for (let k = 0; k < 8; k++) {
+        const pf = el('div', 'abs', `left:0;top:0;width:${R(24, 46)}px;height:${R(24, 46)}px;border-radius:50%;background:rgba(242,232,213,.35);opacity:0`, s.mid);
+        const bx = 100 + 4 * 190 + R(-70, 50), by = dy + 4 * 232;
+        ft(pf, { x: bx, y: by, opacity: .7, scale: .4 }, { x: bx + R(-160, 80), y: by - R(40, 140), opacity: 0, scale: 1.4, duration: R(.6, 1), ease: 'power2.out' }, A + .15 + k * .09);
+      }
+    }
+    ft(d.svg, { y: 130 }, { y: 0, duration: .34, ease: 'back.out(1.6)' }, A);
+  });
+}
+
+/* ---------- 20.3 נורות: ובסוף? ערב שאתם הרמתם. ---------- */
+{
+  const A = T('T05a'), B = T('T06');
+  const s = makeScene('lights', 'linear-gradient(180deg, #08101d 0%, #0e1a2e 55%, #160f17 100%)', A, B);
+  push(s.cam, A, B, 1, 1.06, '50% 60%');
+  const warmSky = el('div', 'abs', 'left:-110px;top:-110px;width:1300px;height:2140px;opacity:0;background:linear-gradient(180deg, rgba(58,26,16,0) 0%, rgba(90,40,20,.35) 55%, rgba(120,50,20,.45) 100%)', s.cam);
+  const warm = el('div', 'abs', 'left:-260px;top:420px;width:1600px;height:1500px;opacity:0;background:radial-gradient(ellipse 52% 40% at 50% 56%, rgba(255,214,150,1) 0%, rgba(245,160,80,.85) 26%, rgba(211,84,0,.4) 52%, rgba(58,26,16,0) 78%)', s.cam);
+  const sa = strand(s.cam, { x0: -60, y0: 60, x1: 1140, y1: 100, sag: 250, n: 13, r: 16 });
+  const sb = strand(s.cam, { x0: -60, y0: 930, x1: 1140, y1: 900, sag: 110, n: 11, r: 13 });
+  [...sa.bulbs].reverse().forEach((b, i) => bulbOn(b, A + .02 + i * .075));
+  [...sb.bulbs].reverse().forEach((b, i) => bulbOn(b, A + .3 + i * .07));
+  ft(warm, { opacity: 0 }, { opacity: 1, duration: .8, ease: 'power2.out' }, T('T05b') - .1);
+  ft(warmSky, { opacity: 0 }, { opacity: 1, duration: 1, ease: 'power2.out' }, T('T05b') - .1);
+  // צלליות של אנשים סביב הבר, צוחקים
+  const ps = svgBox(s.cam);
+  const C = '#0a1120';
+  const people = [[105, 1290, 44, 'pony', 0], [265, 1262, 50, 'cap', 1], [430, 1300, 42, 'bun', 0], [640, 1270, 48, 'none', -1], [815, 1295, 45, 'curly', 0], [985, 1268, 49, 'none', 1]];
+  let pstr = '';
+  people.forEach(([x, b, r, hair, arm], i) => {
+    const w = r * 3.1;
+    let p = `<g class="person"><g class="pbody">`;
+    if (arm) { const sx = x + arm * w * .36; pstr += ''; p += `<g class="parm"><path d="M${sx} ${b + r * .6} L${sx + arm * r * .9} ${b - r * 1.9}" stroke="${C}" stroke-width="${r * .62}" stroke-linecap="round"/><rect x="${sx + arm * r * .9 - 15}" y="${b - r * 1.9 - 46}" width="30" height="42" rx="5" fill="#F4A24A" stroke="${C}" stroke-width="4"/><ellipse cx="${sx + arm * r * .9}" cy="${b - r * 1.9 - 46}" rx="17" ry="8" fill="${CL}"/></g>`; }
+    p += `<path d="M${x - w / 2} ${b + 420} L${x - w / 2} ${b + r * .9} Q${x - w / 2} ${b} ${x - w * .2} ${b - r * .1} L${x + w * .2} ${b - r * .1} Q${x + w / 2} ${b} ${x + w / 2} ${b + r * .9} L${x + w / 2} ${b + 420} Z" fill="${C}"/>`;
+    p += `<rect x="${x - r * .36}" y="${b - r * .9}" width="${r * .72}" height="${r}" fill="${C}"/></g>`;
+    p += `<g class="phead"><circle cx="${x}" cy="${b - r * 1.5}" r="${r}" fill="${C}"/>`;
+    if (hair === 'pony') p += `<circle cx="${x - r * .95}" cy="${b - r * 1.3}" r="${r * .45}" fill="${C}"/>`;
+    if (hair === 'bun') p += `<circle cx="${x}" cy="${b - r * 2.6}" r="${r * .42}" fill="${C}"/>`;
+    if (hair === 'cap') p += `<path d="M${x - r} ${b - r * 1.75} Q${x} ${b - r * 2.75} ${x + r} ${b - r * 1.75} L${x + r * 1.7} ${b - r * 1.6} L${x + r} ${b - r * 1.45} Z" fill="${C}"/>`;
+    if (hair === 'curly') for (let k = 0; k < 6; k++) p += `<circle cx="${x + Math.cos(k * 1.05 + 3.4) * r * .9}" cy="${b - r * 1.6 + Math.sin(k * 1.05 + 3.4) * r * .9}" r="${r * .38}" fill="${C}"/>`;
+    p += `</g></g>`;
+    pstr += p;
+  });
+  pstr += `<rect x="-120" y="1446" width="1320" height="700" fill="#170b06"/><rect x="-120" y="1428" width="1320" height="26" fill="#5b2d17"/><rect x="-120" y="1428" width="1320" height="5" fill="rgba(255,200,120,.5)"/>`;
+  [[200, 'g'], [360, 'b'], [560, 'g'], [740, 'b'], [900, 'g']].forEach(([x, k]) => { pstr += k === 'g' ? `<rect x="${x - 14}" y="1384" width="28" height="44" rx="4" fill="#F4A24A" stroke="${C}" stroke-width="3"/><ellipse cx="${x}" cy="1386" rx="15" ry="6" fill="${CL}"/>` : `<path d="M${x - 10} 1428 L${x - 10} 1376 Q${x} 1360 ${x + 10} 1376 L${x + 10} 1428 Z M${x - 4} 1376 V1346 H${x + 4} V1376" fill="#25150f" stroke="${C}" stroke-width="3"/>`; });
+  ps.innerHTML = pstr;
+  const tb = T('T05b');
+  [...ps.querySelectorAll('.person')].forEach((p, i) => {
+    const [x, b] = people[i];
+    const head = p.querySelector('.phead');
+    gsap.set(head, { svgOrigin: `${x} ${b - 20}` });
+    const st = tb + .05 + hash(i * 7) * .35, per = .17 + hash(i * 13) * .07;
+    ft(p, { y: 0 }, { y: -12, duration: per, repeat: Math.floor((B - st) / per) - 1, yoyo: true, ease: 'sine.inOut' }, st);
+    ft(head, { rotation: 0 }, { rotation: (i % 2 ? 1 : -1) * 9, duration: .3, ease: 'power2.out' }, st);
+    const arm = p.querySelector('.parm');
+    if (arm) { const sx = x + people[i][4] * people[i][2] * 3.1 * .36; gsap.set(arm, { svgOrigin: `${sx} ${b + 30}` }); ft(arm, { rotation: 0 }, { rotation: people[i][4] * -10, duration: .25, repeat: 3, yoyo: true, ease: 'sine.inOut' }, tb + .6 + i * .05); }
+  });
+  const d = makeDeer(s.mid, { x: -70, y: 1150, w: 540 });
+  gsap.set(d.svg, { rotation: 9, x: -300 });
+  ft(d.svg, { x: -300 }, { x: 0, duration: .55, ease: 'power3.out' }, tb + .3);
+  look(d, tb + .3, 4, 0);
+  blink(d, tb + 1.25);
+  earWiggle(d, tb + .9, 2, 10);
+  const t5a = makeTitle(s.fg, 'T05a', { y: 570, size: 175 });
+  const t5b = makeTitle(s.fg, 'T05b', { y: 770, size: 140, color: OR });
+  tIn(t5a, A, 'pop', .5);
+  tIn(t5b, tb, 'fade', .5);
+}
+
+/* ---------- 23.6 ישיבות? / פעם בחודש או חודשיים. ---------- */
+{
+  const A = T('T06'), B = T('T08a');
+  const s = makeScene('meet', 'radial-gradient(ellipse 60% 42% at 50% 34%, #1b2b46 0%, #0e1a2e 55%, #060b15 100%)', A, B);
+  el('div', 'abs', 'left:-110px;top:-110px;width:1300px;height:1500px;background:conic-gradient(from 168deg at 50% 0%, rgba(242,232,213,0) 0deg, rgba(242,232,213,.07) 10deg, rgba(242,232,213,.07) 14deg, rgba(242,232,213,0) 24deg)', s.cam);
+  push(s.cam, A, B, 1.04, 1.0, '50% 40%');
+  const t6 = makeTitle(s.fg, 'T06', { y: 640, size: 220 });
+  tIn(t6, A, 'slam', .42);
+  ft(t6.wrap, { scale: 1.42 }, { scale: 1, duration: .42, ease: 'expo.out' }, A);
+  shake(A, 36, 1.05); flash(A, .5, .2); dust(s.fg, A, 540, 690, 44, 680, 820);
+  // מכונת כתיבה: פעם בחודש או חודשיים.
+  const t7 = makeTitle(s.fg, 'T07', { y: 860, size: 76, weight: 700, color: CL });
+  const full = t7.ink.firstElementChild;
+  const fw = full.offsetWidth;
+  full.textContent = '';
+  full.style.cssText = `width:${fw}px;text-align:right;display:block`;
+  const chars = [...TX.T07].map(ch => { const sp = el('span', '', '', full); sp.textContent = ch; return sp; });
+  const cur = el('span', '', 'display:inline-block;width:6px;height:.86em;margin-right:6px;vertical-align:-.08em;background:#FBEBCB', full);
+  gsap.set(chars, { display: 'none' });
+  const t7t = T('T07');
+  set(t7.wrap, { autoAlpha: 1 }, t7t);
+  chars.forEach((c, i) => set(c, { display: 'inline' }, t7t + i * .045));
+  ft(cur, { opacity: 1 }, { opacity: 0, duration: .01, repeat: Math.floor((B - t7t) / .38), repeatDelay: .37, yoyo: true }, t7t);
+  // הצבי לוגם מכוס, אדיש לגמרי
+  const d = makeDeer(s.mid, { x: 220, y: 1120, w: 640, hide: ['R'] });
+  const arm = addArm(d, { side: 'R', sx: 136, sy: 246, angle: -62, len: 44, bend: -6, grip: 4, props: { mug: { s: .86 } } });
+  const steam = html(s.mid, `<svg class="abs" viewBox="0 0 120 160" style="left:0;top:0;width:120px;height:160px;overflow:visible"><g fill="none" stroke="rgba(242,232,213,.55)" stroke-width="7" stroke-linecap="round"><path class="st" d="M30 150 C 10 120, 50 100, 30 70 C 14 46, 40 30, 30 8"/><path class="st" d="M70 150 C 50 118, 90 98, 70 66 C 54 42, 80 26, 70 4"/></g></svg>`);
+  const mugX = 220 + (136 + Math.cos(-62 * Math.PI / 180) * 48) * 3.2, mugY = 1120 + (246 + Math.sin(-62 * Math.PI / 180) * 48) * 3.2;
+  gsap.set(steam, { x: mugX - 60, y: mugY - 330, autoAlpha: 0 });
+  set(steam, { autoAlpha: 1 }, A + .3);
+  steam.querySelectorAll('.st').forEach((p, i) => ft(p, { opacity: .2, y: 10 }, { opacity: .9, y: -16, duration: .7, repeat: 5, yoyo: true, ease: 'sine.inOut' }, A + .3 + i * .35));
+  const sip = t7t + .35;
+  ft(arm.arm, { rotation: -62 }, { rotation: -124, duration: .5, ease: 'power2.inOut' }, sip);
+  ft(arm.cr, { rotation: 62 }, { rotation: 108, duration: .5, ease: 'power2.inOut' }, sip);
+  to(steam, { autoAlpha: 0, duration: .2 }, sip);
+  eyesShut(d, sip + .35, .75);
+  ft(arm.arm, { rotation: -124 }, { rotation: -62, duration: .5, ease: 'power2.inOut' }, sip + 1.15);
+  ft(arm.cr, { rotation: 108 }, { rotation: 62, duration: .5, ease: 'power2.inOut' }, sip + 1.15);
+  to(steam, { autoAlpha: 1, duration: .3 }, sip + 1.6);
+  blink(d, A + .9);
+  blink(d, B - .45);
+  earWiggle(d, A + .05, 1, 8);
+}
+
+/* ---------- 27.9 ובשוטף? וואטסאפ. ---------- */
+{
+  const A = T('T08a'), B = T('T09a');
+  const s = makeScene('chat', `linear-gradient(180deg, ${N3} 0%, ${N2} 55%, ${N1} 100%)`, A, B);
+  push(s.cam, A, B, 1, 1.05, '50% 45%');
+  // טפט עדין של צ'אט
+  const wp = svgBox(s.cam, 'opacity:.07');
+  let w = ''; const r = mulberry32(55);
+  for (let i = 0; i < 70; i++) { const x = r() * 1080, y = r() * 1920; w += r() < .5 ? `<path transform="translate(${x} ${y}) scale(${1.4 + r() * 1.6})" d="${SPARK}" fill="${CL}"/>` : `<circle cx="${x}" cy="${y}" r="${4 + r() * 8}" fill="none" stroke="${CL}" stroke-width="3"/>`; }
+  wp.innerHTML = w;
+  const t8a = makeTitle(s.fg, 'T08a', { y: 330, size: 170 });
+  tIn(t8a, A, 'fade', .45);
+  const typing = html(s.fg, `<div class="abs" style="left:0;top:0;width:280px;height:140px;border-radius:70px;background:${CR};box-shadow:0 18px 44px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;gap:24px"><i class="dt" style="display:block;width:30px;height:30px;border-radius:50%;background:rgba(58,26,16,.55)"></i><i class="dt" style="display:block;width:30px;height:30px;border-radius:50%;background:rgba(58,26,16,.55)"></i><i class="dt" style="display:block;width:30px;height:30px;border-radius:50%;background:rgba(58,26,16,.55)"></i></div>`);
+  gsap.set(typing, { x: 400, y: 640, autoAlpha: 0, transformOrigin: '20% 100%' });
+  set(typing, { autoAlpha: 1 }, A + .15);
+  ft(typing, { scale: .3 }, { scale: 1, duration: .35, ease: 'back.out(2.4)' }, A + .15);
+  const tb = T('T08b');
+  typing.querySelectorAll('.dt').forEach((dt, i) => ft(dt, { y: 0 }, { y: -18, duration: .16, repeat: Math.floor((tb - A - .4) / .16) - 1, yoyo: true, ease: 'sine.inOut' }, A + .35 + i * .1));
+  to(typing, { autoAlpha: 0, scale: .7, duration: .08 }, tb);
+  const bub = html(s.fg, `<div class="abs" style="left:0;top:0;width:820px;height:300px;"><div class="abs" style="left:0;top:0;width:820px;height:300px;border-radius:60px;background:${CR};box-shadow:0 24px 60px rgba(0,0,0,.45)"></div><svg class="abs" viewBox="0 0 80 60" style="left:40px;top:262px;width:80px;height:60px"><path d="M0 0 L80 0 L6 56 Z" fill="${CR}"/></svg><svg class="abs chk" viewBox="0 0 60 30" style="left:48px;top:222px;width:96px;height:48px"><g fill="none" stroke="#9aa0a6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16 L11 24 L27 6"/><path d="M21 22 L23 24 L39 6"/></g></svg></div>`);
+  gsap.set(bub, { x: 130, y: 560, autoAlpha: 0, transformOrigin: '8% 100%' });
+  const t8b = makeTitle(bub, 'T08b', { x: 410, y: 150, size: 160, color: BR, shadow: 'none', maxW: 700 });
+  gsap.set(t8b.wrap, { autoAlpha: 1 });
+  set(bub, { autoAlpha: 1 }, tb);
+  ft(bub, { scale: .45 }, { scale: 1, duration: .42, ease: 'back.out(2.2)' }, tb);
+  ft(bub.querySelector('.chk g'), { stroke: '#9aa0a6' }, { stroke: '#4FB6EC', duration: .1 }, tb + .45);
+  // הצבי מקליד בשתי פרסות
+  // הצבי גדול יותר וקרוב לבועה; הטלפון צר מהגוף, כדי שהצוואר והחזה נראים משני צדדיו
+  const d = makeDeer(s.mid, { x: 200, y: 950, w: 680 });
+  const phone = document.createElementNS(NS, 'g');
+  phone.innerHTML = `<rect x="71" y="198" width="58" height="42" rx="9" fill="${N3}" ${S5}/><circle cx="117" cy="209" r="3.6" fill="${N1}"/><rect x="77" y="192" width="46" height="6" rx="3" fill="#BFE3FF" opacity=".8"/>`;
+  d.front.appendChild(phone);
+  d.front.appendChild(d.hooves);
+  gsap.set(d.hooves, { y: -24 });
+  look(d, A, 0, 5, .01);
+  const taps = Math.floor((tb - A) / .12);
+  ft(d.hoofL, { y: 0 }, { y: -9, duration: .12, repeat: taps - 1, yoyo: true, ease: 'power1.inOut' }, A);
+  ft(d.hoofR, { y: -9 }, { y: 0, duration: .12, repeat: taps - 1, yoyo: true, ease: 'power1.inOut' }, A);
+  look(d, tb, 0, -2, .2);
+  earWiggle(d, tb + .05, 2, 12);
+  blink(d, tb + .7);
+  const glowF = html(s.mid, `<div class="abs" style="left:0;top:0;width:420px;height:300px;border-radius:50%;background:radial-gradient(ellipse at 50% 50%, rgba(170,215,255,.35), rgba(170,215,255,0) 70%)"></div>`);
+  gsap.set(glowF, { x: 330, y: 950 + 194 * 3.4 - 150 });
+  to(glowF, { autoAlpha: 0, duration: .3 }, tb);
+}
+
+/* ---------- 30.1 מכונת מזל: תחום משלו ---------- */
+{
+  const A = T('T09a'), B = T('T10a');
+  const s = makeScene('slot', 'radial-gradient(ellipse 80% 52% at 50% 46%, #2c1a14 0%, #17111a 48%, #0b1424 100%)', A, B);
+  const rays = el('div', 'abs', 'left:-760px;top:-440px;width:2600px;height:2600px;background:repeating-conic-gradient(from 0deg at 50% 50%, rgba(232,135,59,.07) 0deg 8deg, rgba(232,135,59,0) 8deg 16deg)', s.cam);
+  ft(rays, { rotation: 0 }, { rotation: -22, duration: B - A, ease: 'none' }, A);
+  const t9 = makeTitle(s.fg, 'T09a', { y: 300, size: 124, split: 'ולכל אחד בצוות,|תחום משלו.', lh: 1.08 });
+  tIn(t9, A, 'fade', .5);
+  const M = el('div', 'abs', 'left:0;top:0;width:1080px;height:1920px', s.mid);
+  push(M, A, B, 1, 1.035, '50% 45%');
+  html(M, `<div class="abs" style="left:116px;top:556px;width:848px;height:620px;border-radius:64px;background:linear-gradient(180deg,#F4A057 0%, ${OR} 30%, ${OD} 100%);border:10px solid ${BR};box-shadow:0 44px 90px rgba(0,0,0,.55), inset 0 10px 0 rgba(255,230,190,.35), inset 0 -14px 0 rgba(58,26,16,.25)"></div>`);
+  // נורות מרדף סביב המכונה
+  const chase = [];
+  const per = [];
+  const bx0 = 160, bx1 = 920, by0 = 596, by1 = 1146;
+  const nTop = 14, nSide = 9;
+  for (let i = 0; i < nTop; i++) per.push([bx0 + (bx1 - bx0) * i / (nTop - 1), by0]);
+  for (let i = 1; i < nSide; i++) per.push([bx1, by0 + (by1 - by0) * i / nSide]);
+  for (let i = nTop - 1; i >= 0; i--) per.push([bx0 + (bx1 - bx0) * i / (nTop - 1), by1]);
+  for (let i = nSide - 1; i >= 1; i--) per.push([bx0, by0 + (by1 - by0) * i / nSide]);
+  per.forEach(([x, y]) => chase.push(el('div', 'abs', `left:${x - 11}px;top:${y - 11}px;width:22px;height:22px;border-radius:50%;background:#7a3a14`, M)));
+  // החלון והגלגלת
+  const win = el('div', 'abs', `left:196px;top:650px;width:688px;height:430px;border-radius:34px;background:${CR};border:10px solid ${BR};overflow:hidden;box-shadow:inset 0 18px 40px rgba(58,26,16,.35)`, M);
+  const strip = el('div', 'abs', 'left:0;top:0;width:688px', win);
+  const words = ['*', 'מלאי.', 'עיצוב.', 'פרסום.', 'לוגיסטיקה.', 'גזברות.', 'קשר עם היישוב.', 'עיצוב.', 'מלאי.'];
+  const real = ['T09_1', 'T09_2', 'T09_3', 'T09_4', 'T09_5', 'T09_6', 'T09_7'];
+  const IH = 215;
+  const items = words.concat(real.map(id => TX[id]));
+  items.forEach((wd, i) => {
+    const it = el('div', 'abs', `left:0;top:${i * IH}px;width:688px;height:${IH}px;display:flex;align-items:center;justify-content:center`, strip);
+    if (wd === '*') { const sp = sparkleEl(it, 120, OR); sp.style.position = 'relative'; sp.style.left = sp.style.top = '0'; return; }
+    const fs = Math.min(150, 150 * 600 / textW(wd, 150));
+    el('div', 'ink', `font-size:${fs.toFixed(1)}px;color:${BR};white-space:nowrap;-webkit-mask-position:${(rnd() * 560) | 0}px 0px`, it).textContent = wd;
+  });
+  html(win, `<div class="abs" style="left:0;top:0;width:688px;height:430px;background:linear-gradient(180deg, rgba(58,26,16,.55) 0%, rgba(58,26,16,0) 30%, rgba(58,26,16,0) 70%, rgba(58,26,16,.55) 100%)"></div>`);
+  const ding = html(M, `<div class="abs" style="left:186px;top:640px;width:708px;height:450px;border-radius:40px;box-shadow:0 0 0 8px rgba(255,214,140,.9), 0 0 60px 20px rgba(255,190,90,.65);opacity:0"></div>`);
+  html(M, `<svg class="abs" viewBox="0 0 40 60" style="left:150px;top:835px;width:40px;height:60px"><path d="M4 4 L36 30 L4 56 Z" fill="${BR}"/></svg><svg class="abs" viewBox="0 0 40 60" style="left:890px;top:835px;width:40px;height:60px"><path d="M36 4 L4 30 L36 56 Z" fill="${BR}"/></svg>`);
+  const lever = html(M, `<svg class="abs" viewBox="0 0 100 300" style="left:950px;top:640px;width:100px;height:300px;overflow:visible"><rect x="6" y="210" width="40" height="70" rx="12" fill="${BR}"/><g class="lv"><rect x="34" y="40" width="16" height="200" rx="8" fill="#C9CFD8" stroke="${BR}" stroke-width="5"/><circle cx="42" cy="38" r="34" fill="${OD}" stroke="${BR}" stroke-width="6"/><circle cx="32" cy="26" r="10" fill="#FFB27A"/></g></svg>`);
+  const lv = lever.querySelector('.lv'); gsap.set(lv, { svgOrigin: '42 240' });
+  const Y = k => 215 - (k * IH + IH / 2);
+  gsap.set(strip, { y: Y(0) });
+  const tSlot = sfxNear('slot', 32.4);
+  ft(lv, { scaleY: 1 }, { scaleY: -.8, duration: .18, ease: 'power2.in' }, tSlot - .18);
+  to(lv, { scaleY: 1, duration: .4, ease: 'back.out(2)' }, tSlot + .02);
+  const first = words.length;
+  // כל מילה נוחתת במרכז בדיוק בזמן שלה: מגיעה במהירות (power2.in) עד t, ורק אחרי t קפיצה קטנה ונחיתה.
+  // כך המילה לא קריאה לפני הזמן שלה, ובפריים של t היא כבר במרכז.
+  const OV = 24;
+  const T1 = T('T09_1');
+  ft(strip, { y: Y(0) }, { y: Y(first) - OV, duration: T1 - (tSlot - .06), ease: 'power1.in' }, tSlot - .06);
+  ft(strip, { filter: 'blur(0px)' }, { filter: 'blur(10px)', duration: .06 }, tSlot - .06);
+  set(strip, { filter: 'none' }, T1);
+  real.forEach((id, k) => {
+    const t = T(id);
+    if (k > 0) ft(strip, { y: Y(first + k - 1) }, { y: Y(first + k) - OV, duration: .15, ease: 'power2.in' }, t - .15);
+    ft(strip, { y: Y(first + k) - OV }, { y: Y(first + k), duration: .28, ease: 'back.out(3)' }, t);
+    ft(ding, { opacity: 1 }, { opacity: 0, duration: .4, ease: 'power2.out' }, t);
+  });
+  procs.push((t, f) => {
+    if (t < A - .05 || t > B + .05) return;
+    const k = Math.floor;
+    let onF;
+    if (t < tSlot - .2) onF = i => (i + k(t * 7)) % 4 < 2;
+    else if (t < T('T09_1')) onF = i => (i + k(t * 32)) % 3 === 0;
+    else if (t >= T('T09_7')) onF = i => (i + k(t * 8)) % 2 === 0;
+    else {
+      const near = real.some(id => t >= T(id) && t < T(id) + .2);
+      onF = near ? () => true : i => (i + k(t * 12)) % 4 === 0;
+    }
+    chase.forEach((b, i) => { const on = onF(i); b.style.background = on ? '#FFE3AA' : '#7a3a14'; b.style.boxShadow = on ? '0 0 20px 6px rgba(255,190,90,.7)' : 'none'; });
+  });
+  // הצבי מחליף אביזר בכל עצירה
+  const d = makeDeer(s.mid, { x: 170, y: 1216, w: 560 });
+  const pnames = ['calc', 'mega', 'house', 'box', 'brush', 'tape'];
+  const pp = {}; pnames.forEach(n => pp[n] = { s: 1, dx: 14 });
+  const arm = addArm(d, { side: 'R', angle: -42, len: 76, props: pp });
+  pnames.forEach(n => { gsap.set(arm.props[n], { svgOrigin: '0 -45' }); gsap.set(arm.props[n], { scale: 0 }); });
+  gsap.set(arm.outer, { autoAlpha: 0 });
+  look(d, A, 0, -6, .01);
+  const t1 = T('T09_1');
+  set(arm.outer, { autoAlpha: 1 }, t1); set(d.hoofR, { autoAlpha: 0 }, t1);
+  ft(arm.arm, { rotation: 40 }, { rotation: -42, duration: .3, ease: 'back.out(1.8)' }, t1);
+  look(d, t1, 3, -3, .2);
+  real.slice(0, 6).forEach((id, k) => {
+    const t = T(id), pr = arm.props[pnames[k]];
+    ft(pr, { scale: 0 }, { scale: 1, duration: .3, ease: 'back.out(2.6)' }, t);
+    to(pr, { scale: 0, duration: .09, ease: 'power2.in' }, T(real[k + 1]) - .08);
+    if (k > 0) ft(arm.arm, { rotation: -42 }, { rotation: -52, duration: .1, repeat: 1, yoyo: true, ease: 'sine.inOut' }, t);
+  });
+  const tm = T('T09_7');
+  // "ועוד.": הפרסה עולה למעלה בשמחה (לא זרוע אופקית)
+  ft(arm.arm, { rotation: -42 }, { rotation: -62, duration: .3, ease: 'back.out(2)' }, tm);
+  ft(arm.arm, { rotation: -62 }, { rotation: -52, duration: .16, repeat: 3, yoyo: true, ease: 'sine.inOut' }, tm + .32);
+  eyesShut(d, tm, .55);
+  earWiggle(d, tm, 2, 14);
+  burst(s.fg, tm, 540, 865, 22, 640);
+  burst(s.fg, tm + .06, 540, 865, 12, 300, [WARM, CL]);
+  burst(s.fg, tm + .1, 760, 1420, 10, 380, [OR, CL]);
+  flash(tm, .35, .2);
+  blink(d, 31.3);
+}
+
+/* ---------- 38.9 קרם נקי: לא צריך ניסיון. צריך להיות בעניין. ---------- */
+let creamWin;
+{
+  const A = T('T10a'), B = T('T11a');
+  creamWin = [A, B];
+  const s = makeScene('cream', `radial-gradient(ellipse 80% 60% at 50% 45%, #FBF3E4 0%, ${CR} 58%, #E4D2B0 100%)`, A, B);
+  const rays = el('div', 'abs', 'left:-760px;top:-60px;width:2600px;height:2600px;background:repeating-conic-gradient(from 0deg at 50% 50%, rgba(232,135,59,.06) 0deg 9deg, rgba(232,135,59,0) 9deg 18deg)', s.cam);
+  ft(rays, { rotation: 0 }, { rotation: 10, duration: B - A, ease: 'none' }, A);
+  push(s.cam, A, B, 1, 1.04, '50% 70%');
+  [[150, 260, 50], [930, 330, 40], [120, 980, 34], [960, 1040, 56], [860, 180, 26]].forEach(([x, y, z], i) => {
+    const sp = sparkleEl(s.cam, z, i % 2 ? OD : OR); gsap.set(sp, { x, y });
+    ft(sp, { scale: .5, rotation: 0 }, { scale: 1.1, rotation: 30, duration: .7, repeat: 4, yoyo: true, ease: 'sine.inOut' }, A + i * .2);
+  });
+  const ta = makeTitle(s.fg, 'T10a', { y: 470, size: 150, color: BR, shadow: SH_LIGHT });
+  const tb = makeTitle(s.fg, 'T10b', { y: 660, size: 140, color: OD, shadow: SH_LIGHT });
+  tIn(ta, A, 'fade', .45);
+  tIn(tb, T('T10b'), 'fade', .45);
+  const d = makeDeer(s.mid, { x: 220, y: 1140, w: 640 });
+  ft(d.svg, { y: 90 }, { y: 0, duration: .5, ease: 'power3.out' }, A);
+  blink(d, A + .8);
+  const n0 = T('T10b') + .12;
+  ft(d.head, { y: 0, rotation: 0 }, { y: 9, rotation: 2, duration: .32, repeat: 3, yoyo: true, ease: 'sine.inOut' }, n0);
+  if (d.earL) ft(d.earL, { rotation: 0 }, { rotation: 8, duration: .32, repeat: 3, yoyo: true, ease: 'sine.inOut' }, n0 + .05);
+  if (d.earR) ft(d.earR, { rotation: 0 }, { rotation: -8, duration: .32, repeat: 3, yoyo: true, ease: 'sine.inOut' }, n0 + .05);
+  blink(d, B - .4);
+}
+
+/* ---------- 42.4 דלת לאור חם: ואם יום אחד תרצו לצאת? הצבי יבין. ---------- */
+const BRAAM2 = sfxNear('braam', 45.9), LOGO_HIT = sfxNear('hit', 46.3);
+{
+  const A = T('T11a'), B = LOGO_HIT;
+  const s = makeScene('door', 'linear-gradient(180deg, #16263f 0%, #122036 62%, #0b1424 100%)', A, B);
+  const tDoor = sfxNear('door', 42.6);
+  gsap.set(s.cam, { transformOrigin: '540px 1180px' });
+  ft(s.cam, { scale: 1 }, { scale: 1.06, duration: BRAAM2 - A, ease: 'none' }, A);
+  ft(s.cam, { scale: 1.06 }, { scale: 9, duration: B - BRAAM2, ease: 'power2.in' }, BRAAM2);
+  const wallGlow = el('div', 'abs', 'left:-300px;top:500px;width:1680px;height:1400px;opacity:0;background:radial-gradient(ellipse 40% 45% at 50% 50%, rgba(255,200,120,.5) 0%, rgba(232,135,59,.18) 40%, rgba(232,135,59,0) 70%)', s.cam);
+  el('div', 'abs', 'left:-110px;top:1600px;width:1300px;height:500px;background:linear-gradient(180deg,#0d1729,#060b15)', s.cam);
+  const spill = el('div', 'abs', 'left:0;top:1600px;width:1080px;height:420px;opacity:0;clip-path:polygon(352px 0, 728px 0, 1010px 420px, 70px 420px);background:linear-gradient(180deg, rgba(255,214,150,.7), rgba(255,190,110,.12) 70%, rgba(255,190,110,0))', s.cam);
+  const frame = el('div', 'abs', `left:326px;top:736px;width:428px;height:864px;box-sizing:border-box;border:24px solid ${BR};border-bottom:none;border-radius:10px 10px 0 0;box-shadow:0 0 0 6px #241008`, s.cam);
+  const opening = el('div', 'abs', 'left:350px;top:760px;width:380px;height:840px;background:radial-gradient(ellipse 70% 60% at 50% 38%, #FFF6E2 0%, #FFD99A 38%, #F2A04E 78%, #E8873B 100%);perspective:1600px', s.cam);
+  const door = html(opening, `<div class="abs" style="left:0;top:0;width:380px;height:840px;background:linear-gradient(90deg,#4a2412,#6b3a1e 45%,#5a2c16);box-shadow:inset 0 0 0 6px rgba(0,0,0,.25)"><div class="abs" style="left:46px;top:60px;width:288px;height:300px;border-radius:10px;border:8px solid rgba(0,0,0,.22);box-sizing:border-box"></div><div class="abs" style="left:46px;top:420px;width:288px;height:340px;border-radius:10px;border:8px solid rgba(0,0,0,.22);box-sizing:border-box"></div><div class="abs" style="left:318px;top:400px;width:30px;height:30px;border-radius:50%;background:#E8C26A;box-shadow:0 0 0 5px rgba(58,26,16,.5)"></div></div>`);
+  gsap.set(door, { transformOrigin: '0% 50%', transformPerspective: 1600 });
+  ft(door, { rotationY: 0 }, { rotationY: 76, duration: 1.1, ease: 'power2.inOut' }, tDoor);
+  ft(door, { filter: 'brightness(1)' }, { filter: 'brightness(.55)', duration: 1.1 }, tDoor);
+  ft(spill, { opacity: 0 }, { opacity: 1, duration: 1, ease: 'power2.inOut' }, tDoor + .1);
+  ft(wallGlow, { opacity: 0 }, { opacity: 1, duration: 1.1, ease: 'power2.inOut' }, tDoor + .1);
+  const motes = [];
+  for (let i = 0; i < 18; i++) {
+    const m = el('div', 'abs', `left:0;top:0;width:${R(4, 9)}px;height:${R(4, 9)}px;border-radius:50%;background:#FFE7B8;opacity:0`, s.cam);
+    const x = R(380, 700), y = R(820, 1560);
+    ft(m, { x, y, opacity: 0 }, { x: x + R(-40, 40), y: y - R(60, 160), opacity: R(.4, .85), duration: B - tDoor - .4, ease: 'sine.inOut' }, tDoor + .4);
+    motes.push(m);
+  }
+  const ta = makeTitle(s.fg, 'T11a', { y: 330, size: 130, split: 'ואם יום אחד|תרצו לצאת?', lh: 1.08 });
+  const tb = makeTitle(s.fg, 'T11b', { y: 590, size: 150, color: OR });
+  tIn(ta, A, 'fade', .5);
+  tIn(tb, T('T11b'), 'pop', .5);
+  tOut(ta, BRAAM2, .2); tOut(tb, BRAAM2, .2);
+  // הצבי מרים פרסה, חיוך רך
+  const d = makeDeer(s.mid, { x: 10, y: 1236, w: 560 });
+  gsap.set(d.svg, { y: 120 });
+  ft(d.svg, { y: 120 }, { y: 0, duration: .6, ease: 'power3.out' }, A + .1);
+  look(d, A + .2, 4, -2);
+  const t11b = T('T11b');
+  const arm = addArm(d, { side: 'R', angle: -72, len: 66 });
+  gsap.set(arm.outer, { autoAlpha: 0 });
+  set(arm.outer, { autoAlpha: 1 }, t11b); set(d.hoofR, { autoAlpha: 0 }, t11b);
+  ft(arm.arm, { rotation: 40 }, { rotation: -72, duration: .45, ease: 'back.out(1.7)' }, t11b);
+  ft(arm.arm, { rotation: -72 }, { rotation: -56, duration: .22, repeat: 3, yoyo: true, ease: 'sine.inOut' }, t11b + .5);
+  look(d, t11b, 0, 0);
+  blink(d, t11b + .3);
+  earWiggle(d, t11b + .1, 1, 8);
+  to(d.svg, { y: 520, autoAlpha: 0, duration: .3, ease: 'power2.in' }, BRAAM2);
+  ft(whiteEl, { opacity: 0 }, { opacity: 1, duration: .16, ease: 'power2.in' }, B - .16);
+}
+
+/* ---------- 46.3 חשיפת לוגו ---------- */
+{
+  const A = LOGO_HIT, B = sfxNear('crickets', 50.2) + .25;
+  const s = makeScene('logo', 'linear-gradient(180deg, #070f1c 0%, #0e1a2e 40%, #16263f 70%, #1d3050 100%)', A, B);
+  // הבזק לבן קצר שנעלם מהר (בלי שכבת ענבר: היא יצרה כמה פריימים של הילה חומה ובוצית)
+  ft(whiteEl, { opacity: 1 }, { opacity: 0, duration: .13, ease: 'expo.out' }, A);
+  push(s.cam, A, B, 1, 1.045, '50% 46%');
+  const DY = 70; // כל ההרכב יורד, כדי שהמסך יתמלא בצורה מאוזנת (בלי חור ריק למטה)
+  stars(s.cam, 46, { x0: 30, x1: 1050, y0: 150, y1: 1000 }, 77, [A, B], { mul: 1 });
+  // הגיאומטריה המדויקת של השמש בתוך emblem.webp (900x783): מרכז (449.5,466.5), רדיוס 446.5.
+  // השמש השטוחה זהה בגודל ובמיקום לשמש של הסמל, כך שהמעבר ביניהן לא יוצר טבעת כפולה.
+  const EW = 760, ek = EW / 900;
+  const SC = { x: 540, y: 706 + DY, r: 446.5 * ek };
+  const ex = SC.x - 449.5 * ek, ey = SC.y - 466.5 * ek;
+  const horizon = ey + 783 * ek - 2;
+  const glow = el('div', 'abs', `left:${SC.x - 800}px;top:${SC.y - 800}px;width:1600px;height:1600px;background:radial-gradient(circle, rgba(240,140,50,.55) 0%, rgba(211,84,0,.22) 30%, rgba(14,26,46,0) 60%)`, s.cam);
+  ft(glow, { scale: .4, opacity: .5 }, { scale: 1, opacity: 1, duration: .8, ease: 'expo.out' }, A);
+  ft(glow, { opacity: 1 }, { opacity: .8, duration: .9, repeat: 3, yoyo: true, ease: 'sine.inOut' }, A + .8);
+  // השמש עולה ומתרחבת מקו האופק, והסמל האמיתי נחשף מתוכה
+  const sunG = el('div', 'abs', 'left:0;top:0;width:1080px;height:1920px', s.cam);
+  gsap.set(sunG, { transformOrigin: `${SC.x}px ${horizon}px` });
+  const sun = el('div', 'abs', `left:${(SC.x - SC.r).toFixed(1)}px;top:${(SC.y - SC.r).toFixed(1)}px;width:${(SC.r * 2).toFixed(1)}px;height:${(SC.r * 2).toFixed(1)}px;border-radius:50%;background:#F0882E`, sunG);
+  const em = el('img', 'abs', `left:${ex.toFixed(1)}px;top:${ey.toFixed(1)}px;width:${EW}px;height:auto`, sunG); em.src = emblemImg.src;
+  ft(sunG, { scale: .12 }, { scale: 1, duration: .55, ease: 'expo.out' }, A);
+  gsap.set(em, { autoAlpha: 0 });
+  set(em, { autoAlpha: 1 }, A + .16);
+  ft(em, { opacity: 0 }, { opacity: 1, duration: .26, ease: 'power1.out' }, A + .16);
+  to(sun, { opacity: 0, duration: .2 }, A + .46);
+  const hz = svgBox(s.cam);
+  const hy = x => horizon + 2 - 70 * Math.exp(-Math.pow((x + 40) / 260, 2)) - 60 * Math.exp(-Math.pow((x - 1120) / 280, 2)) + 4 * Math.sin(x * .02);
+  let hd = `M-140 2140 L-140 ${hy(-140)}`; for (let x = -140; x <= 1220; x += 16) hd += ` L${x} ${hy(x).toFixed(1)}`; hd += ' L1220 2140 Z';
+  hz.innerHTML = `<path d="${hd}" fill="${N1}"/>`;
+  // הלוגוטייפ נוחת בסלאם אטום (בלי פריימים של רוח רפאים שקופה)
+  const wm = el('img', 'abs', `left:220px;top:${(horizon + 35).toFixed(1)}px;width:640px;height:auto`, s.cam); wm.src = wordImg.src;
+  gsap.set(wm, { autoAlpha: 0, transformOrigin: '50% 50%' });
+  const tLand = A + .5;
+  set(wm, { autoAlpha: 1 }, tLand - .14);
+  ft(wm, { scale: 1.45 }, { scale: 1, duration: .14, ease: 'power3.in' }, tLand - .14);
+  ft(wm, { opacity: .2 }, { opacity: 1, duration: .05, ease: 'none' }, tLand - .14);
+  dust(s.fg, tLand, 540, horizon + 140, 26, 360, 600);
+  shake(tLand, 10, .35);
+  const st = strand(s.cam, { x0: -60, y0: -14, x1: 1140, y1: -14, sag: 86, n: 14, r: 13 });
+  st.bulbs.forEach((b, i) => bulbOn(b, A + .05 + Math.abs(i - 6.5) * .045));
+  [[260, 430, 54], [850, 400, 40], [930, 660, 30], [150, 690, 34], [760, 300, 26]].forEach(([x, y, z], i) => {
+    const sp = sparkleEl(s.cam, z, i % 2 ? WARM : CL); gsap.set(sp, { x, y: y + DY, autoAlpha: 0 });
+    set(sp, { autoAlpha: 1 }, A + .3 + i * .12);
+    ft(sp, { scale: 0, rotation: 0 }, { scale: 1, rotation: 45, duration: .5, ease: 'back.out(2.5)' }, A + .3 + i * .12);
+    ft(sp, { scale: 1 }, { scale: .55, duration: .6, repeat: 4, yoyo: true, ease: 'sine.inOut' }, A + .8 + i * .12);
+  });
+  burst(s.fg, A, SC.x, SC.y, 20, 620);
+  const ta = makeTitle(s.fg, 'T12a', { y: 212 + DY * .8, size: 132 });
+  const tb = makeTitle(s.fg, 'T12b', { y: 1410, size: 124, color: OR });
+  tIn(ta, T('T12a'), 'fade', .5);
+  tIn(tb, T('T12b'), 'pop', .5);
+  burst(s.fg, T('T12b'), 540, 1410, 14, 420);
+  // שורה קטנה (מהבריף): להרשמה: הקישור בהודעה. בהירה וגדולה מספיק כדי להיקרא גם ב-720
+  const small = el('div', 'title', '', s.fg);
+  el('div', 'ink', `font-size:54px;font-weight:700;color:${CL};text-shadow:${SH_DARK}`, small).textContent = 'להרשמה: הקישור בהודעה';
+  gsap.set(small, { x: 540, y: 1528, xPercent: -50, yPercent: -50, autoAlpha: 0 });
+  set(small, { autoAlpha: 1 }, T('T12b') + .35);
+  ft(small, { opacity: 0, y: 1548 }, { opacity: 1, y: 1528, duration: .45, ease: 'power2.out' }, T('T12b') + .35);
+  // מעבר מהיר ללילה
+  const tf = sfxNear('crickets', 50.2);
+  ft(fadeEl, { opacity: 0 }, { opacity: 1, duration: .25, ease: 'power1.in' }, tf);
+}
+
+/* ---------- 50.2 אחרי הכתוביות: הצבי לבד מאחורי הבר ---------- */
+{
+  const A = sfxNear('crickets', 50.2) + .25, B = DUR + .1;
+  const s = makeScene('post', 'radial-gradient(ellipse 70% 42% at 50% 70%, #1b2740 0%, #0e1a2e 50%, #060b15 100%)', A, B);
+  ft(fadeEl, { opacity: 1 }, { opacity: 0, duration: .5, ease: 'power1.out' }, A + .02);
+  push(s.cam, A, DUR, 1, 1.05, '50% 62%');
+  push(s.mid, A, DUR, 1, 1.03, '50% 80%');
+  stars(s.cam, 26, { x0: 40, x1: 1040, y0: 60, y1: 900 }, 303, [A, B], { mul: .7, big: .15 });
+  el('div', 'abs', 'left:-160px;top:860px;width:1400px;height:1000px;background:radial-gradient(ellipse 45% 40% at 50% 60%, rgba(255,196,120,.28) 0%, rgba(232,135,59,.08) 50%, rgba(232,135,59,0) 75%)', s.cam);
+  const d = makeDeer(s.mid, { x: 250, y: 872, w: 580, hide: ['L', 'R'] });
+  // הכוס מוחזקת נמוך, קרוב לדלפק
+  const armG = addArm(d, { side: 'R', angle: -12, len: 52, props: { glass: { s: .92 } } });
+  const armT = addArm(d, { side: 'L', angle: -14, len: 70, bend: 8, props: { towel: { s: .7, dy: -4 } } });
+  look(d, A, 4, 3, .01);
+  // מדף בקבוקים מאחורי הבר
+  const shelf = svgBox(s.cam);
+  let sh = '<rect x="-120" y="1236" width="1320" height="14" fill="#1b2840"/>';
+  [[90, 'w'], [160, 't'], [230, 'r'], [300, 'w'], [780, 't'], [850, 'r'], [920, 'w'], [990, 't']].forEach(([x, k]) => {
+    if (k === 'w') sh += `<path d="M${x - 16} 1236 V1180 Q${x - 16} 1162 ${x - 6} 1156 V1126 H${x + 6} V1156 Q${x + 16} 1162 ${x + 16} 1180 V1236 Z" fill="#1a2438"/><rect x="${x - 12}" y="1186" width="5" height="40" rx="2" fill="rgba(255,200,120,.25)"/>`;
+    if (k === 't') sh += `<rect x="${x - 18}" y="1170" width="36" height="66" rx="8" fill="#1f2a40"/><rect x="${x - 7}" y="1150" width="14" height="22" fill="#1f2a40"/><rect x="${x - 13}" y="1180" width="5" height="44" rx="2" fill="rgba(255,200,120,.22)"/>`;
+    if (k === 'r') sh += `<path d="M${x - 14} 1236 V1196 Q${x - 14} 1186 ${x} 1186 Q${x + 14} 1186 ${x + 14} 1196 V1236 Z" fill="#232f48"/>`;
+  });
+  shelf.innerHTML = sh;
+  const tEnd = T('T13b');
+  const nW = Math.floor((tEnd - A - .4) / .26);
+  ft(armT.arm, { rotation: -14 }, { rotation: -27, duration: .26, repeat: nW - 1, yoyo: true, ease: 'sine.inOut' }, A + .2);
+  ft(armT.cr, { rotation: 14 }, { rotation: 40, duration: .26, repeat: nW - 1, yoyo: true, ease: 'sine.inOut' }, A + .2);
+  ft(armG.arm, { rotation: -12 }, { rotation: -7, duration: .52, repeat: Math.floor(nW / 2) - 1, yoyo: true, ease: 'sine.inOut' }, A + .2);
+  blink(d, A + 1.6); blink(d, A + 3.2);
+  // הדלפק נמוך מספיק כדי שהכתף של הצבי מעליו: הזרוע המצביעה יוצאת מעל הדלפק ולא מתוך החזית שלו
+  const BAR = 1500;
+  html(s.mid, `<div class="abs" style="left:-120px;top:${BAR + 22}px;width:1320px;height:700px;background:repeating-linear-gradient(90deg, #2a140b 0px, #2a140b 118px, #1f0e07 118px, #1f0e07 124px)"></div>`);
+  html(s.mid, `<div class="abs" style="left:-120px;top:${BAR}px;width:1320px;height:34px;background:linear-gradient(180deg,#7a4022,#55291a);box-shadow:0 6px 0 rgba(0,0,0,.35)"></div>`);
+  html(s.mid, `<div class="abs" style="left:-120px;top:${BAR}px;width:1320px;height:5px;background:rgba(255,200,120,.45)"></div>`);
+  // הכוס מונחת על הבר כשהצבי מצביע (באותו x של הכוס שביד)
+  const gk = .92 * 2.9, glassX = 250 + (120 + 58 * Math.cos(12 * Math.PI / 180)) * 2.9;
+  const towelOnBar = html(s.mid, `<svg class="abs" viewBox="-30 -80 60 84" style="left:${(glassX - 30 * gk).toFixed(1)}px;top:${(BAR + 24 - 80 * gk).toFixed(1)}px;width:${(60 * gk).toFixed(1)}px;height:${(84 * gk).toFixed(1)}px;overflow:visible">${PROP.glass}</svg>`);
+  gsap.set(towelOnBar, { autoAlpha: 0 });
+  // זרוע מצביעה למטה, מעל הדלפק
+  const over = document.createElementNS(NS, 'svg'); over.setAttribute('viewBox', '0 0 200 250');
+  over.style.cssText = 'position:absolute;left:250px;top:872px;width:580px;height:725px;overflow:visible'; s.mid.appendChild(over);
+  const pd = { svg: over, front: over, mid: over, behind: over, arms: {}, props: {} };
+  const point = addArm(pd, { side: 'R', angle: 68, len: 66, into: over });
+  gsap.set(point.outer, { autoAlpha: 0 });
+  set(point.outer, { autoAlpha: 1 }, tEnd); set(armG.outer, { autoAlpha: 0 }, tEnd);
+  set(towelOnBar, { autoAlpha: 1 }, tEnd);
+  ft(towelOnBar, { y: -84 }, { y: 0, duration: .16, ease: 'power2.in' }, tEnd);
+  ft(armT.arm, { rotation: -14 }, { rotation: 6, duration: .3, ease: 'power2.out' }, tEnd);
+  ft(point.arm, { rotation: -60 }, { rotation: 68, duration: .34, ease: 'back.out(1.8)' }, tEnd);
+  ft(point.arm, { rotation: 68 }, { rotation: 58, duration: .2, repeat: 3, yoyo: true, ease: 'sine.inOut' }, tEnd + .45);
+  look(d, tEnd, 0, 0, .15);
+  earWiggle(d, tEnd, 2, 12);
+  blink(d, tEnd + 1.2);
+  // גחליליות
+  for (let i = 0; i < 6; i++) {
+    const fl = el('div', 'abs', 'left:0;top:0;width:14px;height:14px;border-radius:50%;background:#FFE19A;box-shadow:0 0 18px 8px rgba(255,214,120,.55);opacity:0', s.cam);
+    const fx = R(80, 1000), fy = R(820, 1350), ph = R(0, 6.28);
+    procs.push(t => { if (t < A || t > B) return; fl.style.transform = `translate(${(fx + 40 * Math.sin(t * .6 + ph)).toFixed(1)}px, ${(fy + 26 * Math.sin(t * .9 + ph * 2)).toFixed(1)}px)`; fl.style.opacity = Math.pow(Math.max(0, Math.sin(t * 1.4 + ph)), 2).toFixed(3); });
+  }
+  const ta = makeTitle(s.fg, 'T13a', { y: 330, size: 108, split: 'ואם בא לכם|רק ערב על הבר,|מדי פעם...', lh: 1.1 });
+  const tb = makeTitle(s.fg, 'T13b', { y: 690, size: 132, color: OR });
+  tIn(ta, T('T13a'), 'fade', .7);
+  tIn(tb, tEnd, 'pop', .5);
+  ft(fadeEl, { opacity: 0 }, { opacity: 1, duration: .8, ease: 'sine.inOut' }, DUR - .8);
+}
+
+tl.set({}, {}, DUR);
+
+/* טווחים עם תנועה מהירה: render.mjs מצלם בהם כמה דגימות בתוך הפריים ומערבב אותן לטשטוש תנועה אמיתי.
+   בשאר הזמן פריים אחד חד. הדגימות הן תמיד אחרי זמן הפריים, כך שכותרת לא מופיעה לפני הזמן שלה. */
+{
+  const ids4 = ['T04a', 'T04b', 'T04c', 'T04d'], reel = ['T09_1', 'T09_2', 'T09_3', 'T09_4', 'T09_5', 'T09_6'];
+  window.__mb = [
+    [T('T01b'), T('T01b') + .45], [T('T02b'), T('T02b') + .8],
+    [WHOOSH - .06, WHOOSH + 2.1], [T('T03c'), T('T03c') + .55],
+    ...ids4.map(id => [T(id), T(id) + .4]),
+    [T('T05a'), T('T05a') + .5], [T('T05b') + .3, T('T05b') + .85], [T('T06'), T('T06') + .5],
+    [T('T08b'), T('T08b') + .45],
+    [sfxNear('slot', 32.4) - .25, T('T09_1') + .3], ...reel.slice(1).map(id => [T(id) - .16, T(id) + .3]),
+    [T('T09_7'), T('T09_7') + .7], [T('T10a'), T('T10a') + .5], [T('T11b'), T('T11b') + .5],
+    [BRAAM2, LOGO_HIT + .75], [T('T12b'), T('T12b') + .5], [T('T13b'), T('T13b') + .5],
+  ];
+}
+
+/* ---------- פרוצדורלי: נגזר מזמן ה-timeline בלבד ---------- */
+const NG = 8, GW = 360, GH = 640;
+const gctx = grainEl.getContext('2d');
+const grainFrames = [];
+for (let k = 0; k < NG; k++) {
+  const img = gctx.createImageData(GW, GH); const r = mulberry32(1000 + k * 7919); const dt = img.data;
+  for (let i = 0; i < dt.length; i += 4) { const v = 128 + (r() + r() + r() - 1.5) * 150; const c = v < 0 ? 0 : v > 255 ? 255 : v; dt[i] = dt[i + 1] = dt[i + 2] = c; dt[i + 3] = 255; }
+  grainFrames.push(img);
+}
+const sctx = scratchEl.getContext('2d');
+let lastScratch = -1;
+function procedural(t) {
+  const f = Math.round(t * FPS);
+  gctx.putImageData(grainFrames[Math.floor(hash(f * 7 + 3) * NG)], 0, 0);
+  const inCard = t < CARD_END;
+  const inCream = t >= creamWin[0] && t < creamWin[1];
+  grainEl.style.opacity = inCard ? '.34' : inCream ? '.26' : '.17';
+  vigEl.style.opacity = inCream ? '.45' : '1';
+  // מקרן: ריצוד, תזוזת פריים, שריטות ואבק
+  if (inCard) {
+    flickerEl.style.opacity = (.03 + .08 * hash(f * 5 + 2) + (hash(f * 11 + 7) > .9 ? .1 : 0)).toFixed(3);
+    cardScene.el.style.transform = `translate(${((hash(f * 3) - .5) * 3).toFixed(2)}px, ${((hash(f * 3 + 1) - .5) * 5).toFixed(2)}px)`;
+  } else if (flickerEl.style.opacity !== '0') { flickerEl.style.opacity = '0'; cardScene.el.style.transform = ''; }
+  if (inCard) {
+    if (lastScratch !== f) {
+      sctx.clearRect(0, 0, 540, 960);
+      const nl = hash(f * 13 + 1) > .45 ? 1 + Math.floor(hash(f * 17) * 2) : 0;
+      for (let i = 0; i < nl; i++) { const x = hash(f * 19 + i) * 540; sctx.strokeStyle = `rgba(242,232,213,${(.12 + hash(f * 23 + i) * .25).toFixed(3)})`; sctx.lineWidth = .6 + hash(f * 29 + i); sctx.beginPath(); sctx.moveTo(x, 0); sctx.lineTo(x + (hash(f * 31 + i) - .5) * 14, 960); sctx.stroke(); }
+      const nd = Math.floor(hash(f * 37) * 7);
+      for (let i = 0; i < nd; i++) { sctx.fillStyle = hash(f * 41 + i) > .5 ? 'rgba(10,20,12,.55)' : 'rgba(242,232,213,.5)'; sctx.beginPath(); sctx.arc(hash(f * 43 + i) * 540, hash(f * 47 + i) * 960, .6 + hash(f * 53 + i) * 2.4, 0, 7); sctx.fill(); }
+      lastScratch = f;
+    }
+  } else if (lastScratch !== -2) { sctx.clearRect(0, 0, 540, 960); lastScratch = -2; }
+  // מצלמה: סחיפה עדינה שלא נעצרת + רעידות
+  let sx = 0, sy = 0;
+  for (const s of shakes) if (s.a > .05) { sx += s.a * (hash(f * 2 + s.k) * 2 - 1); sy += s.a * (hash(f * 2 + 1 + s.k) * 2 - 1); }
+  const dx = 5 * Math.sin(t * .71) + 2.5 * Math.sin(t * 1.37 + 2), dy = 4 * Math.sin(t * .53 + 1);
+  world.style.transform = `translate(${(dx + sx).toFixed(2)}px, ${(dy + sy).toFixed(2)}px) rotate(${(.1 * Math.sin(t * .37)).toFixed(3)}deg) scale(1.012)`;
+  for (const s of twinkles) {
+    if (t < s.sc - .05 || t > s.se + .05) continue;
+    s.el.setAttribute('opacity', (clamp01(s.base + s.amp * Math.sin(t * s.sp + s.ph)) * s.mul).toFixed(3));
+  }
+  for (const p of procs) p(t, f);
+}
+
+function renderAt(t) { t = Math.max(0, Math.min(DUR - 1e-4, t)); tl.seek(t, false); procedural(t); }
+window.__duration = DUR;
+window.__titles = titles;
+window.__fps = FPS;
+window.__seek = t => { renderAt(t); return true; };
+
+/* התאמת הבמה לחלון */
+function fitStage() {
+  const W = innerWidth, H = innerHeight, k = Math.min(W / 1080, H / 1920);
+  stage.style.transform = `translate(${((W - 1080 * k) / 2).toFixed(2)}px, ${((H - 1920 * k) / 2).toFixed(2)}px) scale(${k})`;
+}
+fitStage(); addEventListener('resize', fitStage);
+
+const t0 = parseFloat(P.get('t') || '0') || 0;
+renderAt(RENDER ? 0 : t0);
+await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+window.__ready = true;
+
+/* ---------- מצב צפייה ---------- */
+if (!RENDER) {
+  const ui = document.getElementById('ui'), bar = document.getElementById('bar'), barI = bar.firstElementChild, tc = document.getElementById('tc');
+  ui.style.display = 'flex'; bar.style.display = 'block'; tc.style.display = 'block';
+  const audio = new Audio('audio/mix.wav'); audio.preload = 'auto';
+  let playing = false, anchor = 0, cur = t0;
+  const show = t => { cur = t; renderAt(t); barI.style.width = (t / DUR * 100).toFixed(2) + '%'; tc.textContent = t.toFixed(2) + 's'; };
+  show(t0);
+  function loop() {
+    if (!playing) return;
+    let t = (performance.now() - anchor) / 1000;
+    if (Math.abs(t - audio.currentTime) > .12 && !audio.paused) { anchor = performance.now() - audio.currentTime * 1000; t = audio.currentTime; }
+    if (t >= DUR || audio.ended) { stop(); show(DUR - 1e-3); return; }
+    show(t); requestAnimationFrame(loop);
+  }
+  function play() { if (cur >= DUR - .05) cur = 0; audio.currentTime = cur; audio.play().catch(() => {}); anchor = performance.now() - cur * 1000; playing = true; ui.style.display = 'none'; requestAnimationFrame(loop); }
+  function stop() { playing = false; audio.pause(); ui.style.display = 'flex'; }
+  ui.addEventListener('click', play);
+  stage.addEventListener('click', () => { if (playing) stop(); });
+  bar.addEventListener('click', e => { const t = e.clientX / innerWidth * DUR; if (playing) { audio.currentTime = t; anchor = performance.now() - t * 1000; } show(t); });
+  addEventListener('keydown', e => {
+    if (e.code === 'Space') { e.preventDefault(); playing ? stop() : play(); }
+    if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') { const t = Math.max(0, Math.min(DUR, cur + (e.code === 'ArrowRight' ? 2 : -2))); if (playing) { audio.currentTime = t; anchor = performance.now() - t * 1000; } show(t); }
+  });
+}
+})().catch(err => { console.error(err); window.__error = String(err && err.stack || err); });
+</script>
+</body>
+</html>

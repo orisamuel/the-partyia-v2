@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>צוות הפרתיה · ההרשמה פתוחה</title>
+    <meta name="description" content="ערב אחד בערך כל חודשיים, צוות של אנשים טובים, וצבי אחד. ההרשמה לצוות הפרתיה פתוחה.">
+    <link rel="icon" href="logo.png" type="image/png">
+    <meta name="theme-color" content="#0e1a2e">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://orisamuel.github.io/the-partyia-v2/team.html">
+    <meta property="og:title" content="צוות הפרתיה · ההרשמה פתוחה 🦌">
+    <meta property="og:description" content="ערב אחד בערך כל חודשיים, צוות של אנשים טובים, וצבי אחד. טריילר, משחקים ושאלון בפנים.">
+    <meta property="og:image" content="https://orisamuel.github.io/the-partyia-v2/team/og.jpg?v=1">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1122">
+    <meta property="og:image:height" content="1402">
+    <meta property="og:image:alt" content="צוות הפרתיה: ההרשמה פתוחה">
+    <meta property="og:locale" content="he_IL">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="צוות הפרתיה · ההרשמה פתוחה 🦌">
+    <meta name="twitter:description" content="ערב אחד בערך כל חודשיים, צוות של אנשים טובים, וצבי אחד.">
+    <meta name="twitter:image" content="https://orisamuel.github.io/the-partyia-v2/team/og.jpg?v=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="team/brand.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; background: var(--night-1); }
+
+        body {
+            font-family: var(--font);
+            background: linear-gradient(180deg, var(--night-1) 0%, var(--night-2) 30%, var(--night-3) 70%, var(--night-1) 100%);
+            min-height: 100vh;
+            color: var(--cream);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body.overlay-open { overflow: hidden; }
+
+        a { color: var(--orange); }
+
+        /* ===== כוכבים ברקע ===== */
+        .sky {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            opacity: .55;
+            background-image:
+                radial-gradient(1.4px 1.4px at 12% 18%, #fff8e6 50%, transparent 51%),
+                radial-gradient(1px 1px at 78% 9%, #fff8e6 50%, transparent 51%),
+                radial-gradient(1.2px 1.2px at 64% 32%, #fff8e6 50%, transparent 51%),
+                radial-gradient(1px 1px at 30% 44%, #fff8e6 50%, transparent 51%),
+                radial-gradient(1.3px 1.3px at 88% 58%, #fff8e6 50%, transparent 51%),
+                radial-gradient(1px 1px at 8% 72%, #fff8e6 50%, transparent 51%),
+                radial-gradient(1.2px 1.2px at 46% 86%, #fff8e6 50%, transparent 51%);
+        }
+
+        main, footer { position: relative; z-index: 1; }
+
+        /* ===== נורות תלויות ===== */
+        .lights {
+            display: flex;
+            justify-content: space-between;
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 14px 18px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .lights::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            height: 14px;
+            border-top: 1.5px solid rgba(255, 255, 255, 0.14);
+            border-radius: 0 0 50% 50% / 0 0 100% 100%;
+        }
+
+        .bulb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ffd98a;
+            box-shadow: 0 0 12px 3px rgba(255, 200, 100, 0.55);
+            animation: flicker 3.2s ease-in-out infinite;
+        }
+
+        .bulb:nth-child(odd) { transform: translateY(9px); }
+        .bulb:nth-child(2n) { animation-delay: .7s; }
+        .bulb:nth-child(3n) { animation-delay: 1.4s; }
+        .bulb:nth-child(4n) { animation-delay: 2.1s; }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; box-shadow: 0 0 12px 3px rgba(255, 200, 100, 0.55); }
+            50% { opacity: .75; box-shadow: 0 0 7px 2px rgba(255, 200, 100, 0.35); }
+        }
+
+        /* ===== מבנה ===== */
+        .wrap {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 0 18px;
+        }
+
+        section { padding: 56px 0 8px; }
+
+        .eyebrow {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: var(--orange);
+            margin-bottom: 8px;
+        }
+
+        .sec-title {
+            font-size: clamp(28px, 8vw, 36px);
+            font-weight: 900;
+            line-height: 1.15;
+            margin-bottom: 8px;
+        }
+
+        .sec-sub {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--cream-dim);
+            margin-bottom: 22px;
+        }
+
+        .center { text-align: center; }
+
+        /* ===== Hero ===== */
+        .hero {
+            text-align: center;
+            padding: 22px 0 10px;
+        }
+
+        .presents {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: var(--cream-dim);
+            margin-bottom: 4px;
+        }
+
+        .deer-stage {
+            position: relative;
+            width: 168px;
+            margin: 6px auto 0;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .deer-stage::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 54%;
+            width: 210px;
+            height: 210px;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(232, 135, 59, 0.55) 0%, rgba(232, 135, 59, 0.18) 45%, transparent 70%);
+            z-index: -1;
+        }
+
+        .deer-stage .deer { width: 100%; height: auto; display: block; transition: transform .2s; }
+        .deer-stage:active .deer { transform: scale(.96) rotate(-2deg); }
+
+        .hero-spark { position: absolute; }
+        .hero-spark.s1 { top: 4px; right: -18px; }
+        .hero-spark.s2 { top: 48px; left: -22px; }
+        .hero-spark.s3 { bottom: 26px; right: -30px; }
+
+        .speech {
+            position: absolute;
+            top: -6px;
+            right: 50%;
+            transform: translate(50%, -100%) scale(.6);
+            width: max-content;
+            max-width: 250px;
+            padding: 10px 14px;
+            border-radius: 16px;
+            background: var(--cream);
+            color: var(--brown);
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.4;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s, transform .25s cubic-bezier(.2, 1.4, .4, 1);
+            z-index: 3;
+        }
+
+        .speech::after {
+            content: '';
+            position: absolute;
+            bottom: -7px;
+            right: 50%;
+            transform: translateX(50%) rotate(45deg);
+            width: 14px;
+            height: 14px;
+            background: var(--cream);
+        }
+
+        .speech.show { opacity: 1; transform: translate(50%, -100%) scale(1); }
+
+        .tap-hint {
+            font-size: 12.5px;
+            color: rgba(207, 196, 173, 0.6);
+            margin-top: 4px;
+        }
+
+        .hero h1 { margin-top: 18px; line-height: 1; }
+
+        .hero h1 .l1 {
+            display: block;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--cream-dim);
+            margin-bottom: 10px;
+        }
+
+        .hero h1 .l2 {
+            display: block;
+            font-size: clamp(54px, 16.5vw, 84px);
+            font-weight: 900;
+            color: var(--orange);
+            text-shadow: 0 6px 30px rgba(232, 135, 59, 0.3);
+            letter-spacing: -1px;
+        }
+
+        .hero h1 .l3 {
+            display: block;
+            font-size: clamp(26px, 7.5vw, 36px);
+            font-weight: 900;
+            color: var(--cream);
+            margin-top: 10px;
+        }
+
+        .hero-sub {
+            font-size: 17px;
+            line-height: 1.6;
+            color: var(--cream-dim);
+            margin: 18px auto 0;
+            max-width: 340px;
+        }
+
+        .hero-sub b { color: var(--cream); }
+
+        .hero-ctas {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 340px;
+            margin: 26px auto 0;
+        }
+
+        /* ===== טריילר ===== */
+        .video-frame {
+            position: relative;
+            width: 100%;
+            max-width: 340px;
+            margin: 0 auto;
+            aspect-ratio: 9 / 16;
+            border-radius: 22px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 0 0 1.5px rgba(232, 135, 59, 0.4), 0 24px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .video-frame video {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: cover;
+        }
+
+        .video-play {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: none;
+            padding-top: 34%;
+            background: rgba(14, 26, 46, 0.25);
+            color: #fff;
+            font-family: inherit;
+            font-size: 17px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        .video-play .ring {
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--orange), var(--orange-deep));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 10px rgba(232, 135, 59, 0.25), 0 12px 30px rgba(0, 0, 0, 0.4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .video-play .ring svg { width: 34px; height: 34px; margin-left: -4px; }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 10px rgba(232, 135, 59, 0.25), 0 12px 30px rgba(0, 0, 0, 0.4); }
+            50% { box-shadow: 0 0 0 18px rgba(232, 135, 59, 0.1), 0 12px 30px rgba(0, 0, 0, 0.4); }
+        }
+
+        .video-play .lbl {
+            background: rgba(14, 26, 46, 0.85);
+            padding: 8px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(242, 232, 213, 0.2);
+        }
+
+        .video-play.hidden { display: none; }
+
+        .video-meta {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            margin-top: 14px;
+            font-size: 14px;
+        }
+
+        .video-meta a { color: var(--cream-dim); text-underline-offset: 3px; }
+
+        /* ===== תווית ערכים תזונתיים ===== */
+        .label {
+            background: #fffaf0;
+            color: #111;
+            border: 3px solid #111;
+            border-radius: 6px;
+            padding: 12px 14px 14px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            transform: rotate(-1deg);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .label h3 {
+            font-size: 34px;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -.5px;
+        }
+
+        .label .serving {
+            font-size: 14px;
+            font-weight: 500;
+            padding: 4px 0 6px;
+            border-bottom: 10px solid #111;
+        }
+
+        .label .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            padding: 6px 0;
+            border-bottom: 1px solid #111;
+            font-size: 15px;
+        }
+
+        .label .row b { font-weight: 900; white-space: nowrap; }
+        .label .row span { text-align: left; }
+
+        .label .row.sub {
+            padding-right: 16px;
+            font-size: 13.5px;
+            color: #333;
+        }
+
+        .label .row.thick { border-bottom-width: 6px; }
+
+        .label .ingredients {
+            font-size: 13.5px;
+            line-height: 1.55;
+            padding-top: 8px;
+        }
+
+        .label .ingredients b { font-weight: 900; }
+
+        .label-note {
+            text-align: center;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--cream-dim);
+            margin-top: 26px;
+        }
+
+        .label-note b { color: var(--cream); }
+
+        /* ===== משחקים ===== */
+        .games {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .game-tile {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            padding: 16px;
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            background: var(--card);
+            color: var(--cream);
+            font-family: inherit;
+            text-align: right;
+            cursor: pointer;
+            transition: transform .12s, border-color .2s, background .2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .game-tile:active { transform: scale(.98); }
+        .game-tile:hover { border-color: rgba(232, 135, 59, 0.5); background: rgba(232, 135, 59, 0.08); }
+
+        .game-tile .icon {
+            flex-shrink: 0;
+            width: 62px;
+            height: 62px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            background: linear-gradient(135deg, rgba(232, 135, 59, 0.3), rgba(211, 84, 0, 0.15));
+            border: 1px solid rgba(232, 135, 59, 0.35);
+        }
+
+        .game-tile .txt { flex: 1; min-width: 0; }
+        .game-tile h3 { font-size: 18px; font-weight: 900; margin-bottom: 2px; }
+        .game-tile p { font-size: 14px; color: var(--cream-dim); line-height: 1.45; }
+        .game-tile .dur { font-size: 12px; color: var(--orange); font-weight: 700; margin-top: 4px; }
+
+        .game-tile .go {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--orange);
+            color: #fff;
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        /* ===== שאלון ===== */
+        #quizMount { min-height: 300px; }
+
+        /* ===== שאלות נפוצות ===== */
+        .faq { display: flex; flex-direction: column; gap: 10px; }
+
+        .faq details {
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            background: var(--card);
+            overflow: hidden;
+        }
+
+        .faq details[open] { border-color: rgba(232, 135, 59, 0.45); background: rgba(232, 135, 59, 0.06); }
+
+        .faq summary {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
+            font-size: 16.5px;
+            font-weight: 700;
+            line-height: 1.45;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .faq summary::-webkit-details-marker { display: none; }
+
+        .faq summary::after {
+            content: '+';
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(232, 135, 59, 0.15);
+            color: var(--orange);
+            font-size: 20px;
+            font-weight: 700;
+            transition: transform .2s;
+        }
+
+        .faq details[open] summary::after { transform: rotate(45deg); }
+
+        .faq .ans {
+            padding: 0 16px 16px;
+            font-size: 16px;
+            line-height: 1.65;
+            color: var(--cream-dim);
+        }
+
+        .faq .ans b { color: var(--cream); }
+        .faq .ans a { font-weight: 700; text-underline-offset: 3px; }
+
+        /* ===== טופס ===== */
+        .form-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(232, 135, 59, 0.4);
+            border-radius: 22px;
+            padding: 24px 18px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        }
+
+        .form-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .form-head h2 { font-size: 24px; font-weight: 900; line-height: 1.2; }
+
+        .form-stamp {
+            flex-shrink: 0;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--orange);
+            border: 1.5px solid var(--orange);
+            border-radius: 8px;
+            padding: 4px 8px;
+            transform: rotate(4deg);
+            white-space: nowrap;
+        }
+
+        .recap {
+            font-size: 14.5px;
+            line-height: 1.6;
+            color: var(--cream-dim);
+            background: rgba(14, 26, 46, 0.5);
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 22px;
+        }
+
+        .recap b { color: var(--cream); }
+
+        .field { margin-bottom: 18px; }
+
+        .field label, .field .lbl {
+            display: block;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .field .hint { font-size: 13px; color: var(--cream-dim); font-weight: 400; }
+
+        .field input, .field textarea {
+            width: 100%;
+            padding: 14px 16px;
+            font-family: inherit;
+            font-size: 16px;
+            color: var(--cream);
+            background: rgba(14, 26, 46, 0.6);
+            border: 1.5px solid rgba(242, 232, 213, 0.2);
+            border-radius: 14px;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .field textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
+        .field input::placeholder, .field textarea::placeholder { color: rgba(207, 196, 173, 0.5); }
+        .field input:focus, .field textarea:focus { border-color: var(--orange); }
+        .field input[type="tel"] { direction: ltr; text-align: right; }
+
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .chip {
+            padding: 9px 14px;
+            border-radius: 999px;
+            border: 1.5px solid rgba(242, 232, 213, 0.25);
+            background: transparent;
+            color: var(--cream);
+            font-family: inherit;
+            font-size: 14.5px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .chip[aria-pressed="true"] {
+            background: var(--orange);
+            border-color: var(--orange);
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .chip.flash { animation: chipflash .8s ease 2; }
+
+        @keyframes chipflash {
+            50% { box-shadow: 0 0 0 6px rgba(232, 135, 59, 0.35); }
+        }
+
+        .privacy {
+            font-size: 13px;
+            color: rgba(207, 196, 173, 0.7);
+            text-align: center;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .error-msg {
+            display: none;
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(220, 53, 69, 0.15);
+            border: 1px solid rgba(220, 53, 69, 0.4);
+            color: #ffb3bb;
+            font-size: 14.5px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .error-msg.show { display: block; }
+
+        .success {
+            display: none;
+            text-align: center;
+            padding: 34px 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(232, 135, 59, 0.4);
+            border-radius: 22px;
+        }
+
+        .success.show { display: block; animation: game-pop .45s cubic-bezier(.2, 1.4, .4, 1); }
+        .success .deer { width: 120px; height: auto; }
+        .success h3 { font-size: 30px; font-weight: 900; color: var(--orange); margin: 6px 0 10px; }
+        .success p { font-size: 16.5px; line-height: 1.65; color: var(--cream); }
+        .success .conf { font-size: 14px; color: var(--cream-dim); margin-top: 14px; }
+        .success .conf b { color: var(--cream); letter-spacing: 2px; }
+        .success .btn { margin-top: 20px; }
+
+        /* ===== על הדרך ===== */
+        .aside-links {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .aside-links .ttl {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--cream-dim);
+            text-align: center;
+            margin-bottom: 2px;
+        }
+
+        .aside-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 14px;
+            border-radius: 14px;
+            border: 1px dashed rgba(242, 232, 213, 0.22);
+            color: var(--cream);
+            text-decoration: none;
+            font-size: 14.5px;
+            line-height: 1.5;
+        }
+
+        .aside-link .em { font-size: 22px; flex-shrink: 0; }
+        .aside-link b { color: var(--orange); white-space: nowrap; }
+
+        /* ===== שיתוף ופוטר ===== */
+        .share-row { text-align: center; margin-top: 46px; }
+
+        footer {
+            max-width: 560px;
+            margin: 50px auto 0;
+            padding: 30px 18px calc(110px + env(safe-area-inset-bottom));
+            text-align: center;
+            border-top: 1px solid var(--cream-faint);
+            font-size: 13px;
+            line-height: 1.8;
+            color: rgba(207, 196, 173, 0.6);
+        }
+
+        footer .credits b { color: var(--cream-dim); font-weight: 700; }
+        footer .terms { margin-top: 16px; text-align: right; display: inline-block; }
+        footer .terms ol { padding-right: 18px; }
+        footer .ver { margin-top: 16px; font-size: 12px; }
+        footer img { width: 64px; height: 64px; border-radius: 50%; object-fit: contain; background: #fff; padding: 5px; margin-bottom: 8px; opacity: .92; }
+
+        /* ===== כפתור צף ===== */
+        .float-cta {
+            position: fixed;
+            left: 50%;
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            transform: translate(-50%, 140%);
+            z-index: 50;
+            padding: 0 30px;
+            min-height: 54px;
+            border-radius: 999px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 0 4px rgba(14, 26, 46, 0.6);
+            transition: transform .35s cubic-bezier(.2, 1.2, .4, 1);
+            white-space: nowrap;
+        }
+
+        .float-cta.show { transform: translate(-50%, 0); }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: calc(86px + env(safe-area-inset-bottom));
+            transform: translate(-50%, 20px);
+            background: var(--cream);
+            color: var(--brown);
+            font-weight: 700;
+            font-size: 15px;
+            padding: 11px 18px;
+            border-radius: 12px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all .25s;
+            z-index: 120;
+            white-space: nowrap;
+        }
+
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        @media (prefers-reduced-motion: reduce) {
+            .bulb, .video-play .ring { animation: none; }
+            html { scroll-behavior: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sky" aria-hidden="true"></div>
+    <div class="lights" aria-hidden="true">
+        <div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div><div class="bulb"></div>
+    </div>
+
+    <main class="wrap">
+        <!-- ===== פתיחה ===== -->
+        <header class="hero" id="top">
+            <div class="deer-stage" id="heroDeer" role="button" tabindex="0" aria-label="הצבי. אפשר ללחוץ עליו">
+                <div class="speech" id="speech" aria-live="polite"></div>
+            </div>
+            <div class="tap-hint">(אפשר ללחוץ על הצבי)</div>
+
+            <h1>
+                <span class="l1">הפרתיה גאה להציג</span>
+                <span class="l2">צוות הפרתיה</span>
+                <span class="l3">בכיכובכם</span>
+            </h1>
+
+            <p class="hero-sub">
+                <b>ההרשמה לצוות פתוחה.</b><br>
+                ערב אחד בערך כל חודשיים, צוות של אנשים טובים, וצבי אחד.
+            </p>
+
+            <div class="hero-ctas">
+                <a class="btn btn-primary btn-block" href="#trailer" id="heroPlay">▶ לטריילר הרשמי</a>
+                <a class="btn btn-ghost btn-block" href="#join">ישר להצטרפות</a>
+            </div>
+        </header>
+
+        <!-- ===== טריילר ===== -->
+        <section id="trailer" class="center">
+            <span class="eyebrow">בכורה עולמית</span>
+            <h2 class="sec-title">הטריילר הרשמי</h2>
+            <p class="sec-sub">57 שניות. עם קריין. כדאי עם סאונד.</p>
+            <div class="video-frame">
+                <video id="trailerVideo" playsinline preload="metadata" poster="team/trailer-poster.jpg">
+                    <source src="team/trailer.mp4" type="video/mp4">
+                </video>
+                <button class="video-play" id="videoPlay" aria-label="הפעלת הטריילר">
+                    <span class="ring"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span>
+                    <span class="lbl">הפעלה (עם סאונד)</span>
+                </button>
+            </div>
+            <div class="video-meta">
+                <a href="team/trailer-1080.mp4" download="צוות-הפרתיה-טריילר.mp4">⬇ לשמור לסטטוס</a>
+                <a href="#" id="shareTrailer">📤 לשלוח למישהו</a>
+            </div>
+        </section>
+
+        <!-- ===== מה זה בעצם ===== -->
+        <section id="what">
+            <div class="center">
+                <span class="eyebrow">שקיפות מלאה</span>
+                <h2 class="sec-title">אז מה זה בעצם?</h2>
+                <p class="sec-sub">כל מה שיש בתפקיד, מודפס על התווית.</p>
+            </div>
+
+            <div class="label" role="table" aria-label="מה כולל התפקיד בצוות">
+                <h3>ערכים תזונתיים</h3>
+                <div class="serving">צוות הפרתיה · מנה אחת = חבר צוות אחד</div>
+                <div class="row"><b>ערב הפעלה משלכם</b><span>1, בערך כל חודשיים</span></div>
+                <div class="row sub"><span>כולל: גיוס מתנדבים לערב, הקמה, הפעלה וניקיון</span></div>
+                <div class="row"><b>ישיבות צוות</b><span>פעם בחודש או חודשיים</span></div>
+                <div class="row"><b>וואטסאפ</b><span>זמינות בשוטף, להחלטות ולעזרה</span></div>
+                <div class="row thick"><b>תחום אחריות</b><span>בדרך כלל 1</span></div>
+                <div class="row"><b>ניסיון קודם</b><span>0 גרם</span></div>
+                <div class="row thick"><b>יציאה מהצוות</b><span>חופשית, בלי אי נעימות</span></div>
+                <div class="ingredients">
+                    <b>רכיבים:</b> רצון אמיתי, זמן פנוי, יכולת להתחייב, אנשים טובים.<br>
+                    <b>עלול להכיל עקבות של צבי.</b>
+                </div>
+            </div>
+
+            <p class="label-note">
+                <b>ולא לבד:</b> יש צוות שלם שמתחלק בעבודה,<br>וקבוצת מתנדבים שמחכה להודעה שלכם.
+            </p>
+        </section>
+
+        <!-- ===== משחקים ===== -->
+        <section id="games">
+            <div class="center">
+                <span class="eyebrow">מחלקת המשחקים</span>
+                <h2 class="sec-title">המשחקים הרשמיים</h2>
+                <p class="sec-sub">שלושה משחקים קצרים. הניקוד לא נשמר בשום מקום, גם לא אצל הצבי.</p>
+            </div>
+            <div class="games">
+                <button class="game-tile" data-game="pour">
+                    <span class="icon">🍺</span>
+                    <span class="txt">
+                        <h3>המזיגה המושלמת</h3>
+                        <p>לחיצה ארוכה כדי למזוג. לעזוב בדיוק בקו.</p>
+                        <div class="dur">כ 40 שניות</div>
+                    </span>
+                    <span class="go">‹</span>
+                </button>
+                <button class="game-tile" data-game="list">
+                    <span class="icon">🙋</span>
+                    <span class="txt">
+                        <h3>רשמו אותי!</h3>
+                        <p>למלא רשימת מתנדבים לערב, בלי להיתקע על "בוקר טוב".</p>
+                        <div class="dur">עד 40 שניות</div>
+                    </span>
+                    <span class="go">‹</span>
+                </button>
+                <button class="game-tile" data-game="tower">
+                    <span class="icon">🪑</span>
+                    <span class="txt">
+                        <h3>מגדל הכיסאות</h3>
+                        <p>סוף ערב. מסדרים כיסאות. כמה גבוה אפשר?</p>
+                        <div class="dur">כ 30 שניות</div>
+                    </span>
+                    <span class="go">‹</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ===== שאלון ===== -->
+        <section id="quiz">
+            <div id="quizMount"></div>
+        </section>
+
+        <!-- ===== שאלות נפוצות ===== -->
+        <section id="faq">
+            <div class="center">
+                <span class="eyebrow">שאלות ותשובות</span>
+                <h2 class="sec-title">שאלות נפוצות</h2>
+                <p class="sec-sub">כל מה שרציתם לדעת, ועוד כמה דברים.</p>
+            </div>
+            <div class="faq">
+                <details><summary>אני לא יודע להכין קוקטיילים בכלל. זה מתאים לי?</summary>
+                    <div class="ans"><b>ברור שכן!</b> רק צריך להיות בעניין. את הקוקטיילים לומדים תוך כדי.</div></details>
+                <details><summary>הפרתיה זה במלעיל או במלרע?</summary>
+                    <div class="ans">כל אחד איך שמתאים לו. אנחנו לא שופטים.</div></details>
+                <details><summary>כמה זמן זה לוקח בפועל?</summary>
+                    <div class="ans">ערב אחד שלכם בערך כל חודשיים, ישיבת צוות פעם בחודש או חודשיים, ולהיות זמינים בוואטסאפ להחלטות ולעזרה. ובדרך כלל גם תחום אחד שאתם אחראים עליו.</div></details>
+                <details><summary>הצבי אמיתי?</summary>
+                    <div class="ans">הוא על הלוגו כבר שנה ולא פספס אף ערב. תסיקו לבד.</div></details>
+                <details><summary>שמעתי שבצוותים יש המון ישיבות.</summary>
+                    <div class="ans">כאן יש ישיבה <b>פעם בחודש או חודשיים.</b> כל השאר קורה בוואטסאפ, ולפעמים החלטה נסגרת באגודל אחד.</div></details>
+                <details><summary>אפשר לשבת על הבר כל הערב ולהגיד שאני "מפקחת"?</summary>
+                    <div class="ans">המשרה הזאת תפוסה. ראו: הצבי.</div></details>
+                <details><summary>אני צריכה לגייס מתנדבים לערב שלי. מאיפה מביאים אותם?</summary>
+                    <div class="ans">מקבוצת המתנדבים, מהחברים ומהשכנים. <b>ולא לבד:</b> הצוות עוזר להשלים.</div></details>
+                <details><summary>מה הצבי עושה בין ערב לערב?</summary>
+                    <div class="ans">מחכה בסבלנות. זה רוב מה שצבאים עושים.</div></details>
+                <details><summary>אני לא שותה. זה בעיה?</summary>
+                    <div class="ans">בכלל לא. מפעילים את הפאב, לא מרוקנים אותו.</div></details>
+                <details><summary>למה לצבי יש קרניים?</summary>
+                    <div class="ans">כדי שיהיה איפה לתלות את הנורות. לפחות זה מה שהוא מספר.</div></details>
+                <details><summary>מה זה "תחום אחריות"?</summary>
+                    <div class="ans">כל אחד בצוות לוקח פינה משלו: גזברות, פרסום, קשר עם היישוב, ניהול מלאי, עיצוב, לוגיסטיקה ועוד. לא בטוחים מה שלכם? <a href="#quiz">יש שאלון בדיוק לזה</a>.</div></details>
+                <details><summary>זה נכון שמי שמסדר את הכיסא האחרון מקבל משאלה?</summary>
+                    <div class="ans">לא אומת. אבל גם אף אחד עוד לא הוכיח שלא.</div></details>
+                <details><summary>ומה אם יש לי ערב שלא מסתדר?</summary>
+                    <div class="ans">מדברים עם הצוות ומסתדרים. בשביל זה יש צוות.</div></details>
+                <details><summary>ואם אחרי כמה חודשים אבין שזה לא בשבילי?</summary>
+                    <div class="ans">אומרים, ויוצאים. בלי אי נעימות. הצבי לא נעלב, הוא צבי.</div></details>
+                <details><summary>בא לי רק לעמוד על הבר מדי פעם, בלי צוות. יש לזה מקום?</summary>
+                    <div class="ans">בטח. בשביל זה יש את <a href="https://chat.whatsapp.com/DBGKCCI6bTmHxv0fLobNqA" target="_blank" rel="noopener">קבוצת המתנדבים</a>: כותבים בה כשצריך ידיים, ואתם עונים כשמתאים לכם.</div></details>
+            </div>
+        </section>
+
+        <!-- ===== הצטרפות ===== -->
+        <section id="join">
+            <form class="form-card" id="joinForm" novalidate>
+                <div class="form-head">
+                    <h2>טופס הצטרפות<br>לצוות הפרתיה</h2>
+                    <span class="form-stamp">עמוד 1 מתוך 1</span>
+                </div>
+
+                <div class="recap">
+                    <b>בקצרה, על מה אומרים כן:</b> ערב אחד בערך כל חודשיים (מגייסים מתנדבים, מקימים, מפעילים ומנקים), ישיבה פעם בחודש או חודשיים, וזמינות בוואטסאפ. אפשר לצאת מתי שרוצים.
+                </div>
+
+                <div class="field">
+                    <label for="fName">איך קוראים לכם?</label>
+                    <input type="text" id="fName" placeholder="נופית פרתוש" autocomplete="name" maxlength="80" required>
+                </div>
+
+                <div class="field">
+                    <label for="fPhone">טלפון (לוואטסאפ)</label>
+                    <input type="tel" id="fPhone" placeholder="050-0000000" autocomplete="tel" inputmode="tel" maxlength="20" required>
+                </div>
+
+                <div class="field">
+                    <span class="lbl">איזה תחום מדבר אליכם? <span class="hint">(אפשר כמה. השאלון ממלא את זה בשבילכם)</span></span>
+                    <div class="chips" id="areaChips">
+                        <button type="button" class="chip" data-area="gizbar" aria-pressed="false">גזברות</button>
+                        <button type="button" class="chip" data-area="pirsum" aria-pressed="false">פרסום</button>
+                        <button type="button" class="chip" data-area="kesher" aria-pressed="false">קשר עם היישוב</button>
+                        <button type="button" class="chip" data-area="melai" aria-pressed="false">ניהול מלאי</button>
+                        <button type="button" class="chip" data-area="design" aria-pressed="false">עיצוב</button>
+                        <button type="button" class="chip" data-area="logistics" aria-pressed="false">לוגיסטיקה</button>
+                        <button type="button" class="chip" data-area="unknown" aria-pressed="false">עוד לא יודעים</button>
+                        <button type="button" class="chip" data-area="other" aria-pressed="false">משהו אחר</button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="fNote">רוצים להוסיף משהו? <span class="hint">(לא חובה)</span></label>
+                    <textarea id="fNote" placeholder="למשל: יש לי טנדר" maxlength="500"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="submitBtn">קראתי, ובא לי. אני בפנים</button>
+                <div class="error-msg" id="errorMsg"></div>
+                <p class="privacy">הפרטים מגיעים רק לצוות הפרתיה, כדי לחזור אליכם.</p>
+            </form>
+
+            <div class="success" id="success" aria-live="polite">
+                <div id="successDeer"></div>
+                <h3>התקבל!</h3>
+                <p id="successText">מישהו מהצוות יכתוב לכם בוואטסאפ.<br>בינתיים הצבי כבר מפנה לכם מקום ליד הבר.</p>
+                <p class="conf">מספר אישור: <b id="confNum"></b><br>שמרו אותו במקום בטוח. לא תצטרכו אותו.</p>
+                <button type="button" class="btn btn-ghost btn-block" id="shareAfter">מכירים עוד מישהו שמתאים לצוות? 📤</button>
+            </div>
+
+            <div class="aside-links">
+                <div class="ttl">ועל הדרך</div>
+                <a class="aside-link" href="https://chat.whatsapp.com/DBGKCCI6bTmHxv0fLobNqA" target="_blank" rel="noopener">
+                    <span class="em">🍻</span>
+                    <span>בא לכם פעם ב להיות על הבר לאיזה ערב, או לעזור בכל מה שצריך? <b>לקבוצת המתנדבים</b></span>
+                </a>
+                <a class="aside-link" href="https://bit.ly/whatsappub" target="_blank" rel="noopener">
+                    <span class="em">📢</span>
+                    <span>עוד לא בקבוצת העדכונים? שם יודעים מתי פתוח ומה קורה. <b>לקבוצת העדכונים</b></span>
+                </a>
+            </div>
+
+            <div class="share-row">
+                <button type="button" class="btn btn-quiet" id="shareSite">לשלוח את האתר למישהו שמתאים לצוות 📤</button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <img src="logo.png" alt="הפרתיה">
+        <div class="credits">
+            <b>ליהוק:</b> אתם · <b>בתפקיד הצבי:</b> הצבי<br>
+            <b>תאורה:</b> שרשרת נורות · <b>ריהוט:</b> כיסאות, בתפקיד עצמם<br>
+            אף צבי לא נפגע במהלך ההפקה.
+        </div>
+        <div class="terms">
+            <b>תנאי שימוש:</b>
+            <ol>
+                <li>הנורה האחרונה נכבית רק אחרי שהכיסא האחרון מסודר.</li>
+                <li>הצבי אינו צד להסכם זה.</li>
+                <li>כל מחלוקת תוכרע בוואטסאפ, ברוב של אימוג'י.</li>
+            </ol>
+        </div>
+        <div class="ver">הפרתיה · פאב קהילתי נופי פרת<br>גרסה 1.0.6 · שופרו ביצועי הצבי</div>
+    </footer>
+
+    <a class="btn btn-primary float-cta" href="#join" id="floatCta">להצטרף לצוות 🦌</a>
+    <div class="toast" id="toast"></div>
+
+    <!-- משטח המשחקים -->
+    <div class="game-overlay" id="gameOverlay" role="dialog" aria-modal="true" aria-labelledby="gameTitle">
+        <div class="game-overlay-bar">
+            <div class="game-overlay-title" id="gameTitle"></div>
+            <button class="game-overlay-close" id="gameClose" aria-label="סגירה">✕</button>
+        </div>
+        <div class="game-stage" id="gameStage"></div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="team/deer.js"></script>
+    <script src="team/games/pour.js"></script>
+    <script src="team/games/list.js"></script>
+    <script src="team/games/tower.js"></script>
+    <script src="team/quiz.js"></script>
+    <script>
+        const VOLUNTEERS_URL = 'https://chat.whatsapp.com/DBGKCCI6bTmHxv0fLobNqA';
+        const SITE_URL = 'https://orisamuel.github.io/the-partyia-v2/team.html';
+        const $ = id => document.getElementById(id);
+
+        /* ===== טוסט ===== */
+        let toastTimer;
+        function toast(text) {
+            const t = $('toast');
+            t.textContent = text;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+        }
+
+        /* ===== שיתוף ===== */
+        async function share(text) {
+            const data = { title: 'צוות הפרתיה', text, url: SITE_URL };
+            try {
+                if (navigator.share) {
+                    await navigator.share(data);
+                } else {
+                    await navigator.clipboard.writeText(text + '\n' + SITE_URL);
+                    toast('הקישור הועתק 📋');
+                }
+            } catch (e) { /* ביטול שיתוף */ }
+        }
+
+        $('shareSite').addEventListener('click', () => share('ראיתי את זה וחשבתי עליך: ההרשמה לצוות הפרתיה פתוחה 🦌'));
+        $('shareAfter').addEventListener('click', () => share('נרשמתי לצוות הפרתיה 🦌 ההרשמה עדיין פתוחה, ונראה לי שזה בדיוק בשבילך.'));
+        $('shareTrailer').addEventListener('click', e => { e.preventDefault(); share('הטריילר הרשמי של צוות הפרתיה 🎬'); });
+
+        /* ===== הצבי בפתיחה ===== */
+        const heroDeer = $('heroDeer');
+        heroDeer.insertAdjacentHTML('beforeend', Deer.svg({ body: true }) +
+            `<span class="hero-spark s1">${Deer.sparkle(22, '#FBEBCB')}</span>` +
+            `<span class="hero-spark s2">${Deer.sparkle(14, '#E8873B')}</span>` +
+            `<span class="hero-spark s3">${Deer.sparkle(18, '#FBEBCB')}</span>`);
+        const QUOTES = [
+            'אני לא מקפל כיסאות. אני מפקח.',
+            'הייתי פה לפני כולם. אני על הלוגו.',
+            'כל הנורות האלה בשבילי? לא הייתם צריכים.',
+            'שמעתי שאתם שוקלים להצטרף. אני לא לוחץ. אני רק מסתכל.',
+        ];
+        let quoteIdx = 0, speechTimer;
+        function deerSpeak() {
+            const s = $('speech');
+            s.textContent = quoteIdx < QUOTES.length ? QUOTES[quoteIdx] : 'הצבי ביקש קצת פרטיות.';
+            quoteIdx++;
+            s.classList.add('show');
+            clearTimeout(speechTimer);
+            speechTimer = setTimeout(() => s.classList.remove('show'), 2800);
+        }
+        heroDeer.addEventListener('click', deerSpeak);
+        heroDeer.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); deerSpeak(); } });
+
+        /* ===== טריילר ===== */
+        const video = $('trailerVideo');
+        function playTrailer() {
+            $('videoPlay').classList.add('hidden');
+            video.controls = true;
+            video.muted = false;
+            video.play().catch(() => { video.muted = true; video.play(); });
+        }
+        $('videoPlay').addEventListener('click', playTrailer);
+        $('heroPlay').addEventListener('click', () => setTimeout(playTrailer, 450));
+        video.addEventListener('ended', () => { video.controls = false; $('videoPlay').classList.remove('hidden'); });
+
+        /* ===== משחקים ===== */
+        const overlay = $('gameOverlay');
+        const stage = $('gameStage');
+        let gameInst = null, gameId = null;
+
+        function mountGame() {
+            stage.innerHTML = '';
+            gameInst = window.PartyiaGames[gameId].mount(stage, gameCtx);
+        }
+
+        function openGame(id) {
+            if (!window.PartyiaGames || !window.PartyiaGames[id]) return;
+            gameId = id;
+            $('gameTitle').textContent = window.PartyiaGames[id].title;
+            overlay.classList.add('open');
+            document.body.classList.add('overlay-open');
+            history.pushState({ game: id }, '');
+            requestAnimationFrame(mountGame);
+        }
+
+        function closeGame(fromPop) {
+            if (!overlay.classList.contains('open')) return;
+            if (gameInst) { gameInst.destroy(); gameInst = null; }
+            stage.innerHTML = '';
+            overlay.classList.remove('open');
+            document.body.classList.remove('overlay-open');
+            if (!fromPop && history.state && history.state.game) history.back();
+        }
+
+        function goJoin() {
+            $('join').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => $('fName').focus({ preventScroll: true }), 700);
+        }
+
+        const gameCtx = {
+            Deer: window.Deer,
+            joinTeam: () => { closeGame(); setTimeout(goJoin, 120); },
+            share: text => share(text),
+            close: () => closeGame(),
+            restart: () => { if (gameInst) gameInst.destroy(); mountGame(); },
+        };
+
+        document.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => openGame(b.dataset.game)));
+        $('gameClose').addEventListener('click', () => closeGame());
+        window.addEventListener('popstate', () => closeGame(true));
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGame(); });
+
+        /* ===== צ'יפים של תחומים ===== */
+        let quizResult = '';
+        document.querySelectorAll('#areaChips .chip').forEach(c => c.addEventListener('click', () => {
+            c.setAttribute('aria-pressed', c.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+        }));
+
+        function selectArea(key) {
+            const chip = document.querySelector(`#areaChips .chip[data-area="${key}"]`);
+            if (!chip) return;
+            chip.setAttribute('aria-pressed', 'true');
+            chip.classList.remove('flash');
+            void chip.offsetWidth;
+            chip.classList.add('flash');
+        }
+
+        /* ===== שאלון ===== */
+        if (window.PartyiaQuiz) {
+            window.PartyiaQuiz.mount($('quizMount'), {
+                Deer: window.Deer,
+                volunteersUrl: VOLUNTEERS_URL,
+                onResult: (key, label) => { quizResult = label; selectArea(key === 'bar' ? 'unknown' : key); },
+                joinTeam: goJoin,
+                share: text => share(text),
+            });
+        }
+
+        /* ===== כפתור צף: אחרי הפתיחה, נעלם כשהטופס על המסך ===== */
+        const floatCta = $('floatCta');
+        let pastHero = false, joinVisible = false, quizVisible = false, trailerVisible = false;
+        const syncFloat = () => floatCta.classList.toggle('show', pastHero && !joinVisible && !quizVisible && !trailerVisible);
+        new IntersectionObserver(([e]) => { trailerVisible = e.isIntersecting; syncFloat(); }, { rootMargin: '0px 0px -30% 0px' }).observe($('trailer'));
+        new IntersectionObserver(([e]) => { pastHero = !e.isIntersecting; syncFloat(); }).observe(document.querySelector('.hero-ctas'));
+        new IntersectionObserver(([e]) => { joinVisible = e.isIntersecting; syncFloat(); }, { rootMargin: '0px 0px -20% 0px' }).observe($('join'));
+        // השאלון: הכפתור הצף מסתיר את התשובות התחתונות, אז הוא יורד כל עוד השאלון על המסך
+        new IntersectionObserver(([e]) => { quizVisible = e.isIntersecting; syncFloat(); }).observe($('quiz'));
+
+        /* ===== טופס ===== */
+        const form = $('joinForm');
+        const submitBtn = $('submitBtn');
+        const SUBMIT_LABEL = submitBtn.textContent;
+
+        function showError(text) {
+            $('errorMsg').textContent = text;
+            $('errorMsg').classList.add('show');
+        }
+
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            $('errorMsg').classList.remove('show');
+
+            const name = $('fName').value.trim();
+            const phone = $('fPhone').value.trim();
+            if (!name) { showError('רק צריך שם ואנחנו מסודרים 🙂'); $('fName').focus(); return; }
+            if (phone.replace(/\D/g, '').length < 9) { showError('צריך טלפון כדי שנוכל לכתוב לכם בוואטסאפ.'); $('fPhone').focus(); return; }
+
+            const areas = [...document.querySelectorAll('#areaChips .chip[aria-pressed="true"]')].map(c => c.textContent).join(', ');
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'שולחים לצוות...';
+
+            try {
+                const res = await fetch(CONFIG.SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ action: 'joinTeam', name, phone, areas, quiz: quizResult, note: $('fNote').value.trim() }),
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const result = JSON.parse(await res.text());
+                if (!result.success) throw new Error(result.message || 'server');
+
+                form.style.display = 'none';
+                $('successDeer').innerHTML = Deer.svg({ body: true, mood: 'wink' });
+                $('confNum').textContent = String(10000 + Math.floor(Math.random() * 89999));
+                $('success').classList.add('show');
+                $('success').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (err) {
+                console.error('joinTeam:', err);
+                showError('משהו לא עבר בדרך 😅 נסו שוב עוד רגע. ואם זה ממשיך, כתבו לנו בקבוצת המתנדבים.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = SUBMIT_LABEL;
+            }
+        });
+    </script>
+</body>
+</html>

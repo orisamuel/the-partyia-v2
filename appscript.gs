@@ -873,6 +873,45 @@ function ensureVolunteerEventSheet_() {
 }
 
 // ============================================================
+// TEAM APPLICATIONS (team.html)
+// Schema: תאריך(0), שעה(1), שם(2), טלפון(3), תחומים(4), תוצאת שאלון(5), הערה(6), סטטוס(7)
+// ============================================================
+
+function joinTeam(data) {
+  try {
+    const name = String(data.name || '').trim();
+    const phone = String(data.phone || '').trim();
+    if (!name) return { success: false, message: 'חסר שם' };
+    if (phone.replace(/\D/g, '').length < 9) return { success: false, message: 'חסר טלפון' };
+
+    const sheet = ensureTeamSheet_();
+    const now = new Date();
+    // גרש בהתחלה כדי שהגיליון ישמור את ה-0 בתחילת המספר
+    sheet.appendRow([
+      fmtDate(now), fmtTime(now), name.slice(0, 80), "'" + phone.slice(0, 20),
+      String(data.areas || '').slice(0, 200), String(data.quiz || '').slice(0, 40),
+      String(data.note || '').slice(0, 500), 'חדש'
+    ]);
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+function ensureTeamSheet_() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName('הצטרפות לצוות');
+  if (!sheet) {
+    sheet = ss.insertSheet('הצטרפות לצוות');
+    sheet.appendRow(['תאריך', 'שעה', 'שם', 'טלפון', 'תחומים', 'תוצאת שאלון', 'הערה', 'סטטוס']);
+    sheet.getRange(1, 1, 1, 8).setFontWeight('bold');
+    sheet.setRightToLeft(true);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// ============================================================
 // MAINTENANCE
 // ============================================================
 
@@ -918,7 +957,7 @@ function doPost(e) {
     switch (action) {
 
       case 'ping':
-        return jsonResponse({ success: true, version: 'v4-volunteers-2026-07-05' });
+        return jsonResponse({ success: true, version: 'v5-team-2026-10-06' });
 
       case 'debugEcho':
         return jsonResponse({ success: true, received: { action: p.action, note: p.note, customerName: p.customerName, products: p.products } });
@@ -1007,6 +1046,10 @@ function doPost(e) {
       // ── Volunteer Event ───────────────────────────────────
       case 'registerVolunteerEvent':
         return jsonResponse(registerVolunteerEvent(p.name, p.guests));
+
+      // ── Team Applications ─────────────────────────────────
+      case 'joinTeam':
+        return jsonResponse(joinTeam({ name: p.name, phone: p.phone, areas: p.areas, quiz: p.quiz, note: p.note }));
 
       default:
         return jsonResponse({ success: false, message: 'פעולה לא מוכרת: ' + action });
