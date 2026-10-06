@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<!-- מקור לתמונת התצוגה בוואטסאפ: team-v2/og.jpg (1122x1402) -->
+<link href="https://fonts.googleapis.com/css2?family=Karantina:wght@700&family=Rubik:wght@500;700&display=swap" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #F4EADB; }
+    .card {
+        position: relative;
+        width: 1122px;
+        height: 1402px;
+        overflow: hidden;
+        background: #F4EADB;
+        color: #2E1710;
+        font-family: 'Rubik', sans-serif;
+        text-align: center;
+    }
+    .card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        opacity: .38;
+        mix-blend-mode: multiply;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .22 0 0 0 0 .12 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .frame { position: absolute; inset: 34px; border: 4px solid #2E1710; border-radius: 34px; }
+    .chip {
+        position: absolute; top: 96px; left: 50%; transform: translateX(-50%);
+        display: inline-flex; align-items: center; gap: 16px; white-space: nowrap;
+        padding: 14px 34px; border: 3px solid #2E1710; border-radius: 999px;
+        font-size: 38px; font-weight: 700; background: #F4EADB;
+    }
+    .chip i { width: 18px; height: 18px; border-radius: 50%; background: #C4531A; display: block; }
+    .emblem { position: absolute; top: 210px; left: 50%; transform: translateX(-50%); width: 560px; }
+    h1 {
+        position: absolute; top: 720px; width: 100%;
+        font-family: 'Karantina', sans-serif; font-weight: 700; font-size: 236px; line-height: .86;
+    }
+    h1 span { display: block; color: #C4531A; }
+    .sub { position: absolute; top: 1170px; width: 100%; font-size: 46px; font-weight: 500; color: #5E4135; }
+    .facts { position: absolute; top: 1252px; width: 100%; font-size: 36px; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="frame"></div>
+    <div class="chip"><i></i>ההרשמה לצוות פתוחה</div>
+    <img class="emblem" src="emblem.webp" alt="">
+    <h1>מחפשים אנשים<span>לצוות הפרתיה</span></h1>
+    <div class="sub">הפאב הקהילתי של נופי פרת</div>
+    <div class="facts">ערב אחד בערך כל חודשיים · בלי ניסיון</div>
+</div>
+</body>
+</html>

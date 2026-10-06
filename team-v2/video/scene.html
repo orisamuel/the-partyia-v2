@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>צוות הפרתיה: סרטון הסבר</title>
+<!--
+  scene.html: סרטון ההסבר של עמוד הגיוס (team-v2), 1080x1920, 30fps.
+  הכול פונקציה טהורה של t בתוך window.seek(t). תזמונים מ-cues.json (מקור האמת, יחד עם audio/mix.wav).
+  רינדור: node render.mjs scene.html --dur 50 --jobs 5 --out <file>
+-->
+<link rel="stylesheet" href="base.css">
+<style>
+  .scene { position: absolute; inset: 0; }
+  .ln { position: absolute; left: 0; width: 1080px; text-align: center; white-space: nowrap; }
+  .ln > span { display: inline-block; }
+  .k { font-family: var(--display); font-weight: 700; line-height: .92; letter-spacing: .5px; }
+  .r { font-family: var(--body); }
+  svg { overflow: visible; }
+
+  #bg { position: absolute; inset: 0;
+    background: radial-gradient(ellipse 90% 70% at 50% 46%, #F8F0E4 0%, #F4EADB 52%, #ECDFCA 100%); }
+  #grain { position: absolute; inset: 0; width: 1080px; height: 1920px; mix-blend-mode: multiply; pointer-events: none; }
+  #speck { position: absolute; inset: 0; width: 1080px; height: 1920px; pointer-events: none; }
+
+  /* הסמל: מערכת קואורדינטות של התמונה (900x783), הזזה והגדלה מ-JS */
+  #emWrap { position: absolute; left: 0; top: 0; width: 900px; height: 783px; transform-origin: 0 0; }
+  #emWrap img { position: absolute; left: 0; top: 0; width: 900px; height: 783px; }
+  #sunClip { position: absolute; left: 0; top: 0; width: 900px; height: 778px; overflow: hidden; }
+  #disk0 { position: absolute; left: 2px; top: 38px; width: 894px; height: 894px; border-radius: 50%; background: #EE8834; }
+
+  .horizon { position: absolute; left: 90px; width: 900px; height: 5px; border-radius: 3px; background: var(--ink); transform-origin: 50% 50%; }
+
+  /* סרגל עליון, כמו באתר */
+  #hdr { position: absolute; inset: 0; }
+  #hdrName { position: absolute; right: 224px; top: 84px; font-size: 90px; line-height: 1; }
+  #hdrPlace { position: absolute; right: 224px; top: 178px; font-size: 31px; color: var(--ink-3); white-space: nowrap; }
+  #chip { position: absolute; left: 90px; top: 106px; height: 82px; padding: 0 30px 0 32px; display: flex; align-items: center; gap: 16px;
+    border: 4px solid var(--ink); border-radius: 999px; background: var(--paper); font-size: 32px; font-weight: 700; white-space: nowrap; }
+  #chipDot { position: relative; width: 18px; height: 18px; border-radius: 50%; background: var(--burnt); }
+  #chipPing { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; border: 3px solid var(--burnt); }
+  #hdrRule { position: absolute; left: 90px; top: 238px; width: 900px; height: 3px; background: var(--line); transform-origin: 100% 50%; }
+
+  /* כרטיסים ועיגולי אייקון בשפה של האתר */
+  .ic { position: absolute; border-radius: 50%; background: var(--sun); border: 5px solid var(--ink); display: flex; align-items: center; justify-content: center; }
+  .ic svg { display: block; }
+  .card { position: absolute; border: 5px solid var(--ink); border-radius: 36px; background: var(--paper); box-shadow: 0 10px 0 var(--ink); }
+
+  /* שנה */
+  #avatars { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; }
+  .av { position: absolute; left: 0; top: 0; border-radius: 50%; }
+  .av.full { background: var(--sun); border: 5px solid var(--ink); }
+  .av.slot { background: rgba(255,255,255,.25); }
+  .av svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* מה זה אומר */
+  #bigDisk { position: absolute; left: 0; top: 0; width: 200px; height: 200px; border-radius: 50%; background: var(--sun); border: 0 solid var(--ink); transform-origin: 50% 50%; }
+  .star { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; }
+
+  /* תפקידים */
+  .tcard { left: 90px; width: 900px; height: 230px; top: 0; }
+  .tcard .ic { right: 34px; top: 32px; width: 156px; height: 156px; }
+  .tcard .tx { position: absolute; right: 222px; left: 30px; top: 0; height: 220px; display: flex; align-items: center; }
+  .tcard .tx span { font-size: 100px; white-space: nowrap; padding-top: 6px; }
+
+  /* ישיבות */
+  .ill { position: absolute; left: 0; top: 0; width: 320px; height: 320px; }
+
+  /* תחומים: צ'יפים כמו בטופס באתר */
+  .arow { position: absolute; left: 60px; width: 960px; height: 158px; display: flex; justify-content: center; gap: 30px; }
+  .achip { position: relative; height: 158px; display: flex; align-items: center; gap: 22px; padding: 0 20px 0 48px; border: 5px solid var(--ink); border-radius: 999px; background: var(--paper); box-shadow: 0 9px 0 var(--ink); }
+  .achip .ic { position: relative; width: 112px; height: 112px; border-width: 4px; flex: none; }
+  .achip .lb { font-size: 122px; line-height: 1; white-space: nowrap; padding-top: 10px; }
+
+  /* צריך */
+  .rule { position: absolute; left: 90px; width: 900px; height: 5px; background: var(--ink); transform-origin: 100% 50%; border-radius: 3px; }
+  .hl { position: absolute; background: var(--sun); border-radius: 12px 26px 14px 30px / 20px 14px 24px 12px; transform-origin: 100% 50%; mix-blend-mode: multiply; opacity: .9; }
+
+  /* סיום */
+  #btn { position: absolute; left: 115px; width: 850px; top: 1342px; height: 146px; border: 5px solid var(--ink); border-radius: 40px; background: var(--sun);
+    display: flex; align-items: center; justify-content: center; gap: 22px; font-size: 58px; font-weight: 700; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div id="bg"></div>
+
+  <!-- ===== פתיחה ===== -->
+  <div class="scene" id="s-intro">
+    <div class="horizon" id="hz1" style="top:891px"></div>
+    <img id="wordmark" src="../wordmark-ink.webp" alt="הפרתיה" style="position:absolute;left:250px;top:952px;width:580px;height:192px">
+    <div class="ln r" id="i2" style="top:1186px;font-size:50px;font-weight:500;color:var(--ink-2)"><span>הפאב הקהילתי של נופי פרת</span></div>
+    <div class="ln k" id="i3a" style="top:1302px;font-size:168px"><span>פותחת את הצוות</span></div>
+    <div class="ln k accent" id="i3b" style="top:1456px;font-size:168px"><span>להצטרפות</span></div>
+  </div>
+
+  <!-- ===== שנה ===== -->
+  <div class="scene" id="s-year">
+    <svg id="lights" width="1080" height="700" style="position:absolute;left:0;top:0">
+      <defs>
+        <radialGradient id="glow"><stop offset="0" stop-color="#F6A35A" stop-opacity=".75"/><stop offset=".45" stop-color="#F2A060" stop-opacity=".28"/><stop offset="1" stop-color="#F2A060" stop-opacity="0"/></radialGradient>
+      </defs>
+      <path id="wire" fill="none" stroke="#2E1710" stroke-width="4" stroke-linecap="round"/>
+      <g id="bulbs"></g>
+    </svg>
+    <div class="ln k" id="y1a" style="top:700px;font-size:250px"><span>כבר שנה</span></div>
+    <div class="ln k accent" id="y1b" style="top:928px;font-size:150px"><span>של ערבים טובים</span></div>
+    <div class="ln k" id="y2a" style="top:700px;font-size:186px"><span>ועכשיו רוצים</span></div>
+    <div class="ln k accent" id="y2b" style="top:872px;font-size:236px"><span>להיות יותר</span></div>
+    <div id="avatars"></div>
+  </div>
+
+  <!-- ===== מה זה אומר בפועל ===== -->
+  <div id="bigDisk"></div>
+  <div class="scene" id="s-q">
+    <div class="ln k" id="q1" style="top:780px;font-size:206px"><span>מה זה אומר</span></div>
+    <div class="ln k" id="q2" style="top:962px;font-size:260px"><span>בפועל?</span></div>
+  </div>
+
+  <!-- ===== ערב אחד ===== -->
+  <div class="scene" id="s-eve">
+    <svg id="ring" width="1080" height="1100" style="position:absolute;left:0;top:0">
+      <circle id="ringLine" cx="540" cy="740" r="290" fill="none" stroke="#8B6E5F" stroke-width="4" stroke-dasharray="6 14" stroke-linecap="round"/>
+      <path id="ringArc" fill="none" stroke="#E8873B" stroke-width="14" stroke-linecap="round"/>
+      <g id="months"></g>
+    </svg>
+    <div id="calIcon" style="position:absolute;left:465px;top:665px;width:150px;height:150px">
+      <svg viewBox="0 0 24 24" width="150" height="150" fill="none" stroke="#2E1710" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.7" fill="#2E1710"/></svg>
+    </div>
+    <div class="ln k" id="e1" style="top:1196px;font-size:176px"><span>ערב הפעלה אחד</span></div>
+    <div class="ln k accent" id="e2" style="top:1370px;font-size:150px"><span>בערך כל חודשיים</span></div>
+  </div>
+
+  <!-- ===== מה עושים בערב ===== -->
+  <div class="scene" id="s-tasks">
+    <div class="card tcard" id="tc1">
+      <div class="ic"><svg viewBox="0 0 24 24" width="84" height="84" fill="none" stroke="#2E1710" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 19.5c.6-3.3 3-5.2 6-5.2s5.4 1.9 6 5.2"/><path d="M16 5.2a3 3 0 0 1 0 5.6M18.5 14.8c1.4.8 2.3 2.4 2.5 4.7"/></svg></div>
+      <div class="tx"><span class="k">מגייסים מתנדבים לערב</span></div>
+    </div>
+    <div class="card tcard" id="tc2">
+      <div class="ic"><svg viewBox="0 0 24 24" width="84" height="84" fill="none" stroke="#2E1710" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5v9h10v-9M7 8h10M5.5 12.5h13M7.5 12.5 6 20.5M16.5 12.5l1.5 8"/></svg></div>
+      <div class="tx"><span class="k">מקימים, מפעילים</span></div>
+    </div>
+    <div class="card tcard" id="tc3">
+      <div class="ic"><svg viewBox="0 0 24 24" width="84" height="84" fill="none" stroke="#2E1710" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8v8.4"/><path d="M8 11.2h8l1.6 9.3H6.4z"/><path d="M7.4 14.6h9.2M10 17.2v3.3M14 17.2v3.3"/></svg></div>
+      <div class="tx"><span class="k">ומנקים בסוף</span></div>
+    </div>
+  </div>
+
+  <!-- ===== ישיבות ווואטסאפ ===== -->
+  <div class="scene" id="s-meet">
+    <div class="ill" id="calIll">
+      <svg viewBox="0 0 300 300" width="320" height="320" fill="none" stroke="#2E1710" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="24" y="44" width="252" height="232" rx="30" fill="#F4EADB" stroke-width="10"/>
+        <path d="M24 74a30 30 0 0 1 30-30h192a30 30 0 0 1 30 30v34H24z" fill="#E8873B" stroke-width="10"/>
+        <path d="M92 22v44M208 22v44" stroke-width="12"/>
+        <g id="calDots" fill="#8B6E5F" stroke="none"></g>
+        <circle id="calMark" cx="194" cy="216" r="27" stroke="#C4531A" stroke-width="9"/>
+      </svg>
+    </div>
+    <div class="ill" id="chatIll">
+      <svg viewBox="0 0 300 300" width="320" height="320" fill="none" stroke="#2E1710" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M40 76a34 34 0 0 1 34-34h152a34 34 0 0 1 34 34v104a34 34 0 0 1-34 34H118l-58 46v-46h0a34 34 0 0 1-20-30z" fill="#EBDDC7" stroke-width="10"/>
+        <circle class="tdot" cx="98" cy="128" r="17" fill="#2E1710" stroke="none"/>
+        <circle class="tdot" cx="150" cy="128" r="17" fill="#2E1710" stroke="none"/>
+        <circle class="tdot" cx="202" cy="128" r="17" fill="#2E1710" stroke="none"/>
+      </svg>
+    </div>
+    <div class="ln k" id="mA1" style="top:984px;font-size:200px"><span>ישיבת צוות</span></div>
+    <div class="ln k accent" id="mA2" style="top:1172px;font-size:128px"><span>פעם בחודש או חודשיים</span></div>
+    <div class="ln k" id="mB1" style="top:990px;font-size:176px"><span>וזמינות בוואטסאפ</span></div>
+    <div class="ln k accent" id="mB2" style="top:1158px;font-size:210px"><span>כשצריך</span></div>
+  </div>
+
+  <!-- ===== תחומים ===== -->
+  <div class="scene" id="s-areas">
+    <div class="ln k" id="a1" style="top:330px;font-size:176px"><span>לכל אחד</span></div>
+    <div class="ln k accent" id="a2" style="top:490px;font-size:176px"><span>תחום משלו</span></div>
+    <div id="acards"></div>
+  </div>
+
+  <!-- ===== מה צריך ===== -->
+  <div class="scene" id="s-need">
+    <div class="rule" id="nr0" style="top:500px"></div>
+    <div class="rule" id="nr1" style="top:810px;height:3px;background:var(--line)"></div>
+    <div class="rule" id="nr2" style="top:1120px;height:3px;background:var(--line)"></div>
+    <div class="rule" id="nr3" style="top:1430px"></div>
+    <div id="hls"></div>
+    <div class="ln k" id="n1" style="top:582px;font-size:186px"><span>לא צריך ניסיון</span></div>
+    <div class="ln k" id="n2" style="top:892px;font-size:186px"><span>צריך <span class="hlw" data-hl="h2">רצון אמיתי</span></span></div>
+    <div class="ln k" id="n3" style="top:1202px;font-size:186px"><span>ויכולת <span class="hlw" data-hl="h3">להתחייב</span></span></div>
+  </div>
+
+  <!-- ===== סיום ===== -->
+  <div class="scene" id="s-end">
+    <div class="horizon" id="hz2" style="top:857px"></div>
+    <div class="ln k" id="d1" style="top:962px;font-size:172px"><span>בואו להיות חלק</span></div>
+    <div class="ln k accent" id="d2" style="top:1122px;font-size:172px"><span>מצוות הפרתיה</span></div>
+    <div id="btnShadow" style="position:absolute;left:115px;width:850px;top:1354px;height:146px;border-radius:40px;background:var(--ink)"></div>
+    <div id="btn" class="r"><span>כל הפרטים וההרשמה בקישור</span></div>
+    <div class="ln r" id="d4" style="top:1566px;font-size:34px;color:var(--ink-3)"><span>פאב קהילתי בהתנדבות · נופי פרת</span></div>
+  </div>
+
+  <div id="stars"></div>
+
+  <!-- הסמל (משותף לכל הסצנות) -->
+  <div id="emWrap">
+    <div id="sunClip"><div id="disk0"></div></div>
+    <img id="emblem" src="../emblem.webp" alt="">
+  </div>
+
+  <!-- סרגל עליון -->
+  <div id="hdr">
+    <div class="k" id="hdrName">הפרתיה</div>
+    <div class="r" id="hdrPlace">פאב קהילתי · נופי פרת</div>
+    <div id="chip" class="r"><span id="chipDot"><span id="chipPing"></span></span><span>ההרשמה לצוות פתוחה</span></div>
+    <div id="hdrRule"></div>
+  </div>
+
+  <canvas id="grain" width="540" height="960"></canvas>
+  <canvas id="speck" width="1080" height="1920"></canvas>
+</div>
+
+<script src="lib.js"></script>
+<script>
+(function () {
+  const { clamp, lerp, prog, easeOutCubic, easeInOutCubic, easeInCubic, spring, springTo, rng } = MG;
+  const $ = (id) => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const INK = '#2E1710';
+
+  // ---------- תזמון (מ-cues.json) ----------
+  const T = {
+    intro: [0.0, 6.4], year: [6.4, 12.2], q: [12.2, 14.3], eve: [14.3, 17.8], tasks: [17.8, 23.0],
+    meet: [23.0, 28.3], areas: [28.3, 36.4], need: [36.4, 41.7], end: [41.7, 50.0],
+    i1: 1.2, i2: 2.22, i3: 4.25,
+    y1: 6.6, y2: 9.56,
+    q1: 12.4,
+    e1: 14.5, e2: 16.03,
+    t1: 18.0, t2: 19.81, t3: 21.6,
+    m1: 23.2, m2: 26.37,
+    a1: 28.62, g1: 31.02, g2: 34.63,
+    n1: 36.82, n2: 38.32, n3: 39.92,
+    d1: 42.12, d2: 44.82,
+  };
+  // כל תחום עולה על המילה שלו בקריינות (מדידת עוצמה של vo7): הקבוצה הראשונה מ-31.02,
+  // "מלאי" נאמר ב-33.86 ו"עיצוב" ב-34.63 (זמן הקבוצה השנייה ב-cues.json).
+  const AREA_T = [T.g1, 31.80, 32.72, 33.86, T.g2, 35.22];
+
+  // ---------- עזרים ----------
+  function S(el, o, x = 0, y = 0, s = 1, r = 0) {
+    el.style.opacity = o.toFixed(4);
+    el.style.transform = `translate(${x.toFixed(2)}px,${y.toFixed(2)}px) scale(${s.toFixed(4)})` + (r ? ` rotate(${r.toFixed(3)}deg)` : '');
+  }
+  const fadeIn = (t, t0, d = 0.5) => easeOutCubic(prog(t, t0, t0 + d));
+  const rise = (t, t0, d = 24) => d * (1 - spring(t, t0, 1.6, 0.82));
+  const outK = (t, tEnd, d = 0.32) => easeInCubic(prog(t, tEnd - d, tEnd));
+  // שורת טקסט: נכנסת שלמה (שקיפות + עלייה), יוצאת עם הסצנה
+  function line(el, t, t0, tEnd, dRise = 24) {
+    const o = outK(t, tEnd);
+    S(el, fadeIn(t, t0) * (1 - o), 0, rise(t, t0, dRise) - 28 * o);
+  }
+  function show(el, t, a, b) { el.style.visibility = (t >= a - 0.05 && t <= b + 0.05) ? 'visible' : 'hidden'; }
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function starPath(c = 0) { // ארבע קצוות, כמו בסמל
+    return 'M12 2.5c.7 4.6 2.1 6.4 6.6 7.5-4.5 1.1-5.9 2.9-6.6 7.5-.7-4.6-2.1-6.4-6.6-7.5 4.5-1.1 5.9-2.9 6.6-7.5Z';
+  }
+  function fitText(node, maxW, minPx) {
+    let fs = parseFloat(getComputedStyle(node).fontSize);
+    while (node.getBoundingClientRect().width > maxW && fs > minPx) { fs -= 2; node.style.fontSize = fs + 'px'; }
+    return fs;
+  }
+
+  // ---------- גרעין נייר והדפס מחוספס (נבנים פעם אחת, סטטיים) ----------
+  function buildTexture() {
+    const R = rng(7);
+    const g = $('grain').getContext('2d');
+    const im = g.createImageData(540, 960);
+    for (let i = 0; i < 540 * 960; i++) {
+      const a = Math.pow(R(), 2.6) * 0.13;
+      im.data[i * 4] = 255 - a * 175; im.data[i * 4 + 1] = 255 - a * 200; im.data[i * 4 + 2] = 255 - a * 225; im.data[i * 4 + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+    // כתמי נייר דהויים, רכים
+    for (let i = 0; i < 26; i++) {
+      const x = R() * 540, y = R() * 960, r = 40 + R() * 120;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, 'rgba(190,150,110,0.07)'); gr.addColorStop(1, 'rgba(190,150,110,0)');
+      g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    // נקודות בצבע הנייר: נראות רק על דיו ועל כתום, כמו הדפס שחוק
+    const s = $('speck').getContext('2d');
+    for (let i = 0; i < 5200; i++) {
+      const x = R() * 1080, y = R() * 1920, r = 0.5 + Math.pow(R(), 3) * 2.1;
+      s.fillStyle = `rgba(244,234,219,${(0.18 + R() * 0.42).toFixed(3)})`;
+      s.beginPath(); s.arc(x, y, r, 0, Math.PI * 2); s.fill();
+    }
+  }
+
+  // ---------- בנייה ----------
+  // נורות
+  const BULBS = [];
+  const wireY = (x) => 302 + 168 * (1 - Math.pow((x - 540) / 560, 2));
+  function buildLights() {
+    const pts = [];
+    for (let x = 1100; x >= -20; x -= 8) pts.push(`${x},${wireY(x).toFixed(1)}`);
+    const w = $('wire');
+    w.setAttribute('d', 'M' + pts.join(' L'));
+    const L = w.getTotalLength();
+    w.style.strokeDasharray = L; w.dataset.len = L;
+    const g = $('bulbs');
+    const xs = [972, 864, 756, 648, 540, 432, 324, 216, 108];
+    xs.forEach((x, i) => {
+      const y = wireY(x);
+      const grp = el('g', {}, g);
+      const glow = el('circle', { cx: x, cy: y + 56, r: 92, fill: 'url(#glow)' }, grp);
+      const b = el('g', {}, grp);
+      el('path', { d: `M${x} ${y} v14`, stroke: INK, 'stroke-width': 4, 'stroke-linecap': 'round' }, b);
+      el('rect', { x: x - 11, y: y + 12, width: 22, height: 20, rx: 4, fill: INK }, b);
+      const bulb = el('path', { d: `M${x} ${y + 30} c-17 0-22 14-22 26 c0 16 12 30 22 30 c10 0 22-14 22-30 c0-12-5-26-22-26z`, fill: '#F4EADB', stroke: INK, 'stroke-width': 4 }, b);
+      const shine = el('path', { d: `M${x - 9} ${y + 48} c0-6 3-10 7-11`, stroke: '#FBE7CF', 'stroke-width': 4, 'stroke-linecap': 'round', fill: 'none' }, b);
+      BULBS.push({ x, y, grp, glow, b, bulb, shine, i });
+    });
+  }
+
+  // אווטרים: שלושה בצוות, ושלושה מקומות פנויים
+  const AV = [];
+  const PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="#2E1710" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9.2" r="3.4"/><path d="M5.6 19.4c.8-3.5 3.3-5.5 6.4-5.5s5.6 2 6.4 5.5"/></svg>';
+  const PLUS = '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="#5E4135" stroke-width="3.6" stroke-dasharray="9 8"/><path d="M50 34v32M34 50h32" stroke="#5E4135" stroke-width="5" stroke-linecap="round"/></svg>';
+  function buildAvatars() {
+    const box = $('avatars');
+    for (let i = 0; i < 6; i++) {
+      const d = document.createElement('div');
+      const full = i < 3;
+      d.className = 'av ' + (full ? 'full' : 'slot');
+      d.innerHTML = full ? PERSON : PLUS;
+      box.appendChild(d);
+      AV.push({ d, full, i });
+    }
+  }
+
+  // טבעת החודשים
+  const MONTHS = ['ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'יוני', 'יולי', 'אוג׳', 'ספט׳', 'אוק׳', 'נוב׳', 'דצמ׳'];
+  const RC = { x: 540, y: 740, r: 290 };
+  const MD = [];
+  function buildRing() {
+    const g = $('months');
+    MONTHS.forEach((m, i) => {
+      const a = (-90 + i * 30) * Math.PI / 180;
+      const x = RC.x + RC.r * Math.cos(a), y = RC.y + RC.r * Math.sin(a);
+      const grp = el('g', {}, g);
+      const pulse = el('circle', { cx: x, cy: y, r: 28, fill: 'none', stroke: '#C4531A', 'stroke-width': 4 }, grp);
+      const dot = el('circle', { cx: x, cy: y, r: 15, fill: '#F4EADB', stroke: INK, 'stroke-width': 4.5 }, grp);
+      const lx = RC.x + 362 * Math.cos(a), ly = RC.y + 362 * Math.sin(a);
+      const lab = el('text', { x: lx, y: ly + 14, 'text-anchor': 'middle', 'font-family': 'Rubik', 'font-weight': 500, 'font-size': 40, fill: '#8B6E5F' }, grp);
+      lab.textContent = m;
+      MD.push({ grp, dot, pulse, lab, x, y, i });
+    });
+    const c = $('ringLine');
+    c.dataset.len = 2 * Math.PI * RC.r;
+  }
+
+  // תאריכים בלוח השנה הקטן
+  function buildCal() {
+    const g = $('calDots');
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) {
+      el('circle', { cx: 62 + c * 44, cy: 140 + r * 38, r: 6.5 }, g);
+    }
+    const m = $('calMark');
+    const L = 2 * Math.PI * 30;
+    m.style.strokeDasharray = L; m.dataset.len = L;
+  }
+
+  // תחומים
+  const ICONS = {
+    gizbar: '<ellipse cx="12" cy="6.2" rx="6.6" ry="2.6"/><path d="M5.4 6.2v4.2c0 1.4 3 2.6 6.6 2.6s6.6-1.2 6.6-2.6V6.2"/><path d="M5.4 10.4v4.2c0 1.4 3 2.6 6.6 2.6s6.6-1.2 6.6-2.6v-4.2"/><path d="M5.4 14.6v3.4c0 1.4 3 2.6 6.6 2.6s6.6-1.2 6.6-2.6v-3.4"/>',
+    pirsum: '<path d="M4 9.6v4.8a1 1 0 0 0 1 1h2.2l8.3 4.4V4.2L7.2 8.6H5a1 1 0 0 0-1 1z"/><path d="M7.4 15.4l1.3 4.8h2.4l-1-4"/><path d="M18.6 9.2a3.6 3.6 0 0 1 0 5.6"/>',
+    kesher: '<path d="M3.5 11.2 12 4l8.5 7.2"/><path d="M5.8 9.4V20h12.4V9.4"/><path d="M12 17.4s-3.2-1.9-3.2-4a1.7 1.7 0 0 1 3.2-.9 1.7 1.7 0 0 1 3.2.9c0 2.1-3.2 4-3.2 4z"/>',
+    melai: '<path d="M3.5 7.6 12 3.6l8.5 4v8.8L12 20.4l-8.5-4z"/><path d="M3.5 7.6 12 11.6l8.5-4M12 11.6v8.8"/><path d="M7.8 5.6l8.4 4"/>',
+    design: '<path d="M14.6 4.4l5 5L9.2 19.8H4.2v-5z"/><path d="M12.4 6.6l5 5"/>',
+    logistics: '<path d="M2.8 6.2h11v9.4h-11z"/><path d="M13.8 9.4h3.9l3 3.4v2.8h-6.9"/><circle cx="6.8" cy="17.4" r="1.9"/><circle cx="17" cy="17.4" r="1.9"/>',
+  };
+  const AREAS = [['gizbar', 'גזברות'], ['pirsum', 'פרסום'], ['kesher', 'קשר עם היישוב'], ['melai', 'מלאי'], ['design', 'עיצוב'], ['logistics', 'לוגיסטיקה']];
+  const AC = [];
+  const AROWS = [[0, 1], [2], [3, 4], [5]];
+  function buildAreas() {
+    const box = $('acards');
+    AROWS.forEach((items, r) => {
+      const row = document.createElement('div');
+      row.className = 'arow';
+      row.style.top = (736 + r * 196) + 'px';
+      items.forEach((i) => {
+        const [key, label] = AREAS[i];
+        const d = document.createElement('div');
+        d.className = 'achip';
+        d.innerHTML = `<div class="ic"><svg viewBox="0 0 24 24" width="62" height="62" fill="none" stroke="#2E1710" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">${ICONS[key]}</svg></div><div class="lb k">${label}</div>`;
+        row.appendChild(d);
+        AC[i] = { d, ic: d.querySelector('.ic'), t0: AREA_T[i] };
+      });
+      box.appendChild(row);
+    });
+  }
+
+  // כוכבים
+  const STARS = [];
+  function star(x, y, size, color, scene, t0, phase) {
+    const d = document.createElement('div');
+    d.className = 'star';
+    d.style.left = (x - size / 2) + 'px'; d.style.top = (y - size / 2) + 'px';
+    d.style.width = size + 'px'; d.style.height = size + 'px';
+    d.innerHTML = `<svg viewBox="0 0 24 24" width="${size}" height="${size}"><path d="${starPath()}" fill="${color}"/></svg>`;
+    $('stars').appendChild(d);
+    STARS.push({ d, scene, t0, phase });
+  }
+
+  // הדגשות מאחורי מילים
+  const HL = [];
+  function buildHighlights() {
+    document.querySelectorAll('.hlw').forEach((w) => {
+      const r = w.getBoundingClientRect();
+      const h = document.createElement('div');
+      h.className = 'hl';
+      h.style.left = (r.left - 14) + 'px'; h.style.width = (r.width + 28) + 'px';
+      h.style.top = (r.top + r.height * 0.70) + 'px'; h.style.height = (r.height * 0.19) + 'px';
+      $('hls').appendChild(h);
+      HL.push({ h, line: w.closest('.ln') });
+    });
+  }
+
+  // ---------- הסמל: מצבים ----------
+  const EW = 900, EH = 783;
+  const EM = {
+    A: { w: 640, cx: 540, top: 340 },
+    B: { w: 118, cx: 931, top: 98 },
+    C: { w: 600, cx: 540, top: 340 },
+  };
+  for (const k in EM) EM[k].cy = EM[k].top + EM[k].w * EH / EW / 2;
+  function emblemAt(t) {
+    let st;
+    if (t < 5.95) st = EM.A;
+    else if (t < 6.85) {
+      const k = easeInOutCubic(prog(t, 5.95, 6.85));
+      st = { cx: lerp(EM.A.cx, EM.B.cx, k), cy: lerp(EM.A.cy, EM.B.cy, k), w: Math.exp(lerp(Math.log(EM.A.w), Math.log(EM.B.w), k)) };
+    } else if (t < 41.3) st = EM.B;
+    else {
+      const k = easeInOutCubic(prog(t, 41.3, 42.1));
+      st = { cx: lerp(EM.B.cx, EM.C.cx, k), cy: lerp(EM.B.cy, EM.C.cy, k), w: Math.exp(lerp(Math.log(EM.B.w), Math.log(EM.C.w), k)) };
+    }
+    return st;
+  }
+  const PUSH = (t) => 1 + 0.03 * easeInOutCubic(prog(t, 42.4, 50));
+  const pushXY = (x, y, p) => [540 + (x - 540) * p, 960 + (y - 960) * p];
+
+  // ---------- seek ----------
+  window.seek = function (t) {
+    t = Math.max(0, Math.min(50, t));
+
+    // ===== סמל =====
+    {
+      const st = emblemAt(t);
+      let { cx, cy, w } = st;
+      if (t >= 41.3) { const p = PUSH(t); [cx, cy] = pushXY(cx, cy, p); w *= p; }
+      // נחיתה: הסמל נכנס מעל השמש שזרחה
+      const s = w / EW;
+      const wrap = $('emWrap');
+      wrap.style.transform = `translate(${(cx - EW * s / 2).toFixed(2)}px,${(cy - EH * s / 2).toFixed(2)}px) scale(${s.toFixed(5)})`;
+      // נחיתה: הסמל נכנס מעל השמש שזרחה ומתיישב על קו האופק
+      const land = t < 3 ? 1 + 0.025 * (1 - spring(t, 0.95, 1.5, 0.8)) : 1;
+      $('emblem').style.transformOrigin = '50% 99%';
+      $('emblem').style.transform = `scale(${land.toFixed(5)})`;
+      // השמש עולה מאחורי קו האופק
+      const kSun = easeOutCubic(prog(t, 0.12, 1.4));
+      $('disk0').style.transform = `translateY(${((1 - kSun) * 760).toFixed(2)}px)`;
+      $('disk0').style.opacity = (1 - prog(t, 1.45, 1.9)).toFixed(4);
+      $('emblem').style.opacity = fadeIn(t, 0.95, 0.5).toFixed(4);
+      $('sunClip').style.visibility = t < 2 ? 'visible' : 'hidden';
+    }
+
+    // ===== סרגל עליון =====
+    {
+      const o = fadeIn(t, 6.55, 0.5) * (1 - outK(t, 41.5, 0.35));
+      const hdr = $('hdr');
+      hdr.style.visibility = o > 0.001 ? 'visible' : 'hidden';
+      S($('hdrName'), o, 0, rise(t, 6.55, 14) );
+      S($('hdrPlace'), o, 0, rise(t, 6.62, 14));
+      S($('chip'), fadeIn(t, 6.75, 0.5) * (1 - outK(t, 41.5, 0.35)), 0, rise(t, 6.75, 14));
+      $('hdrRule').style.opacity = o;
+      $('hdrRule').style.transform = `scaleX(${easeInOutCubic(prog(t, 6.5, 7.2)).toFixed(4)})`;
+      const ph = ((t - 6.75) % 1.8 + 1.8) % 1.8 / 1.8;
+      const ping = $('chipPing');
+      ping.style.transform = `scale(${(1 + ph * 1.6).toFixed(3)})`;
+      ping.style.opacity = (0.75 * (1 - easeOutCubic(ph))).toFixed(3);
+    }
+
+    // ===== פתיחה =====
+    {
+      const [a, b] = T.intro;
+      const sc = $('s-intro'); show(sc, t, a, b);
+      const end = 6.3;
+      const o = outK(t, end, 0.35);
+      $('hz1').style.transform = `scaleX(${easeInOutCubic(prog(t, 0.05, 0.85)).toFixed(4)})`;
+      $('hz1').style.opacity = (1 - o).toFixed(4);
+      line($('wordmark'), t, T.i1, end, 26);
+      line($('i2'), t, T.i2, end, 20);
+      line($('i3a'), t, T.i3, end, 26);
+      line($('i3b'), t, T.i3 + 0.16, end, 26);
+    }
+
+    // ===== שנה =====
+    {
+      const [a, b] = T.year;
+      show($('s-year'), t, 6.33, b); // החוט מתחיל להימתח כשהפתיחה יוצאת
+      if (t > 6.2 && t < b + 0.1) {
+        const end = b;
+        const o = outK(t, end, 0.35);
+        const w = $('wire');
+        const L = +w.dataset.len;
+        const kw = easeOutCubic(prog(t, 6.3, 7.1));
+        w.style.strokeDashoffset = (L * (1 - kw)).toFixed(1);
+        $('lights').style.opacity = (1 - o).toFixed(4);
+        $('lights').style.transform = `translateY(${(-28 * o).toFixed(2)}px)`;
+        for (const B of BULBS) {
+          const frac = (1100 - B.x) / 1120;
+          const ta = 6.3 + 0.8 * (1 - Math.cbrt(1 - clamp(frac))) - 0.04;
+          const sIn = spring(t, ta, 2.2, 0.6);
+          const sway = 3.2 * Math.sin(1.3 * t + B.i * 0.9) * clamp(sIn);
+          B.b.style.transformOrigin = `${B.x}px ${B.y}px`;
+          B.b.style.transform = `rotate(${sway.toFixed(3)}deg) scale(${clamp(sIn, 0, 1.2).toFixed(4)})`;
+          B.b.style.opacity = clamp(sIn * 3).toFixed(3);
+          const tl = 7.05 + B.i * 0.11;
+          const lit = easeOutCubic(prog(t, tl, tl + 0.3));
+          const flick = 0.92 + 0.08 * Math.sin(t * 2.3 + B.i * 1.7);
+          B.bulb.setAttribute('fill', mix('#F4EADB', '#F09443', lit));
+          B.glow.style.opacity = (lit * flick).toFixed(3);
+          B.glow.style.transformOrigin = `${B.x}px ${B.y}px`;
+          B.glow.style.transform = `rotate(${sway.toFixed(3)}deg)`;
+          B.shine.style.opacity = lit.toFixed(3);
+        }
+        // כותרת ראשונה: יוצאת לפני השנייה
+        const out1 = outK(t, T.y2 + 0.02, 0.3);
+        S($('y1a'), fadeIn(t, T.y1) * (1 - out1), 0, rise(t, T.y1, 26) - 30 * out1);
+        S($('y1b'), fadeIn(t, T.y1 + 0.16) * (1 - out1), 0, rise(t, T.y1 + 0.16, 26) - 30 * out1);
+        line($('y2a'), t, T.y2 + 0.08, end, 26);
+        line($('y2b'), t, T.y2 + 0.24, end, 26);
+        // אווטרים
+        const rowY = 1340;
+        const s1 = 168, g1 = 30, s2 = 138, g2 = 14;
+        const relay = 9.86;
+        for (const A of AV) {
+          let x, size, op, sc;
+          // שלב 1: שלושה במרכז
+          const x1 = 540 + (1 - A.i) * (s1 + g1);
+          // שלב 2: שישה, אנחנו מימין ושלושה מקומות פנויים משמאל
+          const x2 = 540 + (2.5 - A.i) * (s2 + g2);
+          if (A.full) {
+            x = springTo(t, [[0, x1], [relay, x2]], 1.4, 0.85);
+            size = springTo(t, [[0, s1], [relay, s2]], 1.4, 0.85);
+            const ta = 7.35 + A.i * 0.13;
+            sc = clamp(spring(t, ta, 2.0, 0.62), 0, 1.3);
+            op = clamp((t - ta) * 5);
+          } else {
+            x = x2; size = s2;
+            const ta = relay + 0.18 + (A.i - 3) * 0.16;
+            sc = clamp(spring(t, ta, 2.0, 0.62), 0, 1.3);
+            op = clamp((t - ta) * 5);
+          }
+          const d = A.d;
+          d.style.width = size + 'px'; d.style.height = size + 'px';
+          d.style.opacity = (op * (1 - o)).toFixed(4);
+          d.style.transform = `translate(${(x - size / 2).toFixed(2)}px,${(rowY - size / 2 - 28 * o).toFixed(2)}px) scale(${sc.toFixed(4)})`;
+        }
+      }
+    }
+
+    // ===== דיסק גדול (שאלה -> מרכז הטבעת) =====
+    {
+      const d = $('bigDisk');
+      const vis = t > 12.15 && t < 17.85;
+      d.style.visibility = vis ? 'visible' : 'hidden';
+      if (vis) {
+        const r0 = spring(t, 12.2, 1.3, 0.86);
+        const k = easeInOutCubic(prog(t, 14.02, 14.8));
+        const cx = 540, cy = lerp(1000, RC.y, k);
+        const r = lerp(410 * r0, 150, k);
+        const out = outK(t, 17.8, 0.35);
+        const rr = r * (1 - 0.3 * out);
+        d.style.opacity = (clamp(r0 * 4) * (1 - out)).toFixed(4);
+        d.style.transform = `translate(${(cx - 100).toFixed(2)}px,${(cy - 100).toFixed(2)}px) scale(${(rr / 100).toFixed(4)})`;
+      }
+    }
+
+    // ===== שאלה =====
+    {
+      const [a, b] = T.q;
+      show($('s-q'), t, a, b);
+      const end = 14.12;
+      line($('q1'), t, T.q1, end, 26);
+      line($('q2'), t, T.q1 + 0.16, end, 26);
+    }
+
+    // ===== ערב אחד בערך כל חודשיים =====
+    {
+      const [a, b] = T.eve;
+      show($('s-eve'), t, a, b);
+      if (t > a - 0.1 && t < b + 0.1) {
+        const end = b;
+        const o = outK(t, end, 0.35);
+        const ringO = 1 - o;
+        const rl = $('ringLine');
+        rl.style.opacity = (fadeIn(t, 14.35, 0.6) * ringO).toFixed(4);
+        const rotIn = (1 - easeOutCubic(prog(t, 14.35, 15.2))) * -40;
+        rl.style.transformOrigin = `${RC.x}px ${RC.y}px`;
+        rl.style.transform = `rotate(${rotIn.toFixed(3)}deg)`;
+        // קשת שעוברת על הערבים
+        const ka = easeInOutCubic(prog(t, 16.12, 17.1));
+        const ang = 300 * ka;
+        const arc = $('ringArc');
+        if (ang > 0.5) {
+          const a0 = -90 * Math.PI / 180, a1 = (-90 + ang) * Math.PI / 180;
+          const p0 = [RC.x + RC.r * Math.cos(a0), RC.y + RC.r * Math.sin(a0)];
+          const p1 = [RC.x + RC.r * Math.cos(a1), RC.y + RC.r * Math.sin(a1)];
+          arc.setAttribute('d', `M${p0[0].toFixed(2)} ${p0[1].toFixed(2)} A${RC.r} ${RC.r} 0 ${ang > 180 ? 1 : 0} 1 ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}`);
+          arc.style.opacity = ringO.toFixed(4);
+        } else arc.setAttribute('d', '');
+        for (const M of MD) {
+          const ta = 14.4 + M.i * 0.045;
+          const sIn = clamp(spring(t, ta, 2.2, 0.7), 0, 1.3);
+          M.grp.style.opacity = (clamp((t - ta) * 4) * ringO).toFixed(4);
+          M.dot.style.transformOrigin = `${M.x}px ${M.y}px`;
+          let lit = 0, pk = 0;
+          if (M.i === 0) { lit = easeOutCubic(prog(t, 14.78, 15.05)); pk = prog(t, 14.8, 15.7); }
+          else if (M.i % 2 === 0) {
+            // נדלק כשהקשת עוברת עליו
+            lit = clamp((ang - M.i * 30 + 6) / 14);
+            const tp = 16.12 + inverseArc(M.i * 30);
+            pk = prog(t, tp, tp + 0.8);
+          }
+          const big = 1 + 0.75 * lit;
+          M.dot.style.transform = `scale(${(sIn * big).toFixed(4)})`;
+          M.dot.setAttribute('fill', mix('#F4EADB', '#E8873B', lit));
+          M.lab.setAttribute('fill', lit > 0.5 ? '#2E1710' : '#8B6E5F');
+          M.lab.setAttribute('font-weight', lit > 0.5 ? 700 : 500);
+          M.pulse.style.transformOrigin = `${M.x}px ${M.y}px`;
+          M.pulse.style.transform = `scale(${(1 + pk * 1.4).toFixed(3)})`;
+          M.pulse.style.opacity = (pk > 0 && pk < 1 ? 0.8 * (1 - pk) : 0).toFixed(3);
+        }
+        const ci = $('calIcon');
+        const cs = clamp(spring(t, 14.62, 1.9, 0.7), 0, 1.3);
+        S(ci, clamp((t - 14.62) * 4) * (1 - o), 0, 0, cs * (1 - 0.3 * o));
+        line($('e1'), t, T.e1, end, 26);
+        line($('e2'), t, T.e2, end, 26);
+      }
+    }
+
+    // ===== תפקידים בערב =====
+    {
+      const [a, b] = T.tasks;
+      // "ומנקים בסוף" נשאר לפחות 1.3 שניות: היציאה נגמרת רגע לפני הסצנה הבאה (23.2)
+      const end = 23.14;
+      show($('s-tasks'), t, a, end);
+      if (t > a - 0.1 && t < end + 0.1) {
+        const o = outK(t, end, 0.35);
+        // הערימה מתמרכזת מחדש עם כל כרטיס שנכנס
+        const H = 230, G = 54, C = 1000;
+        const top = (n) => C - (n * H + (n - 1) * G) / 2;
+        const stackTop = springTo(t, [[0, top(1)], [T.t2, top(2)], [T.t3, top(3)]], 1.25, 0.86);
+        [[$('tc1'), T.t1], [$('tc2'), T.t2], [$('tc3'), T.t3]].forEach(([c, t0], i) => {
+          const s = spring(t, t0, 1.5, 0.78);
+          const y = stackTop + i * (H + G) + 70 * (1 - s) - 28 * o;
+          c.style.opacity = (fadeIn(t, t0, 0.35) * (1 - o)).toFixed(4);
+          c.style.transform = `translateY(${y.toFixed(2)}px)`;
+          const ic = c.querySelector('.ic');
+          const si = clamp(spring(t, t0 + 0.12, 2.1, 0.6), 0, 1.3);
+          ic.style.transform = `scale(${si.toFixed(4)}) rotate(${(-14 * (1 - si)).toFixed(3)}deg)`;
+        });
+      }
+    }
+
+    // ===== ישיבות ווואטסאפ =====
+    {
+      const [a, b] = T.meet;
+      show($('s-meet'), t, a, b);
+      if (t > a - 0.1 && t < b + 0.1) {
+        const end = b;
+        const o = outK(t, end, 0.35);
+        const IY = 760;
+        // לוח שנה: במרכז, ואז זז ימינה כשהבועה נכנסת
+        const xA = springTo(t, [[0, 540], [T.m2 - 0.05, 745]], 1.3, 0.84);
+        const ill = $('calIll');
+        const si = clamp(spring(t, T.m1, 1.9, 0.68), 0, 1.3);
+        S(ill, clamp((t - T.m1) * 4) * (1 - o), xA - 160, IY - 160 - 28 * o, si);
+        const cm = $('calMark');
+        const kL = easeInOutCubic(prog(t, 24.3, 24.95));
+        cm.style.strokeDashoffset = (+cm.dataset.len * (1 - kL)).toFixed(2);
+        cm.style.opacity = kL > 0 ? 1 : 0;
+        // בועת צ'אט עם נקודות הקלדה
+        const ch = $('chatIll');
+        const sc = clamp(spring(t, T.m2 + 0.1, 1.9, 0.66), 0, 1.3);
+        ch.style.transformOrigin = '22% 92%';
+        S(ch, clamp((t - T.m2 - 0.1) * 4) * (1 - o), 335 - 160, IY - 160 - 28 * o, sc);
+        document.querySelectorAll('.tdot').forEach((d, j) => {
+          const ph = (t - T.m2 - 0.45) * 1.5 - j * 0.18;
+          const bounce = ph > 0 ? Math.max(0, Math.sin(2 * Math.PI * (ph % 1))) : 0;
+          const amp = Math.pow(bounce, 1.6);
+          d.style.transform = `translateY(${(-16 * amp).toFixed(2)}px)`;
+          d.style.opacity = (0.45 + 0.55 * amp).toFixed(3);
+        });
+        // הטקסט מתחלף: ישיבות -> וואטסאפ
+        const outA = outK(t, T.m2 - 0.02, 0.3);
+        S($('mA1'), fadeIn(t, T.m1 + 0.05) * (1 - outA), 0, rise(t, T.m1 + 0.05, 24) - 30 * outA);
+        S($('mA2'), fadeIn(t, T.m1 + 0.95) * (1 - outA), 0, rise(t, T.m1 + 0.95, 24) - 30 * outA);
+        line($('mB1'), t, T.m2 + 0.06, end, 24);
+        line($('mB2'), t, T.m2 + 0.5, end, 24);
+      }
+    }
+
+    // ===== תחומים =====
+    {
+      const [a, b] = T.areas;
+      // "לוגיסטיקה" (35.22) נשאר לפחות 1.3 שניות: היציאה נגמרת ב-36.7, לפני הכותרת הבאה (36.82)
+      const end = 36.7;
+      show($('s-areas'), t, a, end);
+      if (t > a - 0.1 && t < end + 0.1) {
+        const o = outK(t, end, 0.35);
+        line($('a1'), t, T.a1, end, 26);
+        line($('a2'), t, T.a1 + 0.16, end, 26);
+        for (const C of AC) {
+          const s = spring(t, C.t0, 1.7, 0.74);
+          C.d.style.opacity = (fadeIn(t, C.t0, 0.3) * (1 - o)).toFixed(4);
+          C.d.style.transform = `translateY(${(40 * (1 - s) - 28 * o).toFixed(2)}px) scale(${(0.9 + 0.1 * s).toFixed(4)})`;
+          const si = clamp(spring(t, C.t0 + 0.1, 2.1, 0.6), 0, 1.3);
+          C.ic.style.transform = `scale(${si.toFixed(4)}) rotate(${(-16 * (1 - si)).toFixed(3)}deg)`;
+        }
+      }
+    }
+
+    // ===== מה צריך =====
+    {
+      const [a, b] = T.need;
+      show($('s-need'), t, a, b);
+      show($('hls'), t, a, b);
+      if (t > a - 0.1 && t < b + 0.1) {
+        const end = b;
+        const o = outK(t, end, 0.35);
+        const rules = [[$('nr0'), 36.66], [$('nr1'), T.n1 + 0.1], [$('nr2'), T.n2 + 0.1], [$('nr3'), T.n3 + 0.1]];
+        for (const [r, t0] of rules) {
+          r.style.opacity = (1 - o).toFixed(4);
+          r.style.transform = `translateY(${(-28 * o).toFixed(2)}px) scaleX(${easeInOutCubic(prog(t, t0, t0 + 0.7)).toFixed(4)})`;
+        }
+        line($('n1'), t, T.n1, end, 26);
+        line($('n2'), t, T.n2, end, 26);
+        line($('n3'), t, T.n3, end, 26);
+        HL.forEach((H, j) => {
+          const t0 = (j === 0 ? T.n2 : T.n3) + 0.42;
+          const k = easeInOutCubic(prog(t, t0, t0 + 0.42));
+          H.h.style.opacity = (0.9 * (1 - o) * (k > 0 ? 1 : 0)).toFixed(4);
+          H.h.style.transform = `translateY(${(-28 * o).toFixed(2)}px) scaleX(${k.toFixed(4)})`;
+        });
+      }
+    }
+
+    // ===== סיום =====
+    {
+      const [a, b] = T.end;
+      const sc = $('s-end');
+      show(sc, t, a, b);
+      if (t > a - 0.1) {
+        const p = PUSH(t);
+        sc.style.transformOrigin = '540px 960px';
+        sc.style.transform = `scale(${p.toFixed(5)})`;
+        const hz = $('hz2');
+        hz.style.transform = `scaleX(${easeInOutCubic(prog(t, 41.85, 42.6)).toFixed(4)})`;
+        line($('d1'), t, T.d1, 99, 26);
+        line($('d2'), t, T.d1 + 0.16, 99, 26);
+        // כפתור בשפה של האתר: צל הדפס, ולחיצה אחת
+        const tb = T.d2;
+        const sIn = spring(t, tb, 1.6, 0.78);
+        const press = Math.sin(Math.PI * prog(t, 46.05, 46.45));
+        const by = 40 * (1 - sIn) + 9 * press;
+        const bo = fadeIn(t, tb, 0.4);
+        S($('btn'), bo, 0, by);
+        S($('btnShadow'), bo, 0, 40 * (1 - sIn));
+        line($('d4'), t, 45.6, 99, 18);
+      }
+    }
+
+    // ===== כוכבים =====
+    for (const s of STARS) {
+      const a = T[s.scene][0], b = s.scene === 'areas' ? 36.7 : T[s.scene][1];
+      const vis = t > a - 0.05 && t < b + 0.05;
+      s.d.style.visibility = vis ? 'visible' : 'hidden';
+      if (!vis) continue;
+      const sIn = clamp(spring(t, s.t0, 1.8, 0.6), 0, 1.3);
+      const tw = 0.86 + 0.14 * Math.sin(2.1 * t + s.phase);
+      const o = s.scene === 'end' ? 0 : outK(t, b, 0.35);
+      s.d.style.opacity = (clamp((t - s.t0) * 4) * (1 - o)).toFixed(4);
+      let x = 0, y = 0, pp = 1;
+      if (s.scene === 'end') { const p = PUSH(t); const L = parseFloat(s.d.style.left) + parseFloat(s.d.style.width) / 2; const Tt = parseFloat(s.d.style.top) + parseFloat(s.d.style.height) / 2; const q = pushXY(L, Tt, p); x = q[0] - L; y = q[1] - Tt; pp = p; }
+      s.d.style.transform = `translate(${x.toFixed(2)}px,${(y - 28 * o).toFixed(2)}px) scale(${(sIn * tw * pp).toFixed(4)}) rotate(${(8 * Math.sin(0.7 * t + s.phase)).toFixed(2)}deg)`;
+    }
+  };
+
+  // ---------- עזרים נוספים ----------
+  function hex(c) { return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)); }
+  function mix(c1, c2, k) {
+    const a = hex(c1), b = hex(c2);
+    return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * clamp(k))).join(',') + ')';
+  }
+  function invEase(v) {
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (easeInOutCubic(m) < v) lo = m; else hi = m; }
+    return lo;
+  }
+  // הזמן שבו הקשת מגיעה לזווית נתונה
+  function inverseArc(deg) {
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (300 * easeInOutCubic(m) < deg) lo = m; else hi = m; }
+    return lo * (17.1 - 16.12);
+  }
+
+  // ---------- אתחול ----------
+  buildTexture();
+  buildLights();
+  buildAvatars();
+  buildRing();
+  buildCal();
+  buildAreas();
+  star(150, 690, 64, '#E8873B', 'q', 12.55, 0.3);
+  star(950, 760, 44, '#2E1710', 'q', 12.7, 1.7);
+  star(905, 1330, 70, '#E8873B', 'q', 12.85, 2.9);
+  star(178, 1262, 40, '#2E1710', 'q', 12.95, 4.2);
+  star(948, 330, 58, '#E8873B', 'areas', 28.8, 0.8);
+  star(140, 520, 40, '#2E1710', 'areas', 28.95, 2.2);
+  star(150, 420, 62, '#E8873B', 'end', 42.6, 0.5);
+  star(940, 560, 42, '#2E1710', 'end', 42.75, 2.0);
+  star(118, 760, 34, '#2E1710', 'end', 42.9, 3.1);
+
+  MG.ready().then(() => {
+    // התאמת רוחב לטקסט אחרי טעינת הפונטים
+    document.querySelectorAll('.ln > span').forEach((s) => fitText(s, 920, 40));
+    document.querySelectorAll('.tcard .tx span').forEach((s) => fitText(s, 636, 60));
+    fitText(document.querySelector('#btn span'), 800, 36);
+    buildHighlights();
+    window.seek(0);
+  });
+})();
+</script>
+</body>
+</html>

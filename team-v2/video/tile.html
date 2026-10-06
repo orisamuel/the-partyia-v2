@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>צוות הפרתיה: תמונת אריח</title>
+<!--
+  tile.html: תמונה רחבה (1080x680) לאריח הסרטון בעמוד. אותה שפה כמו scene.html.
+  החלק התחתון שקט בכוונה: עליו יושבים הכיתוב והכותרת של האריח.
+  רינדור: node render.mjs tile.html --size 1080x680 --stills 0 --outdir <folder>
+-->
+<link rel="stylesheet" href="base.css">
+<style>
+  :root { --W: 1080px; --H: 680px; }
+  #bg { position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 80% at 50% 30%, #F8F0E4 0%, #F4EADB 55%, #ECDFCA 100%); }
+  #ground { position: absolute; left: 0; right: 0; top: 452px; bottom: 0; background: linear-gradient(180deg, #EBDDC7 0%, #E4D4BB 100%); }
+  #hz { position: absolute; left: 0; right: 0; top: 449px; height: 5px; background: var(--ink); }
+  #em { position: absolute; left: 315px; top: 65px; width: 450px; height: 391.5px; }
+  .star { position: absolute; }
+  canvas { position: absolute; inset: 0; width: 1080px; height: 680px; }
+  #grain { mix-blend-mode: multiply; }
+  .bulbs { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div id="bg"></div>
+  <svg class="bulbs" width="1080" height="300" id="lights">
+    <defs>
+      <radialGradient id="glow"><stop offset="0" stop-color="#F6A35A" stop-opacity=".7"/><stop offset=".45" stop-color="#F2A060" stop-opacity=".25"/><stop offset="1" stop-color="#F2A060" stop-opacity="0"/></radialGradient>
+    </defs>
+  </svg>
+  <div id="ground"></div>
+  <div id="hz"></div>
+  <img id="em" src="../emblem.webp" alt="">
+  <div class="star" style="left:160px;top:282px"><svg viewBox="0 0 24 24" width="54" height="54"><path d="M12 2.5c.7 4.6 2.1 6.4 6.6 7.5-4.5 1.1-5.9 2.9-6.6 7.5-.7-4.6-2.1-6.4-6.6-7.5 4.5-1.1 5.9-2.9 6.6-7.5Z" fill="#E8873B"/></svg></div>
+  <div class="star" style="left:860px;top:250px"><svg viewBox="0 0 24 24" width="36" height="36"><path d="M12 2.5c.7 4.6 2.1 6.4 6.6 7.5-4.5 1.1-5.9 2.9-6.6 7.5-.7-4.6-2.1-6.4-6.6-7.5 4.5-1.1 5.9-2.9 6.6-7.5Z" fill="#2E1710"/></svg></div>
+  <div class="star" style="left:262px;top:372px"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M12 2.5c.7 4.6 2.1 6.4 6.6 7.5-4.5 1.1-5.9 2.9-6.6 7.5-.7-4.6-2.1-6.4-6.6-7.5 4.5-1.1 5.9-2.9 6.6-7.5Z" fill="#2E1710"/></svg></div>
+  <canvas id="grain" width="540" height="340"></canvas>
+  <canvas id="speck" width="1080" height="680"></canvas>
+</div>
+<script src="lib.js"></script>
+<script>
+(function () {
+  const R = MG.rng(11);
+  const g = document.getElementById('grain').getContext('2d');
+  const im = g.createImageData(540, 340);
+  for (let i = 0; i < 540 * 340; i++) {
+    const a = Math.pow(R(), 2.6) * 0.13;
+    im.data[i * 4] = 255 - a * 175; im.data[i * 4 + 1] = 255 - a * 200; im.data[i * 4 + 2] = 255 - a * 225; im.data[i * 4 + 3] = 255;
+  }
+  g.putImageData(im, 0, 0);
+  const s = document.getElementById('speck').getContext('2d');
+  for (let i = 0; i < 1900; i++) {
+    const x = R() * 1080, y = R() * 680, r = 0.5 + Math.pow(R(), 3) * 2.1;
+    s.fillStyle = `rgba(244,234,219,${(0.18 + R() * 0.42).toFixed(3)})`;
+    s.beginPath(); s.arc(x, y, r, 0, Math.PI * 2); s.fill();
+  }
+  // שרשרת נורות דולקות מעל הסמל, כמו בסרטון
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('lights');
+  const y = (x) => 34 + 120 * (1 - Math.pow((x - 540) / 600, 2));
+  const pts = [];
+  for (let x = -60; x <= 1140; x += 10) pts.push(`${x},${y(x).toFixed(1)}`);
+  const mk = (tag, a) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
+  mk('path', { d: 'M' + pts.join(' L'), fill: 'none', stroke: '#2E1710', 'stroke-width': 4 });
+  [70, 175, 280, 800, 905, 1010].forEach((x) => {
+    const yy = y(x);
+    mk('circle', { cx: x, cy: yy + 54, r: 84, fill: 'url(#glow)' });
+    mk('path', { d: `M${x} ${yy} v14`, stroke: '#2E1710', 'stroke-width': 4, 'stroke-linecap': 'round' });
+    mk('rect', { x: x - 11, y: yy + 12, width: 22, height: 20, rx: 4, fill: '#2E1710' });
+    mk('path', { d: `M${x} ${yy + 30} c-17 0-22 14-22 26 c0 16 12 30 22 30 c10 0 22-14 22-30 c0-12-5-26-22-26z`, fill: '#F09443', stroke: '#2E1710', 'stroke-width': 4 });
+    mk('path', { d: `M${x - 9} ${yy + 48} c0-6 3-10 7-11`, stroke: '#FBE7CF', 'stroke-width': 4, 'stroke-linecap': 'round', fill: 'none' });
+  });
+  window.seek = () => {};
+  MG.ready();
+})();
+</script>
+</body>
+</html>
