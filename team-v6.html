@@ -8,7 +8,7 @@
     <link rel="icon" href="logo.png" type="image/png">
     <meta name="theme-color" content="#F4EADB">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://orisamuel.github.io/the-partyia-v2/team-v6.html">
+    <meta property="og:url" content="https://orisamuel.github.io/the-partyia-v2/team.html">
     <meta property="og:title" content="צוות הפרתיה מתרחב, וזו ההזדמנות שלך">
     <meta property="og:description" content="הפאב הקהילתי של נופי פרת מגייס. כמה משרות כבר נסגרו, אחת עדיין פתוחה.">
     <meta property="og:image" content="https://orisamuel.github.io/the-partyia-v2/team-v6/og.jpg?v=1">
@@ -108,16 +108,18 @@
                 <button type="button" class="btn btn-primary btn-block" id="refOpen" aria-expanded="false" aria-controls="refForm">להמליץ על מישהו</button>
                 <form class="ref-form" id="refForm" novalidate hidden>
                     <div class="ref-pair">
-                        <div class="field"><label for="rFriendName">את מי אתם ממליצים?</label><input type="text" id="rFriendName" maxlength="80" placeholder="השם שלו"></div>
+                        <div class="field"><label for="rFriendName">על מי בא לך להמליץ?</label><input type="text" id="rFriendName" maxlength="80" placeholder="השם שלו"></div>
                         <div class="field"><label for="rFriendPhone">הטלפון שלו</label><input type="tel" id="rFriendPhone" inputmode="tel" maxlength="20" placeholder="050-0000000"></div>
                     </div>
                     <div class="field"><label for="rWhy">למה דווקא הוא? <span class="hint">(לא חובה)</span></label><textarea id="rWhy" maxlength="500" placeholder="למשל: הוא כבר מתנהג כאילו הפאב שלו"></textarea></div>
                     <div class="ref-pair">
-                        <div class="field"><label for="rName">השם שלכם</label><input type="text" id="rName" autocomplete="name" maxlength="80" placeholder="בשביל השובר"></div>
-                        <div class="field"><label for="rPhone">הטלפון שלכם</label><input type="tel" id="rPhone" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="050-0000000"></div>
+                        <div class="field"><label for="rName">השם שלך</label><input type="text" id="rName" autocomplete="name" maxlength="80" placeholder="בשביל השובר"></div>
+                        <div class="field"><label for="rPhone">הטלפון שלך</label><input type="tel" id="rPhone" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="050-0000000"></div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block" id="refSubmit">שליחת ההמלצה</button>
                     <div class="error-msg" id="refError" role="alert"></div>
+                    <button type="button" class="ref-meta" id="refMeta">אני רוצה להמליץ על מישהו שבטח ימליץ לכם על מישהו ממש טוב</button>
+                    <p class="ref-joke" id="refJoke" hidden>זו כבר לא המלצה, זו הלצה חחח, הבנת? חחח</p>
                 </form>
                 <div class="ref-done" id="refDone" hidden aria-live="polite">
                     <b>תודה! ההמלצה התקבלה.</b>
@@ -183,7 +185,7 @@
             <div class="join">
                 <form id="joinForm" novalidate>
                     <h2 class="display">הגשת <span class="accent">מועמדות</span></h2>
-                    <p class="sub">שם וטלפון מספיקים. מישהו מהצוות יחזור אליך בוואטסאפ.</p>
+                    <p class="sub">רק להשאיר שם וטלפון ונחזור אליך...</p>
                     <div class="field">
                         <label for="fName">שם מלא</label>
                         <input type="text" id="fName" autocomplete="name" maxlength="80" required>
@@ -192,12 +194,9 @@
                         <label for="fPhone">טלפון</label>
                         <input type="tel" id="fPhone" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="050-0000000" required>
                     </div>
-                    <div class="field">
-                        <label for="fNote">משהו שחשוב שנדע? (לא חובה)</label>
-                        <textarea id="fNote" maxlength="500" placeholder="קורות חיים בשורה אחת. למשל: יש לי טנדר וסבלנות לשרשראות נורות."></textarea>
-                    </div>
                     <button type="submit" class="btn btn-primary btn-block" id="submitBtn">שליחת מועמדות</button>
                     <div class="error-msg" id="errorMsg" role="alert"></div>
+                    <p class="also-talk">אפשר גם לדבר עם מישהו מהצוות הנוכחי. זה גם סבבה</p>
                     <p class="privacy">הפרטים מגיעים רק לצוות הפרתיה.</p>
                 </form>
                 <div class="done" id="done" aria-live="polite">
@@ -256,7 +255,7 @@
 <script src="team-v2/games/tower.js"></script>
 <script>
     const VOLUNTEERS_URL = 'https://chat.whatsapp.com/DBGKCCI6bTmHxv0fLobNqA';
-    const SITE_URL = 'https://orisamuel.github.io/the-partyia-v2/team-v6.html';
+    const SITE_URL = 'https://orisamuel.github.io/the-partyia-v2/team.html';
     const $ = id => document.getElementById(id);
 
     let toastTimer;
@@ -358,7 +357,7 @@
             const res = await fetch(CONFIG.SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ action: 'joinTeam', name, phone, note: $('fNote').value.trim() }),
+                body: new URLSearchParams({ action: 'joinTeam', name, phone, note: '' }),
             });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const result = JSON.parse(await res.text());
@@ -437,6 +436,7 @@
         $('refOpen').setAttribute('aria-expanded', 'true');
         $('rFriendName').focus();
     });
+    $('refMeta').addEventListener('click', () => { $('refJoke').hidden = false; });
     $('refForm').addEventListener('submit', async ev => {
         ev.preventDefault();
         const err = t => { $('refError').textContent = t; $('refError').classList.add('show'); };
@@ -445,8 +445,8 @@
         const digits = id => val(id).replace(/\D/g, '').length;
         if (!val('rFriendName')) { err('על מי אתם ממליצים?'); $('rFriendName').focus(); return; }
         if (digits('rFriendPhone') < 9) { err('חסר הטלפון שלו.'); $('rFriendPhone').focus(); return; }
-        if (!val('rName')) { err('חסר השם שלכם, בשביל השובר.'); $('rName').focus(); return; }
-        if (digits('rPhone') < 9) { err('חסר הטלפון שלכם.'); $('rPhone').focus(); return; }
+        if (!val('rName')) { err('חסר השם שלך, בשביל השובר.'); $('rName').focus(); return; }
+        if (digits('rPhone') < 9) { err('חסר הטלפון שלך.'); $('rPhone').focus(); return; }
         const btn = $('refSubmit');
         btn.disabled = true;
         btn.textContent = 'שולחים...';

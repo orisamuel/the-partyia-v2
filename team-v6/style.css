@@ -1031,3 +1031,32 @@ footer .gender { font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
 @media (min-width: 560px) { .ref-pair { grid-template-columns: 1fr 1fr; } }
 @media (prefers-reduced-motion: reduce) { .open-dot { animation: none; } }
 .referral [hidden] { display: none !important; }
+
+/* גרסה סופית: הלצה בטופס ההמלצה, שורת "אפשר גם לדבר" בטופס ההרשמה */
+.ref-meta {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 8px;
+    border: none;
+    background: none;
+    color: var(--ink-2);
+    font-family: var(--body);
+    font-size: 14px;
+    line-height: 1.45;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+.ref-joke {
+    margin-top: 6px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--peach);
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    animation: rise .35s cubic-bezier(.2, 1.2, .4, 1);
+}
+.join .also-talk { font-size: 14.5px; color: rgba(244, 234, 219, 0.85); text-align: center; margin-top: 14px; }
+.join .also-talk { text-wrap: balance; }
