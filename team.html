@@ -194,6 +194,10 @@
                         <label for="fPhone">טלפון</label>
                         <input type="tel" id="fPhone" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="050-0000000" required>
                     </div>
+                    <div class="field">
+                        <label for="fNote">משהו שחשוב שנדע? (לא חובה)</label>
+                        <textarea id="fNote" maxlength="500" placeholder="קורות חיים בשורה אחת. למשל: יש לי טנדר וסבלנות לשרשראות נורות."></textarea>
+                    </div>
                     <button type="submit" class="btn btn-primary btn-block" id="submitBtn">שליחת מועמדות</button>
                     <div class="error-msg" id="errorMsg" role="alert"></div>
                     <p class="also-talk">אפשר גם לדבר עם מישהו מהצוות הנוכחי. זה גם סבבה</p>
@@ -357,7 +361,7 @@
             const res = await fetch(CONFIG.SCRIPT_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ action: 'joinTeam', name, phone, note: '' }),
+                body: new URLSearchParams({ action: 'joinTeam', name, phone, note: $('fNote').value.trim() }),
             });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             const result = JSON.parse(await res.text());
