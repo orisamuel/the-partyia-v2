@@ -916,6 +916,49 @@ function ensureTeamSheet_() {
 }
 
 // ============================================================
+// REFERRALS (חבר מביא חבר, team-v6.html)
+// Schema: תאריך(0), שעה(1), שם הממליץ(2), טלפון הממליץ(3), שם המומלץ(4), טלפון המומלץ(5), למה(6), סטטוס(7)
+// ============================================================
+
+function referFriend(data) {
+  try {
+    const refName = String(data.refName || '').trim();
+    const refPhone = String(data.refPhone || '').trim();
+    const friendName = String(data.friendName || '').trim();
+    const friendPhone = String(data.friendPhone || '').trim();
+    if (!refName) return { success: false, message: 'חסר שם הממליץ' };
+    if (refPhone.replace(/\D/g, '').length < 9) return { success: false, message: 'חסר טלפון הממליץ' };
+    if (!friendName) return { success: false, message: 'חסר שם המומלץ' };
+    if (friendPhone.replace(/\D/g, '').length < 9) return { success: false, message: 'חסר טלפון המומלץ' };
+
+    const sheet = ensureReferralSheet_();
+    const now = new Date();
+    // גרש בהתחלה כדי שהגיליון ישמור את ה-0 בתחילת המספר
+    sheet.appendRow([
+      fmtDate(now), fmtTime(now), refName.slice(0, 80), "'" + refPhone.slice(0, 20),
+      friendName.slice(0, 80), "'" + friendPhone.slice(0, 20),
+      String(data.why || '').slice(0, 500), 'חדש'
+    ]);
+    return { success: true };
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+function ensureReferralSheet_() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName('המלצות');
+  if (!sheet) {
+    sheet = ss.insertSheet('המלצות');
+    sheet.appendRow(['תאריך', 'שעה', 'שם הממליץ', 'טלפון הממליץ', 'שם המומלץ', 'טלפון המומלץ', 'למה', 'סטטוס']);
+    sheet.getRange(1, 1, 1, 8).setFontWeight('bold');
+    sheet.setRightToLeft(true);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// ============================================================
 // MAINTENANCE
 // ============================================================
 
@@ -961,7 +1004,7 @@ function doPost(e) {
     switch (action) {
 
       case 'ping':
-        return jsonResponse({ success: true, version: 'v6-referral-2026-10-07' });
+        return jsonResponse({ success: true, version: 'v7-refer-friend-2026-10-08' });
 
       case 'debugEcho':
         return jsonResponse({ success: true, received: { action: p.action, note: p.note, customerName: p.customerName, products: p.products } });
@@ -1052,6 +1095,9 @@ function doPost(e) {
         return jsonResponse(registerVolunteerEvent(p.name, p.guests));
 
       // ── Team Applications ─────────────────────────────────
+      case 'referFriend':
+        return jsonResponse(referFriend({ refName: p.refName, refPhone: p.refPhone, friendName: p.friendName, friendPhone: p.friendPhone, why: p.why }));
+
       case 'joinTeam':
         return jsonResponse(joinTeam({ name: p.name, phone: p.phone, areas: p.areas, quiz: p.quiz, note: p.note, ref: p.ref }));
 
