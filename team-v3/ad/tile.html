@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>צוות הפרתיה: אריח הפרסומת</title>
+<!--
+  tile.html: תמונה רחבה (1080x680) לאריח הפרסומת בעמוד (ad-tile.jpg). אותה שפה כמו scene.html:
+  הצבי מציץ מעל השמש, שרשרת נורות דולקת. החלק התחתון שקט בכוונה, עליו יושב הכיתוב של האריח.
+  רינדור: node render.mjs tile.html --size 1080x680 --stills 0 --outdir <folder>
+-->
+<link rel="stylesheet" href="base.css">
+<style>
+  :root { --W: 1080px; --H: 680px; }
+  #bg { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 90% at 50% 25%, #F8F0E4 0%, #F4EADB 55%, #ECDFCA 100%); }
+  svg { position: absolute; left: 0; top: 0; overflow: visible; }
+  canvas { position: absolute; inset: 0; width: 1080px; height: 680px; pointer-events: none; }
+  #grain { mix-blend-mode: multiply; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div id="bg"></div>
+  <svg id="art" width="1080" height="680" viewBox="0 0 1080 680"></svg>
+  <canvas id="grain" width="540" height="340"></canvas>
+  <canvas id="speck" width="1080" height="680"></canvas>
+</div>
+<script src="lib.js"></script>
+<script src="rig.js"></script>
+<script>
+(function () {
+  const R = RIG, C = RIG.C, el = RIG.el;
+  const svg = document.getElementById('art');
+  const d = el('defs', {}, svg);
+  const g = el('radialGradient', { id: 'glowT' }, d);
+  el('stop', { offset: 0, 'stop-color': '#FFC46B', 'stop-opacity': 0.8 }, g);
+  el('stop', { offset: 0.45, 'stop-color': '#F2A060', 'stop-opacity': 0.28 }, g);
+  el('stop', { offset: 1, 'stop-color': '#F2A060', 'stop-opacity': 0 }, g);
+  const HZ = 452, SX = 540, SY = 488, SR = 214;
+  // ground (calm lower area for the caption)
+  el('rect', { x: 0, y: HZ, width: 1080, height: 680 - HZ, fill: '#EDE0CB' }, svg);
+  // sparkles
+  [[150, 300, 40, C.o], [930, 330, 30, C.ink], [250, 410, 22, C.ink], [835, 250, 26, C.o]].forEach(([x, y, s, c]) => R.sparkle(svg, x, y, s, c).set(1, 0));
+  // string lights behind, lit
+  const LT = R.lights(svg, -60, 1140, -22, 66, 9, 'glowT', { pad: 0.5 });
+  LT.set(1);
+  LT.B.forEach((b) => { if (Math.abs(b.x - SX) < 110) { b.bg.style.display = 'none'; b.glow.style.display = 'none'; } });
+  // deer behind the sun, hooves on the rim
+  const DS = 1.32;
+  const D = R.make(svg, DS);
+  const rim = SY - SR;
+  R.pose(D, { x: SX, y: rim + 6 + 130 * DS, hr: -6, earL: 10, earR: 6, mouth: 'smile', armVis: [false, false], legVis: false, lx: 0, ly: 0.1 });
+  R.sun(svg, SX, SY, SR, HZ, { stroke: 5 });
+  el('path', { d: `M0 ${HZ} L1080 ${HZ}`, stroke: C.ink, 'stroke-width': 5 }, svg);
+  [-1, 1].map((side) => {
+    const dx0 = 112, x0 = SX + side * dx0, ry = SY - Math.sqrt(SR * SR - dx0 * dx0);
+    const inner = el('g', { transform: `translate(${x0} ${ry}) rotate(${side * Math.asin(dx0 / SR) * 180 / Math.PI}) scale(${DS})` }, svg);
+    const p = `M${-side * 9} 1 C${-side * 10} -18, ${side * 4} -22, ${side * 7} -7`;
+    el('path', { d: p, fill: 'none', stroke: C.ink, 'stroke-width': 15 + 2 * 6.5 / DS, 'stroke-linecap': 'round' }, inner);
+    el('path', { d: p, fill: 'none', stroke: C.om, 'stroke-width': 15, 'stroke-linecap': 'round' }, inner);
+    el('ellipse', { cx: side * 8, cy: 1, rx: 10.5, ry: 11.5, fill: C.hoof, transform: `rotate(${side * 25} ${side * 8} 1)` }, inner);
+  });
+
+  // paper texture, same recipe as the ad
+  const Rn = MG.rng(11);
+  const gc = document.getElementById('grain').getContext('2d');
+  const im = gc.createImageData(540, 340);
+  for (let i = 0; i < 540 * 340; i++) {
+    const a = Math.pow(Rn(), 2.6) * 0.13;
+    im.data[i * 4] = 255 - a * 175; im.data[i * 4 + 1] = 255 - a * 200; im.data[i * 4 + 2] = 255 - a * 225; im.data[i * 4 + 3] = 255;
+  }
+  gc.putImageData(im, 0, 0);
+  const sc = document.getElementById('speck').getContext('2d');
+  for (let i = 0; i < 1500; i++) {
+    const x = Rn() * 1080, y = Rn() * 680, r = 0.5 + Math.pow(Rn(), 3) * 2.1;
+    sc.fillStyle = `rgba(244,234,219,${(0.16 + Rn() * 0.4).toFixed(3)})`;
+    sc.beginPath(); sc.arc(x, y, r, 0, Math.PI * 2); sc.fill();
+  }
+  window.seek = () => {};
+  MG.ready();
+})();
+</script>
+</body>
+</html>

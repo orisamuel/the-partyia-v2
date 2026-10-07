@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>צוות הפרתיה: פרסומת</title>
+<!--
+  scene.html: פרסומת הגיוס לצוות הפרתיה (team-v3), 1080x1920, 30fps, 37.0 שניות.
+  הכול פונקציה טהורה של t בתוך window.seek(t). תזמונים מ-cues.json + words.json (מקור האמת, יחד עם audio/mix.wav).
+  הצבי: rig.js (בובה עם IK, הראש מ-team-v2/deer.js).
+  סטילס:  node render.mjs scene.html --stills 0,2.9 --outdir <folder>
+  רינדור: node render.mjs scene.html --dur 37 --jobs 6 --out <file>
+-->
+<link rel="stylesheet" href="base.css">
+<style>
+  .scene { position: absolute; inset: 0; display: none; }
+  .ln { position: absolute; left: 0; width: 1080px; text-align: center; white-space: nowrap; pointer-events: none; }
+  .ln > span { display: inline-block; transform-origin: 50% 75%; }
+  .k { font-family: var(--display); font-weight: 700; line-height: .92; letter-spacing: .5px; }
+  .r { font-family: var(--body); }
+  svg.full { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: visible; }
+  #bg { position: absolute; inset: 0;
+    background: radial-gradient(ellipse 90% 70% at 50% 46%, #F8F0E4 0%, #F4EADB 52%, #ECDFCA 100%); }
+  #cam { position: absolute; inset: 0; }
+  #grain { position: absolute; inset: 0; width: 1080px; height: 1920px; mix-blend-mode: multiply; pointer-events: none; }
+  #speck { position: absolute; inset: 0; width: 1080px; height: 1920px; pointer-events: none; }
+  #dim { position: absolute; inset: 0; background: #2B2A45; mix-blend-mode: multiply; opacity: 0; pointer-events: none; }
+
+  .chip { position: absolute; top: 0; height: 80px; padding: 0 26px; display: flex; align-items: center; gap: 12px;
+    border: 5px solid var(--ink); border-radius: 999px; background: var(--paper); font-family: var(--body); font-weight: 700; font-size: 38px;
+    white-space: nowrap; transform-origin: 50% 50%; }
+  .chip .tx { margin-top: 2px; }
+  .chip .tick { width: 34px; height: 34px; border-radius: 50%; background: var(--ink); display: flex; align-items: center; justify-content: center; flex: none; }
+  .chip .tick b { color: var(--paper); font: 700 21px/1 var(--body); margin-top: 1px; }
+  .bub { position: absolute; padding: 22px 40px 24px; border: 5px solid var(--ink); border-radius: 40px; background: #FFF9EF;
+    font-family: var(--body); font-weight: 700; font-size: 56px; line-height: 1.1; white-space: nowrap; transform-origin: 0% 100%; box-shadow: 0 7px 0 var(--ink); }
+  .bub.o { background: var(--sun); }
+  .bub::after { content: ''; position: absolute; left: -16px; bottom: 14px; width: 26px; height: 26px; background: inherit;
+    border-left: 5px solid var(--ink); border-bottom: 5px solid var(--ink); transform: skewY(-38deg) rotate(8deg); border-radius: 0 0 0 6px; }
+  .av { position: absolute; width: 84px; height: 84px; border-radius: 50%; border: 5px solid var(--ink); background: var(--peach); transform-origin: 50% 50%; }
+  .av i { position: absolute; top: 32px; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+  .av b { position: absolute; left: 26px; top: 46px; width: 20px; height: 10px; border: 4px solid var(--ink); border-top: 0; border-radius: 0 0 14px 14px; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <div id="bg"></div>
+  <div id="cam"></div>
+  <div id="dim"></div>
+  <canvas id="grain" width="540" height="960"></canvas>
+  <canvas id="speck" width="1080" height="1920"></canvas>
+</div>
+
+<script src="lib.js"></script>
+<script src="rig.js"></script>
+<script>
+(function () {
+  const { clamp, lerp, prog, easeOutCubic, easeInOutCubic, easeInCubic, spring, springTo, rng } = MG;
+  const R = RIG, C = RIG.C, el = RIG.el, tf = RIG.tf, n2 = RIG.n2;
+  const $ = (id) => document.getElementById(id);
+  const EMBLEM = '../../team-v2/emblem.webp', WORDMARK = '../../team-v2/wordmark-ink.webp';
+  const EW = 900, EH = 783, WW = 1157, WH = 383;       // natural sizes of the logo files
+  const SUNC = { x: 449 / 900, y: 485 / 783, r: 447 / 900 }; // the emblem's sun disk, as fractions of its width/height
+
+  // ---------- small helpers ----------
+  const easeOutBack = (x, s = 1.7) => { x = clamp(x); return 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); };
+  const easeInOutSine = (x) => -(Math.cos(Math.PI * clamp(x)) - 1) / 2;
+  const sinw = (t, f, ph = 0) => Math.sin(2 * Math.PI * f * t + ph);
+  function S(e, o, x = 0, y = 0, s = 1, r = 0) {
+    e.style.opacity = n2(o * 1000) / 1000;
+    e.style.transform = `translate(${n2(x)}px,${n2(y)}px) scale(${n2(s * 1000) / 1000})` + (r ? ` rotate(${n2(r)}deg)` : '');
+  }
+  const blinkK = (t, list, d = 0.075) => { let k = 0; for (const b of list) { const x = Math.abs(t - b) / d; if (x < 1) k = Math.max(k, 1 - x); } return k; };
+  // ear flick: damped wiggle after each time
+  const flick = (t, list, amp = 18, f = 6.5, damp = 6) => { let a = 0; for (const tf0 of list) { const x = t - tf0; if (x > 0 && x < 1.4) a += amp * Math.exp(-damp * x) * Math.sin(2 * Math.PI * f * x); } return a; };
+  // damped shake for impacts
+  const shake = (t, t0, A, f = 26, d = 22) => { const x = t - t0; if (x < 0 || x > 0.5) return [0, 0]; const e = A * Math.exp(-d * x); return [e * Math.sin(2 * Math.PI * f * x), e * Math.cos(2 * Math.PI * f * 0.83 * x)]; };
+  // one hop: crouch before t0, air t0..t0+air, squash after landing. k = horizontal progress 0..1
+  function hop(t, t0, air, h, ant = 0.13) {
+    let dy = 0, sx = 1, sy = 1, k = 0, tuck = 0;
+    if (t < t0 - ant) { /* rest */ }
+    else if (t < t0) { const a = easeInOutCubic(prog(t, t0 - ant, t0)); sy = 1 - 0.14 * a; sx = 1 + 0.1 * a; }
+    else if (t < t0 + air) { const p = (t - t0) / air; dy = -h * 4 * p * (1 - p); k = p; const st = Math.max(0, 1 - p * 2.6) * 0.15 + Math.max(0, p - 0.82) * 0.4; sy = 1 + st; sx = 1 - st * 0.55; tuck = Math.sin(Math.PI * p); }
+    else { const x = t - (t0 + air); const q = 0.16 * Math.exp(-x * 11) * Math.cos(x * 24); sy = 1 - q; sx = 1 + q * 0.7; k = 1; }
+    return { dy, sx, sy, k, tuck, air: t >= t0 && t < t0 + air };
+  }
+  const breathe = (t, ph = 0) => 1 + 0.012 * Math.sin(2 * Math.PI * t / 2.1 + ph);
+
+  function scene(id) { const d = document.createElement('div'); d.className = 'scene'; d.id = id; $('cam').appendChild(d); return d; }
+  function svgIn(parent) { const s = el('svg', { class: 'full', viewBox: '0 0 1080 1920', width: 1080, height: 1920 }); parent.appendChild(s); return s; }
+  function defsGlow(svg, id, c0 = '#FFC46B', c1 = '#F2A060') {
+    const d = el('defs', {}, svg);
+    const g = el('radialGradient', { id }, d);
+    el('stop', { offset: 0, 'stop-color': c0, 'stop-opacity': 0.8 }, g);
+    el('stop', { offset: 0.45, 'stop-color': c1, 'stop-opacity': 0.28 }, g);
+    el('stop', { offset: 1, 'stop-color': c1, 'stop-opacity': 0 }, g);
+  }
+  // a title line: parts enter whole (each part its own time)
+  function line(parent, parts, top, size, color) {
+    const d = document.createElement('div');
+    d.className = 'ln k'; d.style.top = top + 'px'; d.style.fontSize = size + 'px';
+    if (color) d.style.color = color;
+    const spans = parts.map((p, i) => {
+      const s = document.createElement('span'); s.textContent = p; d.appendChild(s);
+      if (i < parts.length - 1) d.appendChild(document.createTextNode(' '));
+      return s;
+    });
+    parent.appendChild(d);
+    return { d, spans, size };
+  }
+  function fit(L, maxW = 900) {
+    let fs = L.size;
+    while (L.spans.reduce((a, s) => a + s.getBoundingClientRect().width, 0) + (L.spans.length - 1) * fs * 0.22 > maxW && fs > 40) { fs -= 2; L.d.style.fontSize = fs + 'px'; }
+  }
+  // whole-word entrance: opacity + bouncy scale pop + small rise; exit before tOut
+  function pop(e, t, t0, tOut, o = {}) {
+    if (t < t0 - 1e-6) { e.style.opacity = 0; return; }
+    const k = spring(t, t0, o.f || 2.4, o.z || 0.5);
+    const a = clamp((t - t0) / (o.fade || 0.1));
+    let s = lerp(o.s0 == null ? 0.55 : o.s0, 1, k), y = (1 - k) * (o.rise == null ? 36 : o.rise), op = a;
+    if (tOut != null) { const dOut = o.dOut || 0.2; const q = easeInCubic(prog(t, tOut - dOut, tOut)); op *= 1 - q; y -= 34 * q; s *= 1 - 0.05 * q; }
+    S(e, op * (o.dim == null ? 1 : o.dim), 0, y, s);
+  }
+  function ground(svg, y, opt = {}) {
+    const g = el('g', {}, svg);
+    el('rect', { x: -1000, y, width: 3080, height: 2400 - y, fill: opt.fill || '#EDE0CB' }, g);
+    el('path', { d: `M-1000 ${y} L2080 ${y}`, stroke: C.ink, 'stroke-width': opt.lw || 5, 'stroke-linecap': 'round' }, g);
+    return g;
+  }
+  function image(svg, href, x, y, w, h) { return el('image', { href, x, y, width: w, height: h, preserveAspectRatio: 'none' }, svg); }
+
+  const SCENES = [];
+  const add = (o) => { SCENES.push(o); return o; };
+  const SHAKES = [];   // [t0, amplitude]
+
+  // shared sun position for the hook and the stamp (the emblem lands exactly on it)
+  const SUN = { x: 540, y: 1340, r: 340 };
+  SUN.cut = SUN.y + 0.655 * SUN.r;   // the emblem's sun is cut flat at 65.5% of its radius below centre
+  const EMB = { w: 2 * SUN.r / (2 * SUNC.r) };
+  EMB.h = EMB.w * EH / EW; EMB.x = SUN.x - SUNC.x * EMB.w; EMB.y = SUN.y - SUNC.y * EMB.h;
+
+  // =====================================================================
+  // 1. HOOK  0 - 2.7   "מי מפעיל את הפרתיה?"  (frame 0 = WhatsApp thumbnail: complete)
+  // =====================================================================
+  add((() => {
+    const sc = scene('s-hook');
+    const svg = svgIn(sc);
+    const sp = [[140, 880, 50, C.o, 0], [950, 1100, 36, C.ink, 1.3], [150, 1200, 28, C.ink, 2.2], [915, 760, 34, C.o, 3.1], [110, 640, 24, C.ink, 4]].map(([x, y, s, c, ph]) => Object.assign(R.sparkle(svg, x, y, s, c), { ph }));
+    const DS = 2.6;
+    const D = R.make(svg, DS);
+    const sun = R.sun(svg, SUN.x, SUN.y, SUN.r, SUN.cut, { stroke: 6 });
+    ground(svg, SUN.cut);   // after the deer: hides it when it ducks below the horizon
+    // hooves hooked over the rim (Kilroy style), drawn in front of the sun
+    const grips = [-1, 1].map((side) => {
+      const dx0 = 128, x0 = SUN.x + side * dx0, rim = SUN.y - Math.sqrt(SUN.r * SUN.r - dx0 * dx0);
+      const g = el('g', {}, svg);
+      const inner = el('g', { transform: `translate(${x0} ${rim}) rotate(${n2(side * Math.asin(dx0 / SUN.r) * 180 / Math.PI)}) scale(${DS})` }, g);
+      const d = `M${-side * 9} 1 C${-side * 10} -18, ${side * 4} -22, ${side * 7} -7`;
+      el('path', { d, fill: 'none', stroke: C.ink, 'stroke-width': 15 + 2 * 6.5 / DS, 'stroke-linecap': 'round' }, inner);
+      el('path', { d, fill: 'none', stroke: C.om, 'stroke-width': 15, 'stroke-linecap': 'round' }, inner);
+      el('ellipse', { cx: side * 8, cy: 1, rx: 10.5, ry: 11.5, fill: C.hoof, transform: `rotate(${side * 25} ${side * 8} 1)` }, inner);
+      el('path', { d: `M${side * 4} 7 L${side * 9} 9`, stroke: C.ink2, 'stroke-width': 1.6, 'stroke-linecap': 'round' }, inner);
+      return { g, x0, rim };
+    });
+    const L1 = line(sc, ['מי מפעיל'], 118, 236);
+    const L2 = line(sc, ['את הפרתיה?'], 330, 236, 'var(--burnt)');
+    return {
+      a: 0, b: 2.7, sc, init() { fit(L1); fit(L2); },
+      update(t) {
+        sp.forEach((s) => s.set(0.82 + 0.18 * Math.sin(t * 3.1 + s.ph), t * 8 + s.ph * 10));
+        // rise from the peek, duck before the stamp
+        const up = springTo(t, [[0, 0], [0.38, 1]], 2.4, 0.5);
+        const duck = easeInCubic(prog(t, 2.4, 2.66));
+        // peek: eyes just over the rim; up: the smile clears the rim
+        const rim = SUN.y - SUN.r;
+        const y = lerp(rim - 10 + 186 * DS, rim - 2 + 141 * DS, up) + 640 * duck;
+        const lx = springTo(t, [[0, 0], [0.92, -0.9], [1.28, 0.85], [1.72, 0]], 3.4, 0.7);
+        const hr = springTo(t, [[0, 0], [0.92, 4], [1.36, -10], [2.02, 0]], 2.2, 0.55);
+        const q = clamp(prog(t, 1.32, 1.42)) * (1 - clamp(prog(t, 1.98, 2.08)));
+        R.pose(D, {
+          x: SUN.x, y, sx: 1 / breathe(t), sy: breathe(t),
+          hr, turn: lx * 0.45, lx, ly: t < 0.4 ? 0.25 : 0,
+          earL: lerp(-8, 6, up) + flick(t, [0.4, 1.4]), earR: lerp(-8, 6, up) + flick(t, [0.46, 2.1], 16),
+          blink: blinkK(t, [1.05, 2.12]), mouth: q > 0.5 ? 'o' : 'smile', brows: q, browY: -3 * q,
+          armVis: [false, false], legVis: false,
+        });
+        grips.forEach((G) => { G.g.style.display = duck > 0.15 ? 'none' : ''; });
+        // title: already complete at t=0, a small bounce on the first word, quick exit
+        const bounce = (x) => (x > 0 ? 1 + 0.075 * Math.exp(-5.5 * x) * Math.sin(2 * Math.PI * 2.4 * x) : 1);
+        const out = easeInCubic(prog(t, 2.5, 2.68));
+        S(L1.spans[0], 1 - out, 0, -34 * out, bounce(t - 0.15));
+        S(L2.spans[0], 1 - out, 0, -34 * out, bounce(t - 0.24));
+      },
+    };
+  })());
+
+  // =====================================================================
+  // 2. US  2.7 - 5.35   stamp of the real logo + "אנחנו!" + "תושבים, בהתנדבות"
+  // =====================================================================
+  const T_STAMP = 2.84, T_WM = 2.97;
+  SHAKES.push([T_STAMP, 10], [T_WM, 5]);
+  add((() => {
+    const sc = scene('s-us');
+    const svg = svgIn(sc);
+    const world = el('g', {}, svg);            // camera pulls back after the stamp
+    ground(world, SUN.cut);
+    // world x: after the 0.76 pull back they land clear of the emblem's sun (left) and beside the deer (right)
+    const NB = [[-80, 330, 'bun', 0.1], [120, 296, 'glasses', 0], [1150, 320, 'beanie', 0.2]].map(([x, h, st, d]) => Object.assign(R.neighbour(world, x, SUN.cut, h, st, { lw: 6.5 }), { d }));
+    const sun = R.sun(world, SUN.x, SUN.y, SUN.r, SUN.cut, { stroke: 6 });
+    const emG = el('g', {}, world);
+    image(emG, EMBLEM, EMB.x, EMB.y, EMB.w, EMB.h);
+    const WMW = 460, WMH = WMW * WH / WW;
+    const wmG = el('g', {}, world);
+    image(wmG, WORDMARK, 540 - WMW / 2, SUN.cut + 30, WMW, WMH);
+    const ECX = SUN.x, ECY = EMB.y + EMB.h * 0.52;
+    const imp = el('g', { stroke: C.ink, 'stroke-width': 6, 'stroke-linecap': 'round' }, world);
+    const IMP = [-160, -130, -100, -62, -28, 28, 62, 100, 130, 160, 195, -195].map((a) => ({ a: a * Math.PI / 180, p: el('path', {}, imp) }));
+    const sp = [[170, 860, 40, C.o, 0], [925, 880, 30, C.ink, 1.1], [100, 1040, 24, C.ink, 2.6], [990, 1060, 22, C.o, 3.3]].map(([x, y, s, c, ph]) => Object.assign(R.sparkle(svg, x, y, s, c), { ph }));
+    const D = R.make(svg, 1.32);
+    const L1 = line(sc, ['אנחנו!'], 250, 330);
+    const L2 = line(sc, ['תושבים, בהתנדבות'], 596, 136, 'var(--burnt)');
+    const CAM = (t) => lerp(1, 0.76, easeInOutCubic(prog(t, 3.02, 3.62)));
+    return {
+      a: 2.7, b: 5.35, sc, init() { fit(L1); fit(L2); },
+      update(t) {
+        const cz = CAM(t);
+        tf(world, `translate(540 1000) scale(${n2(cz * 1000) / 1000}) translate(-540 -1000)`);
+        // stamp: slams down 2.70 -> 2.84, squash on impact
+        const k = easeInCubic(prog(t, 2.70, T_STAMP));
+        const sq = t > T_STAMP ? 0.045 * Math.exp(-13 * (t - T_STAMP)) * Math.cos(2 * Math.PI * 5 * (t - T_STAMP)) : 0;
+        const s = lerp(1.38, 1, k);
+        const bottom = EMB.y + EMB.h;
+        tf(emG, `translate(${SUN.x} ${n2(ECY)}) scale(${n2(s * 1000) / 1000}) rotate(${n2(lerp(-6, 0, k))}) translate(${-SUN.x} ${n2(-ECY)}) translate(${SUN.x} ${n2(bottom)}) scale(${n2((1 + sq) * 1000) / 1000} ${n2((1 - sq) * 1000) / 1000}) translate(${-SUN.x} ${n2(-bottom)})`);
+        emG.setAttribute('opacity', n2(clamp((t - 2.70) / 0.05)));
+        sun.g.style.display = t < T_STAMP ? '' : 'none';
+        const k2 = easeInCubic(prog(t, T_WM - 0.11, T_WM));
+        const sq2 = t > T_WM ? 0.05 * Math.exp(-14 * (t - T_WM)) * Math.cos(2 * Math.PI * 5 * (t - T_WM)) : 0;
+        const wy = SUN.cut + 30 + WMH / 2;
+        tf(wmG, `translate(540 ${n2(wy)}) scale(${n2(lerp(1.4, 1, k2) * (1 + sq2) * 1000) / 1000} ${n2(lerp(1.4, 1, k2) * (1 - sq2) * 1000) / 1000}) translate(-540 ${n2(-wy)})`);
+        wmG.setAttribute('opacity', n2(clamp((t - (T_WM - 0.11)) / 0.05)));
+        const ki = prog(t, T_STAMP, T_STAMP + 0.3);
+        imp.style.display = ki > 0 && ki < 1 ? '' : 'none';
+        IMP.forEach((I) => {
+          const r0 = 395 + 70 * easeOutCubic(ki), r1 = r0 + 50 * (1 - ki);
+          const c = Math.cos(I.a), s0 = Math.sin(I.a);
+          I.p.setAttribute('d', `M${n2(ECX + c * r0)} ${n2(ECY - s0 * r0 * 0.86)} L${n2(ECX + c * r1)} ${n2(ECY - s0 * r1 * 0.86)}`);
+        });
+        sp.forEach((p) => p.set(easeOutBack(prog(t, 3.4 + p.ph * 0.1, 3.8 + p.ph * 0.1)) * (0.85 + 0.15 * Math.sin(t * 3 + p.ph)), t * 9 + p.ph * 10));
+        // neighbours draw on with "תושבים"
+        NB.forEach((N, i) => {
+          const t0 = 3.56 + N.d;
+          N.draw(easeInOutCubic(prog(t, t0, t0 + 0.5)), easeOutCubic(prog(t, t0 + 0.3, t0 + 0.6)));
+          const bob = Math.sin(2 * Math.PI * (t - t0) * 1.1 + i * 2) * 5 * clamp(prog(t, t0 + 0.5, t0 + 0.9));
+          tf(N.g, `translate(${N.x} ${n2(N.y + bob)})`);
+        });
+        // the deer hops in from the right (foreground) and waves
+        const h1 = hop(t, 3.22, 0.3, 130), h2 = hop(t, 3.6, 0.3, 100);
+        const x = lerp(lerp(1230, 990, h1.k), 840, h2.k);
+        const air = h1.air || h2.air;
+        const tuck = Math.max(h1.tuck, h2.tuck);
+        const sy = h1.sy * h2.sy * breathe(t), sx = h1.sx * h2.sx / breathe(t);
+        const landed = t > 3.9;
+        const wave = clamp(prog(t, 3.98, 4.14)) * (1 - clamp(prog(t, 5.08, 5.3)));
+        const wx = 13 * Math.sin(2 * Math.PI * 2.7 * (t - 3.98));
+        const handR = [lerp(44, 68 + wx, wave), lerp(-58, -158 + 4 * Math.abs(wx) / 13, wave)];
+        const handL = air ? [-60, -98] : [-44, -58];
+        R.pose(D, {
+          x, y: 1500 + h1.dy + h2.dy, sx, sy, rot: air ? -6 : -2 * wave,
+          hr: springTo(t, [[0, 0], [3.9, 7], [4.5, -5], [5.0, 3]], 1.8, 0.5), turn: landed ? -0.15 : -0.5, lx: landed ? -0.15 : -0.7,
+          earL: flick(t, [3.5, 3.9, 4.7]) + (air ? 12 : 0), earR: flick(t, [3.52, 3.92, 4.3], 14) + (air ? 12 : 0),
+          blink: blinkK(t, [4.6]), eyeL: t > 4.08 && t < 4.5 ? 'happy' : 'open', eyeR: t > 4.08 && t < 4.5 ? 'happy' : 'open',
+          mouth: landed ? 'grin' : 'o', hands: [handL, handR],
+          feet: [[-21, -13 - 14 * tuck], [21, -13 - 14 * tuck]],
+        });
+        pop(L1.spans[0], t, T_STAMP, 5.35, { f: 2.2, z: 0.42, s0: 0.4 });
+        pop(L2.spans[0], t, 3.62, 5.35);
+      },
+    };
+  })());
+
+  // shared bits for floors and cords
+  function shadow(parent) { return el('ellipse', { cx: 0, cy: 0, rx: 70, ry: 13, fill: C.ink, opacity: 0.14 }, parent); }
+  function setShadow(e, x, y, w, k) { e.setAttribute('cx', n2(x)); e.setAttribute('cy', n2(y)); e.setAttribute('rx', n2(w * (1 - 0.45 * k))); e.setAttribute('opacity', n2(0.14 * (1 - 0.6 * k))); }
+  function bottle(parent, x, b, w, h, fill) {
+    const d = `M${x - w / 2} ${b} L${x - w / 2} ${b - h * 0.6} Q${x - w / 2} ${b - h * 0.74} ${x - w * 0.16} ${b - h * 0.8} L${x - w * 0.16} ${b - h} L${x + w * 0.16} ${b - h} L${x + w * 0.16} ${b - h * 0.8} Q${x + w / 2} ${b - h * 0.74} ${x + w / 2} ${b - h * 0.6} L${x + w / 2} ${b} Z`;
+    el('path', { d, fill, stroke: C.ink, 'stroke-width': 5, 'stroke-linejoin': 'round' }, parent);
+    el('rect', { x: x - w * 0.36, y: b - h * 0.45, width: w * 0.72, height: h * 0.2, rx: 3, fill: C.paper, stroke: C.ink, 'stroke-width': 3 }, parent);
+  }
+  function counterFront(parent, x0, x1, top, bot) {
+    const g = el('g', {}, parent);
+    el('rect', { x: x0, y: top, width: x1 - x0, height: bot - top, fill: C.peach, stroke: C.ink, 'stroke-width': 6, 'stroke-linejoin': 'round' }, g);
+    for (let x = x0 + 86; x < x1 - 30; x += 86) el('path', { d: `M${x} ${top + 30} L${x} ${bot - 34}`, stroke: C.ink, 'stroke-width': 4, opacity: 0.28, 'stroke-linecap': 'round' }, g);
+    el('rect', { x: x0, y: bot - 30, width: x1 - x0, height: 30, fill: C.burnt, stroke: C.ink, 'stroke-width': 6 }, g);
+    el('rect', { x: x0 - 22, y: top - 32, width: x1 - x0 + 44, height: 36, rx: 10, fill: C.o, stroke: C.ink, 'stroke-width': 6 }, g);
+    el('path', { d: `M${x0 - 6} ${top - 22} L${x1 - 30} ${top - 22}`, stroke: '#fff', 'stroke-width': 4, opacity: 0.4, 'stroke-linecap': 'round' }, g);
+    return g;
+  }
+  function cord(parent) {
+    const line0 = el('path', { stroke: C.ink, 'stroke-width': 4.5, fill: 'none', 'stroke-linecap': 'round' }, parent);
+    const knob = el('g', {}, parent);
+    el('path', { d: 'M0 -16 C 11 -16, 14 -4, 14 4 C 14 14, 8 20, 0 20 C -8 20, -14 14, -14 4 C -14 -4, -11 -16, 0 -16 Z', fill: C.o, stroke: C.ink, 'stroke-width': 5 }, knob);
+    return { set(x, yTop, yEnd) { line0.setAttribute('d', `M${n2(x)} ${n2(yTop)} L${n2(x)} ${n2(yEnd - 16)}`); tf(knob, `translate(${n2(x)} ${n2(yEnd)})`); } };
+  }
+
+  // =====================================================================
+  // 3. OTHER SIDE  5.35 - 8.5   "מחפשים עוד אנשים" / "לצד השני של הבר": the deer jumps over the counter
+  // =====================================================================
+  add((() => {
+    const sc = scene('s-other');
+    const svg = svgIn(sc);
+    const FLOOR = 1640, CT = 1240, CX0 = 300, CX1 = 1040, BACK = 1330, BACKD = 1300;
+    ground(svg, FLOOR);
+    const shF = shadow(svg);
+    const set = el('g', {}, svg);
+    const shelf = el('g', {}, set);
+    el('path', { d: `M${CX0 + 30} 862 L${CX1 - 20} 862`, stroke: C.ink, 'stroke-width': 8, 'stroke-linecap': 'round' }, shelf);
+    [[372, 52, 150, C.burnt], [436, 46, 120, C.peach], [870, 50, 160, C.o], [934, 44, 118, C.ink2], [990, 40, 136, C.paper3]].forEach(([x, w, h, f]) => bottle(shelf, x, 858, w, h, f));
+    const slotsG = el('g', {}, set);
+    const SL = [480, 680, 880].map((x) => {
+      const n = R.neighbour(slotsG, x, BACK, 380, 'bald', { fill: 'none', lw: 5.5 });
+      n.paths.forEach((p) => { p.removeAttribute('pathLength'); p.setAttribute('stroke-dasharray', '15 12'); p.setAttribute('fill', 'none'); p.setAttribute('stroke', C.ink2); });
+      n.face.style.display = 'none';
+      el('path', { d: `M0 ${n.hy - 26} L0 ${n.hy + 26} M-26 ${n.hy} L26 ${n.hy}`, stroke: C.burnt, 'stroke-width': 10, 'stroke-linecap': 'round' }, n.g);
+      return n;
+    });
+    const behind = el('g', {}, set);
+    counterFront(set, CX0, CX1, CT, FLOOR);
+    const tapT = el('g', {}, set);
+    el('rect', { x: 976, y: CT - 120, width: 26, height: 92, rx: 6, fill: C.paper3, stroke: C.ink, 'stroke-width': 5 }, tapT);
+    el('rect', { x: 952, y: CT - 136, width: 74, height: 24, rx: 8, fill: C.paper3, stroke: C.ink, 'stroke-width': 5 }, tapT);
+    [966, 1012].forEach((x) => el('rect', { x: x - 8, y: CT - 196, width: 16, height: 62, rx: 7, fill: C.o, stroke: C.ink, 'stroke-width': 5 }, tapT));
+    const front = el('g', {}, svg);
+    const D = R.make(front, 1.4);
+    // gingham bar towel draped over the deer's left shoulder, its fold tucked under the chin, the flap over the upper arm
+    const tw = R.towel(D.propFront);
+    tf(tw, 'translate(-34 -130) rotate(10) scale(0.96)');
+    const L1 = line(sc, ['מחפשים עוד אנשים'], 215, 176);
+    const L2 = line(sc, ['לצד השני של הבר'], 405, 176, 'var(--burnt)');
+    const TJ = 7.15, AIR = 0.38;
+    return {
+      a: 5.35, b: 8.5, sc, init() { fit(L1); fit(L2); },
+      update(t) {
+        const rise = (1 - spring(t, 5.35, 2.1, 0.66)) * 760;
+        tf(set, `translate(0 ${n2(rise)})`);
+        SL.forEach((n, i) => {
+          const k = easeOutBack(prog(t, 5.62 + i * 0.12, 5.92 + i * 0.12), 2.2);
+          const gone = i === 0 ? easeInCubic(prog(t, TJ + AIR - 0.1, TJ + AIR)) : 0;
+          const sway = Math.sin(t * 2.4 + i * 1.7) * 2.5;
+          tf(n.g, `translate(${n.x} ${BACK}) rotate(${n2(sway)}) scale(${n2(Math.max(0.001, k * (1 - gone)) * 1000) / 1000})`);
+        });
+        // jump over the counter on "לצד"
+        const J = hop(t, TJ, AIR, 360, 0.2);
+        const x = lerp(175, 480, J.k);
+        const base = lerp(FLOOR, BACKD, J.k);
+        const behindNow = t >= TJ + AIR * 0.5;
+        const want = behindNow ? behind : front;
+        if (D.root.parentNode !== want) want.appendChild(D.root);
+        setShadow(shF, x, FLOOR + 4, 78, clamp(-J.dy / 200));
+        shF.style.display = behindNow ? 'none' : '';
+        const pre = t < TJ - 0.2;
+        const point = clamp(prog(t, 5.78, 5.95)) * (1 - clamp(prog(t, 6.55, 6.72)));
+        const lookAt = springTo(t, [[0, 0.2], [5.55, 0.85], [6.4, 0], [6.9, 0.6]], 2.6, 0.75);
+        let hands = [[-44, -58], [44, -58]];
+        if (pre) hands = [[-44, -58], [lerp(44, 74, point), lerp(-58, -122, point)]];
+        else if (J.air || (t >= TJ - 0.2 && t < TJ)) hands = J.air ? [[-58, -156], [58, -156]] : [[-50, -48], [50, -48]];
+        else if (t >= TJ + AIR) {
+          const c = (1 - Math.cos(2 * Math.PI * 2.5 * Math.max(0, t - 7.72))) / 2;
+          const up = clamp(prog(t, 7.6, 7.75));
+          hands = [[-46, -66], [lerp(46, 66 - 16 * c, up), lerp(-66, -150 + 10 * c, up)]];
+        }
+        const landed = t >= TJ + AIR;
+        const wink = t > 7.98 && t < 8.38;
+        R.pose(D, {
+          x, y: base + J.dy, sx: J.sx / breathe(t), sy: J.sy * breathe(t), rot: J.air ? 12 * Math.sin(Math.PI * J.k) : 0,
+          hr: landed ? springTo(t, [[0, 0], [7.55, -6], [8.0, 5]], 2, 0.5) : springTo(t, [[0, 0], [5.6, 5], [6.4, -4], [6.9, 0]], 2, 0.6),
+          turn: landed ? 0 : lookAt * 0.55, lx: landed ? 0 : lookAt, ly: 0,
+          earL: flick(t, [5.62, 6.45, 7.55], 16) + (J.air ? 14 : 0), earR: flick(t, [5.66, 6.5, 7.58], 16) + (J.air ? 14 : 0),
+          blink: blinkK(t, [6.15, 6.95]), eyeL: wink ? 'happy' : 'open', eyeR: 'open',
+          brows: clamp(prog(t, 6.35, 6.45)) * (1 - clamp(prog(t, 6.85, 6.95))), browY: -3,
+          mouth: landed ? 'grin' : 'smile', hands,
+          feet: [[-21, -13 - 16 * J.tuck], [21, -13 - 16 * J.tuck]],
+        });
+        pop(L1.spans[0], t, 5.45, 8.5, { dOut: 0.16 });
+        pop(L2.spans[0], t, 7.21, 8.5, { dOut: 0.16 });
+      },
+    };
+  })());
+
+  // =====================================================================
+  // 4. EVENING  8.5 - 15.0   "ערב אחד, בערך כל חודשיים" + four hard cuts on the words, with step chips
+  // =====================================================================
+  const CUT = [10.72, 11.90, 12.66, 13.74];
+  add((() => {
+    const sc = scene('s-eve');
+    const svg = svgIn(sc);
+    // lights-off dim: over the stage only, under the titles and chips
+    const dimE = document.createElement('div');
+    dimE.style.cssText = 'position:absolute;inset:0;background:#2B2A45;mix-blend-mode:multiply;opacity:0;pointer-events:none';
+    sc.appendChild(dimE);
+    defsGlow(svg, 'glowE');
+    const FL = 1650;
+    const V = [0, 1, 2, 3, 4].map(() => el('g', {}, svg));
+
+    // ---------- V0: the evening starts, lights on (8.5 - 10.72) ----------
+    const sun0 = el('g', {}, V[0]);
+    R.sun(sun0, 190, 1570, 230, null, { stroke: 5 });
+    ground(V[0], FL);
+    const LT0 = R.lights(V[0], -40, 1120, 735, 120, 8, 'glowE');
+    const CX0 = 830, KN0 = 1140;
+    const cord0 = cord(V[0]);
+    const sh0 = shadow(V[0]);
+    const D0 = R.make(V[0], 1.8);
+
+    // ---------- V1: recruiting, typing, "רשמו אותי!" bubbles pile up ----------
+    const D1 = R.make(V[1], 2.35);
+    const ph1 = R.phone(D1.propMid);
+    tf(ph1.g, 'translate(0 -98)');
+    const BT = [10.72, 11.05, 11.3, 11.48, 11.63, 11.76];
+    const bubWrap = document.createElement('div');
+    bubWrap.style.cssText = 'position:absolute;inset:0;display:none';
+    const BUB = BT.map((t0, i) => {
+      const av = document.createElement('div'); av.className = 'av';
+      av.style.left = '86px'; av.style.top = '0px';
+      av.style.background = [C.peach, C.o, C.paper3][i % 3];
+      av.innerHTML = '<i style="left:20px"></i><i style="left:42px"></i><b></b>';
+      const b = document.createElement('div'); b.className = 'bub' + (i % 2 ? ' o' : '');
+      b.textContent = 'רשמו אותי!';
+      b.style.left = '194px'; b.style.top = '0px';
+      bubWrap.appendChild(av); bubWrap.appendChild(b);
+      return { av, b, t0 };
+    });
+
+    // ---------- V2: setting up, a wobbling tower of chairs on the antlers ----------
+    ground(V[2], FL);
+    const sh2 = shadow(V[2]);
+    const D2 = R.make(V[2], 1.5);
+    const TW = el('g', {}, D2.propFront);
+    const LV = [];
+    let parent = el('g', { transform: 'translate(0 -262) scale(0.74)' }, TW);
+    for (let i = 0; i < 6; i++) {
+      const lv = el('g', {}, parent);
+      const ch = R.chair(lv, i % 2 ? C.peach : C.o);
+      tf(ch, 'translate(0 -74)');
+      LV.push(lv); parent = lv;
+    }
+
+    // ---------- V3: on the bar, pour to the line, approved ----------
+    const D3S = 2.5, D3Y = 1650;
+    const D3 = R.make(V[3], D3S, { arm: [42, 40] });
+    const P3 = el('g', {}, D3.propMid);
+    const GX = 92, GB = -42, GH = 76, LINE = 0.82 * GH, HP = [GX, -146];
+    const tap = el('g', {}, P3);
+    el('rect', { x: GX + 24, y: -156, width: 17, height: 156 + GB, rx: 4, fill: C.paper3, stroke: C.ink, 'stroke-width': 3 }, tap);
+    el('rect', { x: GX - 10, y: -146, width: 51, height: 13, rx: 5, fill: C.paper3, stroke: C.ink, 'stroke-width': 3 }, tap);
+    el('rect', { x: GX - 5.5, y: -135, width: 11, height: 10, rx: 2, fill: C.ink2, stroke: C.ink, 'stroke-width': 2.5 }, tap);
+    el('ellipse', { cx: GX + 32.5, cy: -157, rx: 12, ry: 5, fill: C.paper3, stroke: C.ink, 'stroke-width': 3 }, tap);
+    const handle = el('g', {}, tap);
+    el('rect', { x: -5.5, y: -34, width: 11, height: 34, rx: 5, fill: C.o, stroke: C.ink, 'stroke-width': 3 }, handle);
+    el('ellipse', { cx: 0, cy: -36, rx: 8, ry: 6.5, fill: C.burnt, stroke: C.ink, 'stroke-width': 3 }, handle);
+    const stream = el('rect', { x: GX - 3, width: 6, fill: C.beer }, P3);
+    const glass = el('g', { transform: `translate(${GX} ${GB})` }, P3);
+    const GLD = `M-23 0 L-28 ${-GH} L28 ${-GH} L23 0 Q0 3 -23 0 Z`;
+    const gcp = el('clipPath', { id: 'glassclip' }, glass);
+    el('path', { d: GLD }, gcp);
+    el('path', { d: GLD, fill: '#FFF9EF', 'fill-opacity': 0.55 }, glass);
+    const liq = el('g', { 'clip-path': 'url(#glassclip)' }, glass);
+    const beer = el('rect', { x: -32, width: 64, fill: C.beer }, liq);
+    const bubbles3 = el('g', { fill: '#FFE2A8' }, liq);
+    [[-10, -10, 1.6], [6, -18, 1.3], [-4, -28, 1.5], [12, -34, 1.2], [-14, -40, 1.2]].forEach(([x, y, r]) => el('circle', { cx: x, cy: y, r }, bubbles3));
+    const foam = el('path', { fill: C.foam, stroke: C.ink, 'stroke-width': 2.4, 'stroke-linejoin': 'round' }, liq);
+    el('path', { d: GLD, fill: 'none', stroke: C.ink, 'stroke-width': 3.2, 'stroke-linejoin': 'round' }, glass);
+    el('path', { d: `M-27 ${-LINE} L27 ${-LINE}`, stroke: C.burnt, 'stroke-width': 2.8, 'stroke-dasharray': '5 3.6' }, glass);
+    el('path', { d: `M-18 ${-GH + 10} L-15 -9`, stroke: '#fff', 'stroke-width': 3, 'stroke-linecap': 'round', opacity: 0.75 }, glass);
+    counterFront(V[3], -40, 1120, D3Y + GB * D3S + 32, 2000);
+    const stamp = el('g', {}, V[3]);
+    const stIn = el('g', { opacity: 0.94 }, stamp);
+    el('rect', { x: -168, y: -72, width: 336, height: 144, rx: 22, fill: 'none', stroke: C.burnt, 'stroke-width': 10 }, stIn);
+    el('rect', { x: -152, y: -56, width: 304, height: 112, rx: 12, fill: 'none', stroke: C.burnt, 'stroke-width': 4 }, stIn);
+    const stTx = el('text', { x: 0, y: 40, 'text-anchor': 'middle', 'font-family': 'Karantina', 'font-weight': 700, 'font-size': 124, fill: C.burnt }, stIn);
+    stTx.textContent = 'מאושר';
+    const T_ST = 13.25;
+    SHAKES.push([T_ST, 6]);
+
+    // ---------- V4: tidy up, last chair down, lights off ----------
+    ground(V[4], FL);
+    const LT4 = R.lights(V[4], -40, 1120, 735, 120, 8, 'glowE');
+    const CX4 = 800, KN4 = 1236;
+    const cord4 = cord(V[4]);
+    const stack = el('g', {}, V[4]);
+    for (let i = 0; i < 4; i++) { const c = R.chair(stack, i % 2 ? C.peach : C.o); tf(c, `translate(170 ${FL - 78 - i * 26}) scale(1.05)`); }
+    const sh4 = shadow(V[4]);
+    const D4 = R.make(V[4], 1.75);
+    const ch4 = R.chair(V[4], C.o);
+
+    // ---------- titles + chips ----------
+    const L1 = line(sc, ['ערב אחד,'], 196, 214);
+    const L2 = line(sc, ['בערך כל חודשיים'], 392, 150, 'var(--burnt)');
+    sc.appendChild(bubWrap);
+    const CHIPS = ['מגייסים', 'מקימים', 'על הבר', 'מסדרים'].map((txt, i) => {
+      const d = document.createElement('div'); d.className = 'chip';
+      d.innerHTML = `<span class="tx">${txt}</span>`;
+      d.style.top = '594px';
+      sc.appendChild(d);
+      return { d, tx: d.querySelector('.tx'), t0: CUT[i] };
+    });
+
+    const GRIP = [64, -172];   // where the right hoof holds the cord knob (deer units): beside the head, under the ear
+    function lightsOn(LT, t, t0, icord) { LT.set((i) => clamp((t - t0 - Math.abs(i - icord) * 0.035) / 0.06)); }
+
+    return {
+      a: 8.5, b: 15.0, sc,
+      init() {
+        fit(L1); fit(L2);
+        // chips: fixed layout for all four, RTL from the right
+        const ws = CHIPS.map((c) => c.d.getBoundingClientRect().width);
+        const gap = 14, tot = ws.reduce((a, b) => a + b, 0) + gap * 3;
+        let right = 540 + tot / 2;
+        CHIPS.forEach((c, i) => { c.d.style.left = (right - ws[i]) + 'px'; right -= ws[i] + gap; });
+        // bubbles: fixed widths
+      },
+      update(t) {
+        const vi = t < CUT[0] ? 0 : t < CUT[1] ? 1 : t < CUT[2] ? 2 : t < CUT[3] ? 3 : 4;
+        V.forEach((g, i) => { g.style.display = i === vi ? '' : 'none'; });
+        bubWrap.style.display = vi === 1 ? '' : 'none';
+        dimE.style.opacity = vi === 4 ? n2(0.3 * easeOutCubic(prog(t, 14.35, 14.5))) : 0;
+        pop(L1.spans[0], t, 8.64, 15.0, { dOut: 0.18 });
+        pop(L2.spans[0], t, 9.32, 15.0, { dOut: 0.18 });
+        CHIPS.forEach((c, i) => {
+          if (t < c.t0) { c.d.style.opacity = 0; return; }
+          const k = spring(t, c.t0, 3, 0.5);
+          const done = i < vi - 1 || (i === 3 && false);
+          const active = i === vi - 1;
+          c.d.style.background = active ? C.o : C.paper;
+          c.tx.style.opacity = done ? 0.5 : 1;
+          c.d.style.borderColor = done ? 'rgba(46,23,16,.45)' : C.ink;
+          const out = easeInCubic(prog(t, 14.82, 15.0));
+          S(c.d, clamp((t - c.t0) / 0.08) * (1 - out), 0, (1 - k) * 20, lerp(0.5, 1, k) * (active ? 1.06 : 1));
+        });
+        if (vi === 0) v0(t); else if (vi === 1) v1(t); else if (vi === 2) v2(t); else if (vi === 3) v3(t); else v4(t);
+      },
+    };
+
+    function v0(t) {
+      tf(sun0, `translate(0 ${n2(160 * easeInOutCubic(prog(t, 8.5, 9.7)))})`);
+      const H = hop(t, 9.08, 0.34, 240, 0.14);
+      const b1 = hop(t, 9.98, 0.24, 56), b2 = hop(t, 10.34, 0.24, 56);
+      // the cord hangs beside the head (GRIP), so the hoof never crosses the face
+      const x = CX0 - GRIP[0] * 1.8, y = FL + H.dy + b1.dy + b2.dy;
+      setShadow(sh0, x, FL + 4, 100, clamp(-(H.dy + b1.dy + b2.dy) / 200));
+      const reach = clamp(prog(t, 8.96, 9.1)) * (1 - clamp(prog(t, 9.78, 9.9)));
+      const yay = clamp(prog(t, 9.9, 10.0)) * (1 - clamp(prog(t, 10.6, 10.72)));
+      const hands = [[lerp(-44, -60, yay), lerp(-58, -150, yay)], [lerp(lerp(44, GRIP[0], reach), 62, yay), lerp(lerp(-58, GRIP[1], reach), -150, yay)]];
+      const lit = t >= 9.42;
+      const p = R.pose(D0, {
+        x, y, sx: H.sx * b1.sx * b2.sx / breathe(t), sy: H.sy * b1.sy * b2.sy * breathe(t),
+        hr: lit ? springTo(t, [[0, 0], [9.5, 5], [10.1, -5], [10.5, 3]], 2, 0.5) : -6, ly: lit ? 0 : -1, lx: lit ? 0 : 0.7, turn: lit ? 0 : 0.3,
+        earL: flick(t, [8.6, 9.42, 9.98, 10.34]) + (H.air ? 12 : 0), earR: flick(t, [8.64, 9.45, 10.0, 10.36], 15) + (H.air ? 12 : 0),
+        blink: blinkK(t, [8.85]), eyeL: lit && t > 9.5 ? 'happy' : 'open', eyeR: lit && t > 9.5 ? 'happy' : 'open', wide: !lit && t > 9.0 ? 1 : 0,
+        mouth: lit ? 'grin' : 'smile', hands, feet: [[-21, -13 - 15 * H.tuck], [21, -13 - 15 * H.tuck]],
+      });
+      // the cord follows the hoof once grabbed, then springs back
+      const handY = y + D0.arms[1].hand[1] * 1.8 * p.sy;
+      let ky = KN0;
+      if (t >= 9.2 && t < 9.84) ky = Math.max(KN0, handY + 8);
+      else if (t >= 9.84) { const yr = FL - 150 * 1.8; ky = KN0 + (yr - KN0) * (1 - spring(t, 9.84, 2.6, 0.32)); }
+      cord0.set(CX0, LT0.wy(CX0) + 4, ky);
+      lightsOn(LT0, t, 9.42, 5.2);
+    }
+
+    function v1(t) {
+      const a = Math.max(0, Math.sin(2 * Math.PI * 6.5 * t)), b = Math.max(0, -Math.sin(2 * Math.PI * 6.5 * t));
+      const pp = (1 - spring(t, CUT[0], 3, 0.6));
+      R.pose(D1, {
+        x: 770, y: 1765 + pp * 80, sx: 1 / breathe(t), sy: breathe(t) * (1 + 0.012 * Math.sin(2 * Math.PI * 6.5 * t * 2)),
+        hr: 6 + 2 * Math.sin(t * 9), ly: 1, lx: -0.1, turn: -0.05,
+        earL: flick(t, BT, 12) + 4, earR: flick(t, BT.map((x) => x + 0.04), 12) + 4,
+        blink: blinkK(t, [11.4]), mouth: 'tongue', brows: 0.7, browY: 2, browTilt: -8,
+        hands: [[-30 + 7 * a, -98 + 6 * a], [30 - 7 * b, -98 + 6 * b]],
+      });
+      BUB.forEach((B, i) => {
+        if (t < B.t0) { B.av.style.opacity = 0; B.b.style.opacity = 0; return; }
+        let after = 0;
+        for (let j = i + 1; j < BUB.length; j++) after += spring(t, BUB[j].t0, 3.2, 0.75);
+        const y = 1420 - 140 * after;
+        const k = spring(t, B.t0, 3.2, 0.5), o = clamp((t - B.t0) / 0.06);
+        B.av.style.top = n2(y + 14) + 'px'; B.b.style.top = n2(y) + 'px';
+        S(B.av, o, 0, 0, lerp(0.3, 1, k)); S(B.b, o, 0, 0, lerp(0.3, 1, k));
+      });
+    }
+
+    function v2(t) {
+      const x0 = t - 11.92;
+      let th = x0 > 0 ? -92 * Math.exp(-4.4 * x0) * Math.sin(2 * Math.PI * 1.75 * x0) : 0;
+      th += 3 * Math.sin(2 * Math.PI * 1.5 * t);
+      LV.forEach((lv, i) => {
+        const w = (0.5 + 1.0 * i / 5) / 6;
+        tf(lv, `translate(0 ${i ? -30 : 0}) rotate(${n2(th * w)})`);
+      });
+      const ph = 2 * Math.PI * 3.1 * (t - 11.9);
+      const panic = clamp(prog(t, 11.96, 12.02)) * (1 - clamp(prog(t, 12.36, 12.44)));
+      const x = lerp(640, 560, prog(t, 11.9, 12.66));
+      const step = Math.sin(ph);
+      R.pose(D2, {
+        x, y: FL - 5 * Math.abs(step), sx: 1 / breathe(t), sy: breathe(t),
+        rot: -th * 0.2, hr: -th * 0.1, ly: -1, lx: th < -8 ? -0.6 : 0.2,
+        earL: flick(t, [11.95, 12.3], 16) + 6, earR: flick(t, [11.97, 12.32], 16) + 6,
+        eyeL: t > 12.44 ? 'happy' : 'open', eyeR: t > 12.44 ? 'happy' : 'open', wide: panic,
+        brows: panic, browY: -4 * panic,
+        mouth: t < 11.97 ? 'smile' : t < 12.44 ? (t < 12.2 ? 'o' : 'wobble') : 'grin',
+        hands: [
+          [lerp(-42, -72 + 9 * Math.sin(2 * Math.PI * 7 * t), panic), lerp(-168, -138 + 12 * Math.cos(2 * Math.PI * 5 * t), panic)],
+          [lerp(42, 72 + 9 * Math.sin(2 * Math.PI * 6 * t + 1), panic), lerp(-168, -138 + 12 * Math.cos(2 * Math.PI * 7 * t), panic)],
+        ],
+        feet: [[-21, -13 - 12 * Math.max(0, step)], [21, -13 - 12 * Math.max(0, -step)]],
+      });
+      setShadow(sh2, x, FL + 4, 92, 0);
+    }
+
+    function v3(t) {
+      const pull = easeOutBack(prog(t, 12.66, 12.76), 1.4) * (1 - easeInOutCubic(prog(t, 13.12, 13.22)));
+      const ang = -38 * pull;
+      tf(handle, `translate(${HP[0]} ${HP[1]}) rotate(${n2(ang)})`);
+      const r = ang * Math.PI / 180;
+      const grip = [HP[0] + Math.sin(r) * 19, HP[1] - Math.cos(r) * 19];
+      const fillK = easeOutCubic(prog(t, 12.76, 13.12));
+      const lvl = (LINE - 13) * fillK, fh = Math.min(13, lvl * 0.45);
+      beer.setAttribute('y', n2(-lvl)); beer.setAttribute('height', n2(lvl + 4));
+      bubbles3.style.display = lvl > 8 ? '' : 'none';
+      const top = -(lvl + fh);
+      foam.setAttribute('d', lvl < 0.5 ? '' : `M-32 ${n2(-lvl + 1)} L-32 ${n2(top + 1)} Q-24 ${n2(top - 3)} -16 ${n2(top + 1)} Q-8 ${n2(top - 3)} 0 ${n2(top)} Q8 ${n2(top - 3)} 16 ${n2(top + 1)} Q24 ${n2(top - 3)} 32 ${n2(top + 1)} L32 ${n2(-lvl + 1)} Z`);
+      const pouring = t > 12.73 && t < 13.14;
+      stream.style.display = pouring ? '' : 'none';
+      const sTop = -126, sBot = GB + top;
+      stream.setAttribute('y', sTop); stream.setAttribute('height', n2(Math.max(0, sBot - sTop)));
+      const done = t > 13.13;
+      // after the pour the hoof lets go of the handle and pumps up on the stamp
+      // (dropping it to the hip swept the arm across the glass)
+      const kr = easeOutCubic(prog(t, 13.2, 13.32));
+      const pump = t > 13.3 ? 10 * Math.sin(2 * Math.PI * 2.6 * (t - 13.3)) * Math.exp(-2.4 * (t - 13.3)) : 0;
+      const handR = t > 13.2 ? [lerp(grip[0], 72, kr), lerp(grip[1], -150, kr) - pump] : grip;
+      R.pose(D3, {
+        x: 350, y: D3Y, sx: 1 / breathe(t), sy: breathe(t),
+        hr: done ? springTo(t, [[0, 4], [13.14, -4]], 2.2, 0.5) : 4, ly: done ? 0 : 1, lx: done ? 0 : 0.7, turn: done ? 0 : 0.3,
+        earL: flick(t, [12.7, 13.15, 13.26], 14), earR: flick(t, [12.72, 13.17, 13.27], 14),
+        eyeL: done && t > 13.2 ? 'happy' : 'open', eyeR: done && t > 13.2 ? 'happy' : 'open', blink: blinkK(t, [13.0]),
+        mouth: done ? 'grin' : 'tongue', brows: done ? 0 : 0.6, browY: 2, browTilt: -6,
+        hands: [[-48, -48], handR],
+        legVis: false,
+      });
+      const ks = easeInCubic(prog(t, T_ST - 0.1, T_ST));
+      const sq = t > T_ST ? 0.06 * Math.exp(-14 * (t - T_ST)) * Math.cos(2 * Math.PI * 5 * (t - T_ST)) : 0;
+      stamp.style.display = t > T_ST - 0.1 ? '' : 'none';
+      tf(stamp, `translate(812 1130) rotate(-11) scale(${n2(lerp(2.1, 1, ks) * (1 + sq) * 1000) / 1000} ${n2(lerp(2.1, 1, ks) * (1 - sq) * 1000) / 1000})`);
+      stamp.setAttribute('opacity', n2(clamp((t - (T_ST - 0.1)) / 0.04)));
+    }
+
+    function v4(t) {
+      LT4.set(t < 14.35 ? 1 : 0);
+      // the last chair goes down next to the stack
+      const kc = easeInOutCubic(prog(t, 13.76, 14.0));
+      const bump = t > 14.0 ? 4 * Math.exp(-18 * (t - 14.0)) * Math.sin(2 * Math.PI * 6 * (t - 14.0)) : 0;
+      const cx = lerp(540, 380, kc), cy = lerp(1462, FL - 78, kc) - bump;
+      tf(ch4, `translate(${n2(cx)} ${n2(cy)}) scale(1.05)`);
+      const H = hop(t, 14.14, 0.22, 140, 0.1);
+      const x = lerp(630, CX4 - GRIP[0] * 1.75, H.k);
+      const y = FL + H.dy;
+      setShadow(sh4, x, FL + 4, 96, clamp(-H.dy / 200));
+      const bend = kc * (1 - clamp(prog(t, 14.0, 14.08)));
+      const off = t >= 14.35;
+      const yawn = clamp(prog(t, 14.6, 14.72));
+      let hands;
+      if (t < 14.02) {
+        const hx = (cx - x) / 1.75, hy = (cy - 24 - y) / 1.75;
+        hands = [[hx - 30, hy], [hx + 30, hy]];
+      } else if (t < 14.62) {
+        const reach = clamp(prog(t, 14.08, 14.16));
+        hands = [[-44, -58], [lerp(44, GRIP[0], reach), lerp(-58, GRIP[1], reach)]];
+      } else hands = [[lerp(-44, -52, yawn), lerp(-58, -170, yawn)], [lerp(GRIP[0], 52, yawn), lerp(GRIP[1], -170, yawn)]];
+      const p = R.pose(D4, {
+        x, y, sx: H.sx / breathe(t), sy: H.sy * breathe(t) * (1 - 0.06 * bend), rot: -10 * bend,
+        hr: off ? 6 : -4, ly: off ? 0.2 : (t > 14.04 ? -1 : 0.6), lx: t < 14.02 ? -0.6 : 0.2,
+        earL: off ? -14 * clamp(prog(t, 14.4, 14.6)) + flick(t, [14.36], 10) : flick(t, [13.8, 14.14], 14), earR: off ? -14 * clamp(prog(t, 14.4, 14.6)) + flick(t, [14.38], 10) : flick(t, [13.82, 14.16], 14),
+        eyeL: off && t > 14.45 ? 'closed' : 'open', eyeR: off && t > 14.45 ? 'closed' : 'open', blink: blinkK(t, [13.9]),
+        mouth: yawn > 0.3 && t < 14.95 ? 'yawn' : 'smile', hands,
+        feet: [[-21, -13 - 14 * H.tuck], [21, -13 - 14 * H.tuck]],
+      });
+      const handY = y + D4.arms[1].hand[1] * 1.75 * p.sy;
+      let ky = KN4;
+      if (t >= 14.22 && t < 14.6) ky = Math.max(KN4, handY + 8);
+      else if (t >= 14.6) { const yr = FL - 150 * 1.75; ky = KN4 + (yr - KN4) * (1 - spring(t, 14.6, 2.6, 0.32)); }
+      cord4.set(CX4, LT4.wy(CX4) + 4, ky);
+    }
+  })());
+
+  // neighbour arm (paper-filled rubber hose with a round hand), drawn on top of the bust
+  function nArm(parent) {
+    const o = el('path', { fill: 'none', stroke: C.ink, 'stroke-width': 30, 'stroke-linecap': 'round' }, parent);
+    const f = el('path', { fill: 'none', stroke: C.paper, 'stroke-width': 19, 'stroke-linecap': 'round' }, parent);
+    const h = el('circle', { r: 17, fill: C.paper, stroke: C.ink, 'stroke-width': 5.5 }, parent);
+    return { set(sx, sy, cx, cy, hx, hy) { const d = `M${n2(sx)} ${n2(sy)} Q${n2(cx)} ${n2(cy)} ${n2(hx)} ${n2(hy)}`; o.setAttribute('d', d); f.setAttribute('d', d); h.setAttribute('cx', n2(hx)); h.setAttribute('cy', n2(hy)); } };
+  }
+  function burst(parent, n = 8, r0 = 26, r1 = 58) {
+    const g = el('g', { stroke: C.ink, 'stroke-width': 6, 'stroke-linecap': 'round' }, parent);
+    const P = Array.from({ length: n }, (_, i) => ({ a: (i / n) * Math.PI * 2 + 0.3, p: el('path', {}, g) }));
+    return { g, set(x, y, k) { g.style.display = k > 0 && k < 1 ? '' : 'none'; P.forEach((q) => { const a = r0 + (r1 - r0) * easeOutCubic(k), b = a + 22 * (1 - k); q.p.setAttribute('d', `M${n2(x + Math.cos(q.a) * a)} ${n2(y + Math.sin(q.a) * a)} L${n2(x + Math.cos(q.a) * b)} ${n2(y + Math.sin(q.a) * b)}`); }); } };
+  }
+  function thumb(parent) { // orange circle with an ink thumbs-up
+    const g = el('g', {}, parent);
+    el('circle', { r: 30, fill: C.o, stroke: C.ink, 'stroke-width': 5 }, g);
+    el('path', { d: 'M-12 -1 L-12 15 L-5 15 L-5 -1 Z M-3 -1 L2 -12 C3 -16, 9 -16, 9 -11 L7 -3 L14 -3 C18 -3, 19 1, 17 4 L13 14 C12 16, 10 16, 9 16 L-3 16 Z', fill: C.paper, stroke: C.ink, 'stroke-width': 3.6, 'stroke-linejoin': 'round' }, g);
+    return g;
+  }
+
+  // =====================================================================
+  // 5. TEAM  15.0 - 20.35   "ביחד, לא לבד" + meeting once a month or two + WhatsApp in between
+  // =====================================================================
+  add((() => {
+    const sc = scene('s-team');
+    const svg = svgIn(sc);
+    const d0 = el('defs', {}, svg);
+    const lg = el('radialGradient', { id: 'lampGlow' }, d0);
+    el('stop', { offset: 0, 'stop-color': '#FFC981', 'stop-opacity': 0.75 }, lg);
+    el('stop', { offset: 0.55, 'stop-color': '#F7B26A', 'stop-opacity': 0.25 }, lg);
+    el('stop', { offset: 1, 'stop-color': '#F7B26A', 'stop-opacity': 0 }, lg);
+    const cg = el('linearGradient', { id: 'cordFade', x1: 0, y1: 0, x2: 0, y2: 1 }, d0);
+    el('stop', { offset: 0, 'stop-color': C.ink, 'stop-opacity': 0 }, cg);
+    el('stop', { offset: 0.5, 'stop-color': C.ink, 'stop-opacity': 1 }, cg);
+    const W = el('g', {}, svg);   // world: pulls back
+    const TX = 540, TY = 1372, TRX = 410, TRY = 84;
+    el('ellipse', { cx: TX, cy: 1330, rx: 470, ry: 330, fill: 'url(#lampGlow)' }, W);
+    // lamp: the sun hanging above the table
+    const lamp = el('g', { transform: 'translate(0 -16)' }, W);   // lifted so the antlers clear it on the high-five hop
+    el('rect', { x: TX - 2.5, y: 640, width: 5, height: 150, fill: 'url(#cordFade)' }, lamp);
+    el('path', { d: `M${TX - 26} 792 L${TX + 26} 792 L${TX + 18} 774 L${TX - 18} 774 Z`, fill: C.ink }, lamp);
+    R.sun(lamp, TX, 872, 84, null);
+    el('circle', { cx: TX, cy: 872, r: 84, fill: 'none', stroke: C.ink, 'stroke-width': 5 }, lamp);
+    // calendar on the wall (left)
+    const cal = el('g', { transform: 'translate(205 885)' }, W);
+    const calPage = (parent, mark, fill) => {
+      const g = el('g', {}, parent);
+      el('rect', { x: -96, y: -92, width: 192, height: 196, rx: 16, fill: fill || '#FFF9EF', stroke: C.ink, 'stroke-width': 5.5 }, g);
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) el('circle', { cx: -64 + c * 32, cy: -26 + r * 32, r: 5.5, fill: C.ink3 }, g);
+      const [mr, mc] = mark;
+      el('circle', { cx: -64 + mc * 32, cy: -26 + mr * 32, r: 17, fill: 'none', stroke: C.burnt, 'stroke-width': 5.5 }, g);
+      return g;
+    };
+    calPage(cal, [3, 1]);
+    const flipPage = el('g', {}, cal);
+    const pageFront = calPage(flipPage, [1, 3]);
+    const pageBack = el('rect', { x: -96, y: -92, width: 192, height: 196, rx: 16, fill: C.paper3, stroke: C.ink, 'stroke-width': 5.5 }, flipPage);
+    el('path', { d: 'M-96 -76 C-96 -95, -90 -100, -76 -100 L76 -100 C90 -100, 96 -95, 96 -76 L96 -56 L-96 -56 Z', fill: C.o, stroke: C.ink, 'stroke-width': 5.5, 'stroke-linejoin': 'round' }, cal);
+    [-50, 0, 50].forEach((x) => el('rect', { x: x - 6, y: -116, width: 12, height: 30, rx: 6, fill: C.ink }, cal));
+    // people behind the table
+    const NB = [[180, 1468, 300, 'cap'], [348, 1428, 330, 'long'], [736, 1428, 334, 'curly'], [904, 1468, 300, 'glasses']].map(([x, y, h, st]) => R.neighbour(W, x, y, h, st, { lw: 5.5 }));
+    const D = R.make(W, 1.45);
+    // table
+    const table = el('g', {}, W);
+    el('rect', { x: TX - 26, y: TY + 40, width: 52, height: 1660 - TY - 40, fill: C.ink2, stroke: C.ink, 'stroke-width': 5 }, table);
+    el('ellipse', { cx: TX, cy: 1660, rx: 140, ry: 22, fill: C.ink2, stroke: C.ink, 'stroke-width': 5 }, table);
+    el('path', { d: `M${TX - TRX} ${TY} L${TX - TRX} ${TY + 28} A${TRX} ${TRY} 0 0 0 ${TX + TRX} ${TY + 28} L${TX + TRX} ${TY} Z`, fill: C.burnt, stroke: C.ink, 'stroke-width': 6, 'stroke-linejoin': 'round' }, table);
+    el('ellipse', { cx: TX, cy: TY, rx: TRX, ry: TRY, fill: C.o, stroke: C.ink, 'stroke-width': 6 }, table);
+    el('path', { d: `M${TX - 300} ${TY - 30} Q${TX - 120} ${TY - 64} ${TX + 60} ${TY - 64}`, stroke: '#fff', 'stroke-width': 5, opacity: 0.35, fill: 'none', 'stroke-linecap': 'round' }, table);
+    // a few glasses on the table
+    [[TX - 250, TY + 8], [TX + 262, TY + 4], [TX - 92, TY + 34]].forEach(([x, y]) => {
+      const g = el('g', { transform: `translate(${x} ${y})` }, table);
+      el('path', { d: 'M-17 0 L-21 -50 L21 -50 L17 0 Q0 3 -17 0 Z', fill: C.beer, stroke: C.ink, 'stroke-width': 4.5, 'stroke-linejoin': 'round' }, g);
+      el('path', { d: 'M-22 -50 Q-16 -60 -8 -54 Q0 -62 8 -54 Q16 -60 22 -50 Z', fill: C.foam, stroke: C.ink, 'stroke-width': 4, 'stroke-linejoin': 'round' }, g);
+    });
+    // arms resting on the table (in front of the table top)
+    const armsG = el('g', {}, W);
+    const nArms = NB.map(() => nArm(armsG));
+    const hi5 = burst(W, 8, 24, 60);
+    // chat bubble (generic, no logo)
+    const chat = el('g', {}, svg);
+    el('path', { d: 'M-170 -96 C-170 -116, -158 -128, -138 -128 L138 -128 C158 -128, 170 -116, 170 -96 L170 64 C170 84, 158 96, 138 96 L-96 96 L-138 132 L-132 96 L-138 96 C-158 96, -170 84, -170 64 Z', fill: '#FFF9EF', stroke: C.ink, 'stroke-width': 6, 'stroke-linejoin': 'round' }, chat);
+    const ctx = el('text', { x: 0, y: -48, 'text-anchor': 'middle', 'font-family': 'Rubik', 'font-weight': 700, 'font-size': 54, fill: C.ink }, chat);
+    ctx.textContent = 'מי מגיע?';
+    const TH = [-120, -60, 0, 60, 120].map((x) => { const g = thumb(chat); return { g, x }; });
+    const TH_T = [19.62, 19.7, 19.78, 19.86, 19.94];
+    const T1 = line(sc, ['ביחד, לא לבד'], 196, 230);
+    const S1a = line(sc, ['ישיבה פעם בחודש'], 430, 124, 'var(--burnt)');
+    const S1b = line(sc, ['או חודשיים'], 548, 124, 'var(--burnt)');
+    const S2 = line(sc, ['ובין לבין,', 'וואטסאפ'], 452, 150, 'var(--burnt)');
+    return {
+      a: 15.0, b: 20.35, sc, init() { [T1, S1a, S1b, S2].forEach((L) => fit(L)); },
+      update(t) {
+        const z = lerp(1.5, 1, easeInOutCubic(prog(t, 15.0, 15.95)));
+        tf(W, `translate(540 1130) scale(${n2(z * 1000) / 1000}) translate(-540 -1130)`);
+        NB.forEach((N, i) => {
+          const bob = Math.sin(2 * Math.PI * 0.9 * t + i * 1.9) * 4;
+          tf(N.g, `translate(${N.x} ${n2(N.y + bob)})`);
+        });
+        // calendar flip on "ישיבה"
+        const fk = easeInOutCubic(prog(t, 16.46, 16.78));
+        const cy = Math.cos(Math.PI * fk);
+        flipPage.style.display = fk < 1 ? '' : 'none';
+        pageFront.style.display = cy > 0 ? '' : 'none';
+        pageBack.style.display = cy > 0 ? 'none' : '';
+        tf(flipPage, `translate(0 -92) scale(1 ${n2(Math.max(0.01, Math.abs(cy)) * (cy >= 0 ? 1 : -1) * 1000) / 1000}) translate(0 92)`);
+        tf(cal, `translate(205 885) rotate(${n2(3 * Math.sin(2 * Math.PI * 1.6 * Math.max(0, t - 16.5)) * Math.exp(-3 * Math.max(0, t - 16.5)))})`);
+        // deer: chats, nods, then the high five
+        const H = hop(t, 19.92, 0.26, 42, 0.12);
+        const hi = clamp(prog(t, 19.86, 19.98)) * (1 - clamp(prog(t, 20.2, 20.3)));
+        const look = springTo(t, [[0, 0], [15.6, -0.7], [16.5, -1], [17.4, 0.7], [18.3, 0], [18.9, 0.9], [19.7, 0.6]], 2.4, 0.75);
+        R.pose(D, {
+          x: TX, y: 1446 + H.dy, sx: H.sx / breathe(t), sy: H.sy * breathe(t),
+          hr: springTo(t, [[0, 0], [15.5, -5], [16.6, 6], [17.6, -4], [18.5, 4], [19.5, 0]], 1.8, 0.55) + 4 * Math.sin(2 * Math.PI * 1.3 * t) * clamp(prog(t, 17.2, 17.4)) * (1 - clamp(prog(t, 18.0, 18.2))),
+          lx: look, turn: look * 0.4, ly: t > 16.4 && t < 16.9 ? -0.4 : 0,
+          earL: flick(t, [15.3, 16.5, 18.8, 19.95], 15), earR: flick(t, [15.34, 16.55, 18.84, 19.97], 15),
+          blink: blinkK(t, [15.8, 17.9, 19.3]), eyeL: t > 20.0 ? 'happy' : 'open', eyeR: t > 20.0 ? 'happy' : 'open',
+          mouth: t > 17.2 && t < 18.0 ? (Math.sin(2 * Math.PI * 4 * t) > 0 ? 'grin' : 'smile') : (t > 19.6 ? 'grin' : 'smile'),
+          hands: [[-48, -70], [lerp(48, 70, hi), lerp(-70, -150, hi)]],
+          feet: [[-21, -13], [21, -13]],
+        });
+        // arms on the table; the right neighbour joins the high five
+        const tableY = TY - 10;
+        NB.forEach((N, i) => {
+          const sx = N.x + (i < 2 ? 0.26 : -0.26) * N.h, sy = N.y - 0.42 * N.h;
+          const hx = N.x + (i < 2 ? 0.34 : -0.34) * N.h, hy = tableY + (i % 3 === 0 ? 4 : -6);
+          if (i === 2) {
+            const k = clamp(prog(t, 19.84, 19.98)) * (1 - clamp(prog(t, 20.2, 20.32)));
+            const tx = lerp(hx, 660, k), ty = lerp(hy, 1186 + H.dy * 0.3, k);
+            nArms[i].set(sx, sy, lerp(sx - 10, sx - 40, k), lerp(sy + 60, sy + 10, k), tx, ty);
+          } else nArms[i].set(sx, sy, sx + (i < 2 ? 30 : -30), sy + 70, hx, hy);
+        });
+        hi5.set(650, 1180, prog(t, 20.0, 20.3));
+        // chat bubble
+        const ck = spring(t, 18.78, 2.6, 0.55);
+        chat.style.display = t >= 18.78 ? '' : 'none';
+        tf(chat, `translate(806 856) scale(${n2(lerp(0.3, 1.05, ck) * 1000) / 1000})`);
+        chat.setAttribute('opacity', n2(clamp((t - 18.78) / 0.08)));
+        TH.forEach((T0, i) => {
+          const k = t >= TH_T[i] ? spring(t, TH_T[i], 3.2, 0.45) : 0;
+          T0.g.style.display = t >= TH_T[i] ? '' : 'none';
+          tf(T0.g, `translate(${T0.x} 40) scale(${n2(Math.max(0.001, k) * 1000) / 1000})`);
+        });
+        // titles
+        pop(T1.spans[0], t, 15.16, 20.35);
+        pop(S1a.spans[0], t, 16.48, 18.66, { dOut: 0.18 });
+        pop(S1b.spans[0], t, 16.6, 18.66, { dOut: 0.18 });
+        pop(S2.spans[0], t, 18.78, 20.35);
+        pop(S2.spans[1], t, 19.62, 20.35, { s0: 0.4 });
+      },
+    };
+  })());
+
+  // =====================================================================
+  // 6. NO EXPERIENCE  20.35 - 26.75   the shaker slips, the deer shrugs, "רק רצון אמיתי"
+  // =====================================================================
+  add((() => {
+    const sc = scene('s-noexp');
+    const svg = svgIn(sc);
+    const FL = 1660, DS = 2.45;
+    const sunG = el('g', {}, svg);
+    R.sun(sunG, 540, 1500, 380, null, { stroke: 6 });
+    ground(svg, FL);
+    const sh = shadow(svg);
+    const D = R.make(svg, DS);
+    const shk = R.shaker(D.propMid);
+    const fly = R.shaker(svg);
+    const heart = el('path', { d: 'M0 10 C-14 -2, -22 -10, -22 -20 C-22 -30, -10 -34, 0 -24 C10 -34, 22 -30, 22 -20 C22 -10, 14 -2, 0 10 Z', fill: C.o, stroke: C.ink, 'stroke-width': 5, 'stroke-linejoin': 'round' }, svg);
+    const A = line(sc, ['ניסיון?', 'לא צריך.'], 176, 156);
+    const B = line(sc, ['קוקטיילים?', 'גם לא.'], 340, 156);
+    const Cc = line(sc, ['רק רצון אמיתי'], 520, 206, 'var(--burnt)');
+    const T_SLIP = 22.86;
+    return {
+      a: 20.35, b: 26.75, sc, init() { [A, B, Cc].forEach((L) => fit(L)); },
+      update(t) {
+        const sunK = easeOutCubic(prog(t, 24.3, 25.9));
+        tf(sunG, `translate(0 ${n2(lerp(520, 0, sunK))})`);
+        // shaking like a pro, a toss and a catch, then the slip
+        const shaking = t < T_SLIP;
+        const ph = 2 * Math.PI * 3.3 * (t - 20.35);
+        const toss = prog(t, 21.6, 21.98);
+        const tossUp = toss > 0 && toss < 1 ? Math.sin(Math.PI * toss) * 70 : 0;
+        const amp = shaking ? 13 : 0;
+        const off = amp * Math.sin(ph);
+        const ang = 30 + (toss > 0 && toss < 1 ? 360 * easeInOutCubic(toss) : 0) + 6 * Math.sin(ph);
+        const bx = 36 + off * 0.55, by = -96 - off * 0.8 - tossUp / 1.3;
+        const ra = ang * Math.PI / 180;
+        const along = (d) => [bx + Math.sin(ra) * d, by - Math.cos(ra) * d];
+        tf(shk, `translate(${n2(bx)} ${n2(by)}) rotate(${n2(ang)}) scale(0.8)`);
+        shk.style.display = shaking ? '' : 'none';
+        // after the slip the shaker flies out of frame spinning
+        const fx = t - T_SLIP;
+        fly.style.display = fx > 0 && fx < 0.6 ? '' : 'none';
+        const sx0 = 540 + 36 * DS, sy0 = FL - 106 * DS;
+        tf(fly, `translate(${n2(sx0 + 1400 * fx)} ${n2(sy0 - 1600 * fx + 1700 * fx * fx)}) rotate(${n2(30 + 1250 * fx)}) scale(${n2(0.8 * DS * 1000) / 1000})`);
+        let hands;
+        const freeze = clamp(prog(t, T_SLIP, T_SLIP + 0.05)) * (1 - clamp(prog(t, 23.9, 24.05)));
+        const shrug = clamp(prog(t, 23.92, 24.08)) * (1 - clamp(prog(t, 24.36, 24.5)));
+        const heartK = clamp(prog(t, 24.42, 24.62));
+        if (shaking) hands = [along(10 * 0.8), along(100 * 0.8)];
+        else {
+          const fr = [[38, -104], [70, -166]];
+          hands = [[lerp(fr[0][0], -66, shrug), lerp(fr[0][1], -98, shrug)], [lerp(fr[1][0], 66, shrug), lerp(fr[1][1], -98, shrug)]];
+          if (heartK > 0) hands = [[lerp(-66, -14, heartK), lerp(-98, -100, heartK)], [lerp(66, 14, heartK), lerp(-98, -100, heartK)]];
+        }
+        if (toss > 0 && toss < 1) hands = [[lerp(hands[0][0], -40, Math.sin(Math.PI * toss)), lerp(hands[0][1], -150, Math.sin(Math.PI * toss))], [lerp(hands[1][0], 56, Math.sin(Math.PI * toss)), lerp(hands[1][1], -160, Math.sin(Math.PI * toss))]];
+        const wince = clamp(prog(t, 23.7, 23.74)) * (1 - clamp(prog(t, 23.88, 23.94)));
+        const calm = t > 24.42;
+        const bob = shaking ? Math.abs(Math.sin(ph)) : 0;
+        const eyesHappy = (shaking && ((t > 20.5 && t < 21.4) || (t > 22.1 && t < 22.7))) || (shrug > 0.5);
+        R.pose(D, {
+          x: 540, y: FL - 6 * bob, sx: 1 / breathe(t), sy: breathe(t) * (1 + 0.04 * shrug - 0.03 * wince),
+          rot: calm ? 2 * Math.sin(2 * Math.PI * 0.45 * (t - 24.4)) : 3 * Math.sin(ph * 0.5),
+          hr: shaking ? 5 * Math.sin(ph) : calm ? 6 : lerp(-6, 10, shrug),
+          lx: freeze > 0.5 ? 0.9 : 0, ly: freeze > 0.5 ? -1 : 0, turn: freeze > 0.5 ? 0.4 : 0,
+          earL: (shaking ? 10 * Math.sin(ph + 1) : 0) + flick(t, [T_SLIP, 24.0], 18) - 16 * wince, earR: (shaking ? 10 * Math.sin(ph + 2) : 0) + flick(t, [T_SLIP + 0.03, 24.02], 18) - 16 * wince,
+          eyeL: calm ? 'closed' : wince > 0.5 ? 'closed' : eyesHappy ? 'happy' : 'open', eyeR: calm ? 'closed' : wince > 0.5 ? 'closed' : eyesHappy ? 'happy' : 'open',
+          wide: freeze, brows: Math.max(freeze, shrug), browY: -5 * Math.max(freeze, shrug),
+          blink: blinkK(t, [22.0]), mouth: freeze > 0.5 ? (wince > 0.5 ? 'wobble' : 'o') : shrug > 0.3 ? 'grin' : shaking ? 'grin' : 'smile',
+          hands,
+        });
+        setShadow(sh, 540, FL + 4, 128, 0);
+        // a small heart rises from the chest
+        const hk = prog(t, 24.62, 25.9);
+        heart.style.display = hk > 0 && hk < 1 ? '' : 'none';
+        tf(heart, `translate(${n2(540 + 14 * Math.sin(hk * 6))} ${n2(FL - 326 * DS - 110 * easeOutCubic(hk))}) scale(${n2(easeOutBack(clamp(hk * 4)) * 1.7 * 1000) / 1000})`);
+        heart.setAttribute('opacity', n2(1 - easeInCubic(prog(hk, 0.6, 1))));
+        // titles: questions, answers on their words; the last line lands calmly and the rest steps back
+        const dim = lerp(1, 0.42, easeInOutCubic(prog(t, 24.39, 24.7)));
+        pop(A.spans[0], t, 20.51, 26.75, { dim });
+        pop(A.spans[1], t, 21.51, 26.75, { dim });
+        pop(B.spans[0], t, 22.51, 26.75, { dim });
+        pop(B.spans[1], t, 23.47, 26.75, { dim });
+        pop(Cc.spans[0], t, 24.39, 26.75, { f: 1.6, z: 0.85, s0: 0.85, rise: 26, fade: 0.25 });
+      },
+    };
+  })());
+
+  // =====================================================================
+  // 7. EVERYONE  26.75 - 30.8   the settlement map lights up house by house; the deer winks
+  // =====================================================================
+  add((() => {
+    const sc = scene('s-map');
+    const svg = svgIn(sc);
+    const M = el('g', {}, svg);
+    const card = el('rect', { x: 70, y: 610, width: 940, height: 1000, rx: 44, fill: '#EFE2CC', stroke: C.ink, 'stroke-width': 6 }, M);
+    const rd = el('g', { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, M);
+    const ROADS = [
+      'M 300 1190 C 255 990, 420 830, 600 840 C 790 850, 905 970, 865 1130 C 835 1265, 705 1330, 565 1312 C 425 1295, 330 1300, 300 1190 Z',
+      'M 470 1300 C 455 1400, 430 1500, 400 1640',
+      'M 865 1120 C 935 1170, 965 1270, 950 1400',
+      'M 330 1010 C 250 960, 190 905, 145 815',
+      'M 705 845 C 735 765, 795 715, 875 690',
+      'M 350 1135 C 480 1090, 640 1070, 845 1035',
+    ];
+    const RP = ROADS.map((d) => { const o = el('path', { d, stroke: C.ink, 'stroke-width': 42, pathLength: 1 }, rd); return o; });
+    const RI = ROADS.map((d) => el('path', { d, stroke: '#F7EFE3', 'stroke-width': 30, pathLength: 1 }, rd));
+    // houses along the roads (seeded), both sides
+    const rr = rng(42);
+    const H = [];
+    const probe = ROADS.map((d) => el('path', { d }, svg));
+    const tooClose = (x, y) => H.some((h) => Math.hypot(h.x - x, h.y - y) < 82);
+    const nearRoad = (x, y) => {
+      for (const p of probe) { const L = p.getTotalLength(); for (let s = 0; s <= L; s += 14) { const q = p.getPointAtLength(s); if (Math.hypot(q.x - x, q.y - y) < 52) return true; } }
+      return false;
+    };
+    function place() {
+      probe.forEach((p, ri) => {
+        const L = p.getTotalLength();
+        for (let s = 36; s < L - 20; s += 88) {
+          const a = p.getPointAtLength(s), b = p.getPointAtLength(Math.min(L, s + 2));
+          const ang = Math.atan2(b.y - a.y, b.x - a.x);
+          for (const side of [-1, 1]) {
+            const off = 70 + rr() * 10;
+            const x = a.x - Math.sin(ang) * off * side, y = a.y + Math.cos(ang) * off * side;
+            if (x < 120 || x > 960 || y < 660 || y > 1560) continue;
+            if (tooClose(x, y) || nearRoad(x, y)) continue;
+            H.push({ x, y, a: ang * 180 / Math.PI + (rr() - 0.5) * 8, w: 58 + rr() * 12, h: 44 + rr() * 8 });
+          }
+        }
+      });
+    }
+    const housesG = el('g', {}, M);
+    const treesG = el('g', {}, M);
+    const dotsG = el('g', {}, M);
+    let DOTS = [], TREES = [];
+    const D = R.make(svg, 1.55);
+    const L1 = line(sc, ['מכירים פה את כולם?'], 186, 168);
+    const L2 = line(sc, ['חצי מהעבודה כבר עשיתם'], 360, 150, 'var(--burnt)');
+    return {
+      a: 26.75, b: 30.8, sc,
+      init() {
+        fit(L1); fit(L2);
+        place();
+        H.forEach((h) => {
+          const g = el('g', {}, housesG);
+          el('rect', { x: -h.w / 2, y: -h.h / 2, width: h.w, height: h.h, rx: 4, fill: C.paper, stroke: C.ink, 'stroke-width': 4.5 }, g);
+          el('rect', { x: -h.w / 2 + 2.5, y: 0, width: h.w - 5, height: h.h / 2 - 2.5, fill: C.peach }, g);
+          el('path', { d: `M${-h.w / 2} 0 L${h.w / 2} 0`, stroke: C.ink, 'stroke-width': 4 }, g);
+          h.g = g;
+        });
+        // trees in the gaps
+        for (let i = 0; i < 70 && TREES.length < 16; i++) {
+          const x = 130 + rr() * 820, y = 680 + rr() * 860;
+          if (H.some((h) => Math.hypot(h.x - x, h.y - y) < 60) || TREES.some((q) => Math.hypot(q.x - x, q.y - y) < 60) || nearRoad(x, y)) continue;
+          const r = 15 + rr() * 8;
+          const g = el('g', {}, treesG);
+          el('circle', { cx: x, cy: y, r, fill: '#E3D3B8', stroke: C.ink, 'stroke-width': 4 }, g);
+          el('circle', { cx: x - r * 0.3, cy: y - r * 0.3, r: r * 0.28, fill: '#F2E7D6' }, g);
+          TREES.push({ x, y, g });
+        }
+        probe.forEach((p) => p.remove());
+        // dot order: spread out, then faster and faster
+        const order = H.map((h, i) => ({ i, k: rr() })).sort((a, b) => a.k - b.k);
+        const N = order.length;
+        DOTS = order.map((o, j) => {
+          const h = H[o.i];
+          const g = el('g', {}, dotsG);
+          const ring = el('circle', { cx: h.x, cy: h.y, r: 20, fill: 'none', stroke: C.o, 'stroke-width': 6 }, g);
+          const dot = el('circle', { cx: h.x, cy: h.y, r: 20, fill: C.o, stroke: C.ink, 'stroke-width': 5 }, g);
+          return { g, ring, dot, h, t0: 27.35 + 2.3 * Math.pow(j / (N - 1), 0.62) };
+        });
+      },
+      update(t) {
+        const ck = spring(t, 26.75, 2.4, 0.7);
+        tf(M, `translate(540 1110) scale(${n2(lerp(0.86, 1, ck) * 1000) / 1000}) translate(-540 -1110)`);
+        // no fade, and the build starts just before the cut: the first frame of the map already shows half the roads
+        // and the first houses (an empty card on the cut read as a near blank frame)
+        const rk = easeOutCubic(prog(t, 26.64, 27.12));
+        rd.style.display = rk < 0.02 ? 'none' : '';   // zero-length dashes with round caps showed as stray dots
+        RP.concat(RI).forEach((p) => { p.setAttribute('stroke-dasharray', '1 1'); p.setAttribute('stroke-dashoffset', n2(1 - rk)); });
+        H.forEach((h) => {
+          const d = Math.hypot(h.x - 540, h.y - 1110) / 600;
+          const k = easeOutBack(prog(t, 26.68 + d * 0.4, 26.93 + d * 0.4), 2);
+          tf(h.g, `translate(${n2(h.x)} ${n2(h.y)}) rotate(${n2(h.a)}) scale(${n2(Math.max(0.001, k) * 1000) / 1000})`);
+        });
+        TREES.forEach((q, i) => { const k = easeOutBack(prog(t, 26.82 + i * 0.02, 27.07 + i * 0.02), 2); tf(q.g, `translate(${n2(q.x)} ${n2(q.y)}) scale(${n2(Math.max(0.001, k) * 1000) / 1000}) translate(${n2(-q.x)} ${n2(-q.y)})`); });
+        DOTS.forEach((Dd) => {
+          const x = t - Dd.t0;
+          Dd.g.style.display = x > 0 ? '' : 'none';
+          if (x <= 0) return;
+          const k = spring(t, Dd.t0, 3.4, 0.45);
+          tf(Dd.dot, `translate(${n2(Dd.h.x)} ${n2(Dd.h.y)}) scale(${n2(k * 1000) / 1000}) translate(${n2(-Dd.h.x)} ${n2(-Dd.h.y)})`);
+          const rk2 = clamp(x / 0.55);
+          Dd.ring.setAttribute('r', n2(20 + 40 * easeOutCubic(rk2)));
+          Dd.ring.setAttribute('opacity', n2(0.9 * (1 - rk2)));
+        });
+        // the deer peeks up from the bottom right corner, looks at the map, winks
+        const up = spring(t, 26.85, 2.2, 0.6);
+        const wink = t > 29.95 && t < 30.5;
+        const lookCam = t > 29.7;
+        R.pose(D, {
+          x: 900, y: lerp(2400, 1985, up), sx: 1 / breathe(t), sy: breathe(t),
+          hr: lookCam ? springTo(t, [[0, -8], [29.7, 8]], 2, 0.5) : -8, lx: lookCam ? 0 : -0.9, ly: lookCam ? 0 : -0.7, turn: lookCam ? 0 : -0.45,
+          earL: flick(t, [27.3, 28.95, 29.95], 15), earR: flick(t, [27.34, 29.25, 29.98], 15),
+          blink: blinkK(t, [28.3]), eyeL: wink ? 'happy' : 'open', eyeR: 'open', mouth: lookCam ? 'grin' : 'smile',
+          hands: [[-56, -150], [44, -58]],
+          legVis: false,
+        });
+        pop(L1.spans[0], t, 27.27, 30.8);
+        pop(L2.spans[0], t, 28.91, 30.8);
+      },
+    };
+  })());
+
+  // =====================================================================
+  // 8. END  30.8 - 37.0   logo, "כל הפרטים וההרשמה בקישור", "נתראה מאחורי הבר!", the deer points down
+  // =====================================================================
+  add((() => {
+    const sc = scene('s-end');
+    const svg = svgIn(sc);
+    const EWd = 470, EHd = EWd * EH / EW, EX = 540 - EWd / 2, EY = 560;
+    const WMW = 410, WMH = WMW * WH / WW, WMY = EY + EHd + 22;
+    const sp = [[230, 650, 40, C.o, 0], [860, 700, 30, C.ink, 1.3], [175, 900, 24, C.ink, 2.2], [905, 930, 34, C.o, 3.1], [130, 1240, 22, C.o, 4], [955, 1200, 22, C.ink, 5]].map(([x, y, s, c, ph]) => Object.assign(R.sparkle(svg, x, y, s, c), { ph }));
+    const emG = el('g', {}, svg);
+    image(emG, EMBLEM, EX, EY, EWd, EHd);
+    const wmG = el('g', {}, svg);
+    image(wmG, WORDMARK, 540 - WMW / 2, WMY, WMW, WMH);
+    const arrows = [-1, 1].map((side) => {
+      const g = el('g', {}, svg);
+      const d = 'M0 0 C 10 50, -10 110, 2 176 M -30 140 C -18 156, -8 168, 2 182 C 10 166, 20 152, 32 138';
+      const o = el('path', { d, fill: 'none', stroke: C.ink, 'stroke-width': 30, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', pathLength: 1 }, g);
+      const f = el('path', { d, fill: 'none', stroke: C.o, 'stroke-width': 16, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', pathLength: 1 }, g);
+      return { g, o, f, side };
+    });
+    const D = R.make(svg, 1.75);
+    const PT = (MG.qs.get('pt') || '86,-50').split(',').map(Number);
+    const E1 = line(sc, ['כל הפרטים וההרשמה'], 166, 156);
+    const E2 = line(sc, ['בקישור'], 314, 216, 'var(--burnt)');
+    const E3 = line(sc, ['נתראה מאחורי הבר!'], WMY + WMH + 40, 132);
+    SHAKES.push([30.92, 5]);
+    return {
+      a: 30.8, b: 37.01, sc, init() { [E1, E2, E3].forEach((L) => fit(L)); },
+      update(t) {
+        sp.forEach((p) => p.set(easeOutBack(prog(t, 31.0 + p.ph * 0.06, 31.35 + p.ph * 0.06)) * (0.82 + 0.18 * Math.sin(t * 2.6 + p.ph)), t * 7 + p.ph * 10));
+        const k = easeInCubic(prog(t, 30.8, 30.92));
+        const sq = t > 30.92 ? 0.04 * Math.exp(-12 * (t - 30.92)) * Math.cos(2 * Math.PI * 5 * (t - 30.92)) : 0;
+        const ecx = 540, ecy = EY + EHd / 2;
+        tf(emG, `translate(${ecx} ${n2(ecy)}) scale(${n2(lerp(1.3, 1, k) * (1 + sq) * 1000) / 1000} ${n2(lerp(1.3, 1, k) * (1 - sq) * 1000) / 1000}) translate(${-ecx} ${n2(-ecy)})`);
+        emG.setAttribute('opacity', 1);   // opaque on the cut: a fade-in made frame 924 a near blank ghost
+        const k2 = easeInCubic(prog(t, 30.94, 31.04));
+        const wcy = WMY + WMH / 2;
+        tf(wmG, `translate(540 ${n2(wcy)}) scale(${n2(lerp(1.35, 1, k2) * 1000) / 1000}) translate(-540 ${n2(-wcy)})`);
+        wmG.setAttribute('opacity', n2(clamp((t - 30.94) / 0.05)));
+        // the deer rises, waves, then points down at the link
+        const up = spring(t, 31.15, 2.2, 0.62);
+        const wave = clamp(prog(t, 31.62, 31.78)) * (1 - clamp(prog(t, 32.95, 33.12)));
+        const wx = 13 * Math.sin(2 * Math.PI * 2.6 * (t - 31.62));
+        const point = clamp(prog(t, 33.18, 33.36));
+        const pb = Math.max(0, Math.sin(2 * Math.PI * 2.2 * (t - 33.36))) * point;
+        let hands = [[-44, -58], [lerp(44, 66 + wx, wave), lerp(-58, -156, wave)]];
+        // pointing down: arms straight and spread down-outward (hanging close to the body they read as "standing still"), pumping with the arrows
+        if (point > 0) hands = [[lerp(hands[0][0], -PT[0], point), lerp(hands[0][1], PT[1] + 12 * pb, point)], [lerp(hands[1][0], PT[0], point), lerp(hands[1][1], PT[1] + 12 * pb, point)]];
+        const wink = t > 35.3 && t < 35.7;
+        R.pose(D, {
+          x: 540, y: lerp(2560, 1925, up) + 6 * pb, sx: 1 / breathe(t), sy: breathe(t),
+          hr: springTo(t, [[0, 0], [31.5, -6], [32.2, 6], [33.2, 0], [35.2, 6]], 1.8, 0.55),
+          ly: point > 0 && t < 34.4 ? 0.9 : 0, lx: 0,
+          earL: flick(t, [31.4, 32.3, 33.3, 34.6, 36.0], 15), earR: flick(t, [31.44, 32.8, 33.34, 35.3, 36.3], 15),
+          blink: blinkK(t, [32.6, 34.9, 36.4]), eyeL: wink ? 'happy' : 'open', eyeR: 'open',
+          mouth: wave > 0.2 || point > 0 ? 'grin' : 'smile', hands, legVis: false,
+        });
+        // arrows draw on, then bounce toward the bottom of the screen
+        arrows.forEach((A, i) => {
+          const dk = easeInOutCubic(prog(t, 33.3 + i * 0.08, 33.62 + i * 0.08));
+          A.o.setAttribute('stroke-dasharray', '1 1'); A.f.setAttribute('stroke-dasharray', '1 1');
+          A.o.setAttribute('stroke-dashoffset', n2(1 - dk)); A.f.setAttribute('stroke-dashoffset', n2(1 - dk));
+          const b = 22 * Math.max(0, Math.sin(2 * Math.PI * 2.2 * (t - 33.36)));
+          tf(A.g, `translate(${540 + A.side * 268} ${n2(1580 + b * clamp(prog(t, 33.6, 33.8)))}) rotate(${A.side * -8})`);
+          A.g.style.display = dk > 0 ? '' : 'none';
+        });
+        pop(E1.spans[0], t, 30.96, null);
+        pop(E2.spans[0], t, 31.08, null, { s0: 0.4 });
+        pop(E3.spans[0], t, 33.66, null);
+      },
+    };
+  })());
+
+  // ---------- paper texture (static, built once) ----------
+  function buildTexture() {
+    const Rn = rng(7);
+    const g = $('grain').getContext('2d');
+    const im = g.createImageData(540, 960);
+    for (let i = 0; i < 540 * 960; i++) {
+      const a = Math.pow(Rn(), 2.6) * 0.13;
+      im.data[i * 4] = 255 - a * 175; im.data[i * 4 + 1] = 255 - a * 200; im.data[i * 4 + 2] = 255 - a * 225; im.data[i * 4 + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+    for (let i = 0; i < 26; i++) {
+      const x = Rn() * 540, y = Rn() * 960, r = 40 + Rn() * 120;
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, 'rgba(190,150,110,0.07)'); gr.addColorStop(1, 'rgba(190,150,110,0)');
+      g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+    }
+    const s = $('speck').getContext('2d');
+    for (let i = 0; i < 4200; i++) {
+      const x = Rn() * 1080, y = Rn() * 1920, r = 0.5 + Math.pow(Rn(), 3) * 2.1;
+      s.fillStyle = `rgba(244,234,219,${(0.16 + Rn() * 0.4).toFixed(3)})`;
+      s.beginPath(); s.arc(x, y, r, 0, Math.PI * 2); s.fill();
+    }
+  }
+
+  const DUR = 37.0;
+  window.seek = function (t) {
+    t = Math.max(0, Math.min(DUR - 1e-4, t));
+    let sx = 0, sy = 0;
+    for (const [t0, A] of SHAKES) { const [a, b] = shake(t, t0, A); sx += a; sy += b; }
+    $('cam').style.transform = `translate(${n2(sx)}px,${n2(sy)}px)`;
+    $('dim').style.opacity = 0;
+    for (const S0 of SCENES) {
+      const on = t >= S0.a && t < S0.b;
+      const d = on ? '' : 'none';
+      if (S0.sc.style.display !== (on ? 'block' : 'none')) S0.sc.style.display = on ? 'block' : 'none';
+      if (on) S0.update(t);
+    }
+    if (window.__extra) window.__extra(t);
+  };
+
+  // hard cuts: render.mjs keeps every motion-blur sub-sample of a frame on that frame's side of a cut
+  // (a cut that falls exactly on a frame boundary otherwise mixes both shots into one frame)
+  window.__cuts = SCENES.map((s) => s.a).filter((a) => a > 0).concat(CUT).sort((a, b) => a - b);
+
+  buildTexture();
+  MG.ready([], [EMBLEM, WORDMARK], () => {
+    // measure while visible (fit() and chip layout need real widths)
+    SCENES.forEach((s) => { if (!s.init) return; s.sc.style.display = 'block'; s.init(); s.sc.style.display = 'none'; });
+    window.seek(Number(MG.qs.get('t') || 0));
+  });
+})();
+</script>
+</body>
+</html>
