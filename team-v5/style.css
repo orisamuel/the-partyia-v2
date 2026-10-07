@@ -1,0 +1,957 @@
+/* team-v2/style.css: עמוד הגיוס לצוות הפרתיה, גרסה 2.
+   שפה גרפית מהלוגו: נייר קרם, שמש כתומה, חום כהה, הדפס מחוספס. */
+
+:root {
+    --paper: #F4EADB;
+    --paper-2: #EBDDC7;
+    --paper-3: #E2D1B6;
+    --ink: #2E1710;
+    --ink-2: #5E4135;
+    --ink-3: #6F5345;
+    --sun: #E8873B;
+    --burnt: #C4531A;
+    --burnt-text: #9C3F0E;
+    --peach: #F2C79C;
+    --night: #17263D;
+    --line: rgba(46, 23, 16, 0.14);
+    --radius: 18px;
+    --display: 'Karantina', 'Rubik', sans-serif;
+    --body: 'Rubik', 'Segoe UI', Tahoma, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 68px; background: var(--paper); }
+
+body {
+    font-family: var(--body);
+    background: var(--paper);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    line-height: 1.55;
+}
+
+body.sheet-open { overflow: hidden; }
+
+/* גרעין נייר עדין */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 200;
+    opacity: .32;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .22 0 0 0 0 .12 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+a { color: inherit; }
+
+.wrap { max-width: 520px; margin: 0 auto; padding: 0 20px; }
+
+.display {
+    font-family: var(--display);
+    font-weight: 700;
+    line-height: .9;
+}
+
+.accent { color: var(--burnt); }
+
+/* ===== כפתורים ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 54px;
+    padding: 0 22px;
+    border-radius: 14px;
+    border: 2px solid var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .12s, box-shadow .12s, background .15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary {
+    background: var(--sun);
+    color: var(--ink);
+    box-shadow: 0 4px 0 var(--ink);
+}
+
+.btn-primary:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+
+.btn-ghost { background: transparent; color: var(--ink); }
+.btn-ghost:active { background: var(--paper-2); }
+.btn-ghost.on-dark { color: var(--paper); border-color: rgba(244, 234, 219, 0.5); }
+
+.btn-ink {
+    background: var(--ink);
+    color: var(--paper);
+    min-height: 44px;
+    padding: 0 18px;
+    font-size: 15px;
+    border-radius: 999px;
+}
+
+.btn-block { display: flex; width: 100%; }
+
+/* ===== סרגל עליון ===== */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(244, 234, 219, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .2s;
+}
+
+.topbar .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+    transition: opacity .25s, transform .25s;
+}
+
+.brand img { width: 34px; height: auto; display: block; }
+.brand .brand-word { width: auto; height: 26px; }
+
+.topbar.show-brand { border-bottom-color: var(--line); }
+.topbar.show-brand .brand { opacity: 1; transform: none; pointer-events: auto; }
+
+/* ===== פתיחה ===== */
+.hero { padding: 4px 0 30px; text-align: center; }
+
+.hero-logo { width: 196px; margin: 0 auto; }
+.hero-art { display: block; width: 100%; height: auto; }
+.hero-word { display: block; width: 100%; height: auto; margin-top: 4px; }
+
+.hero h1 {
+    font-size: clamp(64px, 19vw, 100px);
+    margin: 16px 0 12px;
+}
+
+.hero h1 span { display: block; }
+
+.hero .lead {
+    text-wrap: balance;
+    font-size: 17px;
+    color: var(--ink-2);
+    max-width: 360px;
+    margin: 0 auto;
+}
+
+.hero-ctas {
+    display: grid;
+    grid-template-columns: 1.55fr 1fr;
+    gap: 10px;
+    max-width: 380px;
+    margin: 20px auto 0;
+}
+
+.hero-ctas .btn { padding: 0 12px; }
+
+.facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 22px auto 0;
+    max-width: 420px;
+    border-top: 1.5px solid var(--ink);
+    border-bottom: 1.5px solid var(--ink);
+}
+
+.facts div {
+    padding: 10px 4px;
+    font-size: 13px;
+    line-height: 1.3;
+    color: var(--ink-2);
+}
+
+.facts div + div { border-right: 1px solid var(--line); }
+.facts b { display: block; font-family: var(--display); font-size: 29px; font-weight: 700; color: var(--ink); line-height: 1; margin-bottom: 2px; }
+
+/* ===== סקשנים ===== */
+section { padding: 36px 0; }
+
+section.tinted { background: var(--paper-2); }
+
+.sec-title { font-size: 46px; margin-bottom: 16px; }
+.sec-sub { font-size: 16px; color: var(--ink-2); margin: -8px 0 18px; }
+
+/* ===== מה זה אומר בפועל ===== */
+.role { list-style: none; border-top: 1.5px solid var(--ink); }
+
+.role li {
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 14px;
+    align-items: start;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.role .ic {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--sun);
+    border: 2px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.role .ic svg { width: 23px; height: 23px; }
+.role h3 { font-size: 17.5px; font-weight: 700; line-height: 1.35; }
+.role p { font-size: 15.5px; color: var(--ink-2); margin-top: 2px; text-wrap: pretty; }
+
+.need {
+    margin-top: 20px;
+    padding: 18px;
+    border-radius: var(--radius);
+    background: var(--paper-2);
+    font-size: 16px;
+}
+
+.need b { font-weight: 700; }
+.need p + p { margin-top: 6px; color: var(--ink-2); font-size: 15px; }
+.need .btn { margin-top: 16px; }
+
+/* ===== אריחים ===== */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 172px;
+    padding: 14px;
+    border-radius: var(--radius);
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    text-align: right;
+    font-family: var(--body);
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform .12s, background .15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tile:active { transform: scale(.98); }
+
+.tile .t-art { width: 50px; height: 50px; margin-bottom: auto; flex-shrink: 0; }
+.tile .t-kicker { font-size: 13px; font-weight: 700; color: var(--burnt-text); margin-top: 10px; }
+.tile h3 { font-family: var(--display); font-weight: 700; font-size: 29px; line-height: .95; margin-top: 2px; }
+.tile .t-meta { font-size: 13px; color: var(--ink-3); margin-top: 6px; }
+
+.tile-quiz { background: var(--peach); }
+.tile-quiz .t-kicker { color: var(--ink-2); }
+
+.tile-video {
+    grid-column: 1 / -1;
+    min-height: 220px;
+    background: var(--ink) url('../team-v2/emblem.webp') no-repeat 8% 40% / 150px auto;
+    color: var(--paper);
+}
+
+.tile-video .t-kicker { color: var(--sun); }
+.tile-video .t-meta { color: rgba(244, 234, 219, 0.75); }
+.tile-video h3 { font-size: 36px; }
+
+.tile-video .poster {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tile-video .shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(46, 23, 16, 0.94) 6%, rgba(46, 23, 16, 0.55) 40%, rgba(46, 23, 16, 0) 68%);
+}
+
+.tile-video > .t-kicker, .tile-video > h3, .tile-video > .t-meta { position: relative; }
+
+.tile-video .play {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--sun);
+    border: 2px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tile-video .play svg { width: 22px; height: 22px; margin-left: -3px; }
+
+/* ===== שאלות נפוצות ===== */
+.faq { border-top: 1.5px solid var(--ink); }
+
+.faq details { border-bottom: 1px solid var(--line); }
+
+.faq summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 16px 0;
+    font-size: 16.5px;
+    font-weight: 700;
+    line-height: 1.4;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.faq summary::-webkit-details-marker { display: none; }
+
+.faq summary::after {
+    content: '';
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ink);
+    background:
+        linear-gradient(var(--ink), var(--ink)) center / 11px 2px no-repeat,
+        linear-gradient(var(--ink), var(--ink)) center / 2px 11px no-repeat;
+    transition: transform .2s, background-color .2s;
+}
+
+.faq details[open] summary::after { transform: rotate(45deg); background-color: var(--sun); }
+
+.faq .ans { padding: 0 0 18px; font-size: 15.5px; color: var(--ink-2); text-wrap: pretty; }
+.faq .ans a, .faq .ans button.link { color: var(--burnt-text); font-weight: 700; text-underline-offset: 3px; }
+
+button.link {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* ===== טופס ===== */
+#join { padding-top: 8px; }
+
+.join {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 24px;
+    padding: 28px 20px 24px;
+}
+
+.join h2 { font-size: 56px; }
+.join h2 .accent { color: var(--sun); }
+.join .sub { font-size: 16px; color: rgba(244, 234, 219, 0.78); margin: 10px 0 20px; }
+
+.field { margin-bottom: 16px; }
+
+.field label, .field .lbl {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 7px;
+}
+
+.field .hint { font-weight: 400; font-size: 13px; color: rgba(244, 234, 219, 0.65); }
+
+.field input, .field textarea {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    outline: none;
+    transition: border-color .15s;
+}
+
+.field textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+.field input:focus, .field textarea:focus { border-color: var(--sun); }
+.field input::placeholder, .field textarea::placeholder { color: var(--ink-3); }
+.field input[type="tel"] { direction: ltr; text-align: right; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.chip {
+    min-height: 44px;
+    padding: 0 15px;
+    border-radius: 999px;
+    border: 1.5px solid rgba(244, 234, 219, 0.55);
+    background: transparent;
+    color: var(--paper);
+    font-family: var(--body);
+    font-size: 15px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.chip[aria-pressed="true"] { background: var(--sun); border-color: var(--sun); color: var(--ink); font-weight: 700; }
+.chip.flash { animation: chipflash .7s ease 2; }
+@keyframes chipflash { 50% { box-shadow: 0 0 0 5px rgba(232, 135, 59, 0.45); } }
+
+.join .btn-primary { margin-top: 8px; border-color: var(--sun); box-shadow: 0 4px 0 #000; }
+.join .btn-primary:active { box-shadow: 0 1px 0 #000; }
+
+.privacy { font-size: 13px; color: rgba(244, 234, 219, 0.65); text-align: center; margin-top: 12px; }
+
+.error-msg {
+    display: none;
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(232, 135, 59, 0.15);
+    border: 1px solid rgba(232, 135, 59, 0.5);
+    color: #FFD3B0;
+    font-size: 14.5px;
+    text-align: center;
+}
+
+.error-msg.show { display: block; }
+
+.done { display: none; text-align: center; padding: 14px 0 4px; }
+.done.show { display: block; animation: rise .5s cubic-bezier(.2, 1.2, .4, 1); }
+.done img { width: 140px; height: auto; }
+.done h3 { font-family: var(--display); font-weight: 700; font-size: 58px; line-height: 1; color: var(--sun); margin: 6px 0 8px; }
+.done p { font-size: 16.5px; color: rgba(244, 234, 219, 0.88); }
+.done .btn { margin-top: 18px; white-space: normal; padding: 10px 16px; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* ===== על הדרך + פוטר ===== */
+.aside { padding: 22px 0 0; }
+
+.aside a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 15px 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    font-size: 15.5px;
+}
+
+.aside a:first-child { border-top: 1px solid var(--line); }
+.aside a b { display: block; font-weight: 700; }
+.aside a span { color: var(--ink-2); font-size: 14px; }
+.aside .arr { flex-shrink: 0; width: 22px; height: 22px; color: var(--burnt-text); }
+
+footer {
+    text-align: center;
+    padding: 30px 20px calc(28px + env(safe-area-inset-bottom));
+    color: var(--ink-3);
+    font-size: 13px;
+}
+
+footer img { width: 150px; height: auto; opacity: .9; margin-bottom: 8px; }
+
+/* ===== גיליון במסך מלא (סרטון, שאלון, משחק) ===== */
+.sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    display: none;
+    flex-direction: column;
+    background: var(--paper);
+}
+
+.sheet.open { display: flex; animation: sheetin .28s cubic-bezier(.2, .9, .3, 1); }
+@keyframes sheetin { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.sheet.dark { background: #0d1522; color: var(--paper); }
+
+.sheet-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    padding: 0 14px;
+    padding-top: env(safe-area-inset-top);
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+}
+
+.sheet.dark .sheet-bar { border-color: rgba(244, 234, 219, 0.12); }
+.sheet-title { font-family: var(--display); font-weight: 700; font-size: 30px; line-height: 1; margin-top: 4px; }
+
+.sheet-close {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid currentColor;
+    background: transparent;
+    color: inherit;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.sheet-body { position: relative; flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
+.sheet-body.stage { overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.video-wrap {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+}
+
+.video-wrap video {
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 9 / 16;
+    border-radius: 14px;
+    background: #000;
+}
+
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 16px);
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 15px;
+    font-weight: 700;
+    padding: 11px 18px;
+    border-radius: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all .25s;
+    z-index: 400;
+    white-space: nowrap;
+}
+
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ===== מחשב ===== */
+@media (min-width: 900px) {
+    .wrap { max-width: 1040px; padding: 0 32px; }
+    section { padding: 56px 0; }
+
+    .hero { padding: 36px 0 56px; text-align: right; }
+    .hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px; align-items: center; }
+    .hero-logo { order: 2; width: 360px; }
+    .hero-text { order: 1; }
+    .hero .lead { margin: 0; max-width: 460px; font-size: 19px; }
+    .hero-ctas { margin: 26px 0 0; max-width: 440px; }
+    .facts { margin: 30px 0 0; max-width: 460px; }
+
+    .sec-title { font-size: 60px; }
+    .role { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 28px; }
+    .role li { grid-template-columns: 1fr; border-bottom: none; }
+    .need { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .need p + p { margin-top: 0; }
+    .need .btn { margin: 0 0 0 auto; width: auto; }
+
+    .tiles { grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .tile-video { min-height: 280px; background-size: 220px auto; }
+    .tile { min-height: 200px; }
+
+    .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+    .duo > section { padding-top: 56px; }
+    #join .join { position: sticky; top: 84px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+}
+
+/* ===== גרסה 3: אריחי משחקים בשורה + הצבי החמוד ===== */
+.tiles { grid-template-columns: repeat(3, 1fr); }
+.tile-video { grid-column: 1 / -1; }
+.tile.tile-game { min-height: 150px; padding: 12px 10px; }
+.tile.tile-game .t-art { width: 44px; height: 44px; }
+.tile.tile-game h3 { font-size: 24px; }
+.tile.tile-game .t-kicker { font-size: 12px; }
+.tile.tile-game .t-meta { font-size: 12px; }
+
+.deer .deer-eye { transform-box: fill-box; transform-origin: center; animation: deer-blink 4.2s infinite; }
+@keyframes deer-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+
+/* צבי שמציץ מעל קצה של קופסה */
+.peek { position: relative; }
+.peek-deer {
+    position: absolute;
+    top: 0;
+    left: 18px;
+    width: 74px;
+    transform: translateY(-78%);
+    pointer-events: none;
+    animation: peek-bob 3.6s ease-in-out infinite;
+}
+.peek-deer svg { width: 100%; height: auto; display: block; }
+@keyframes peek-bob { 0%, 100% { transform: translateY(-78%); } 50% { transform: translateY(-84%); } }
+
+@media (min-width: 900px) {
+    .tiles { grid-template-columns: 2fr 1fr 1fr 1fr; }
+    .tile-video { grid-column: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .deer .deer-eye, .peek-deer { animation: none; }
+}
+
+.hero .eyebrow {
+    display: inline-block;
+    margin-top: 18px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--burnt-text);
+}
+.hero h1 { margin-top: 6px; }
+.done-deer { width: 120px; margin: 0 auto; }
+.done-deer svg { width: 100%; height: auto; display: block; }
+.need.peek { margin-top: 64px; }
+.hero h1 { font-size: clamp(54px, 15.6vw, 96px); }
+.sec-title { text-wrap: balance; }
+@media (max-width: 420px) { #faq .sec-title { font-size: 40px; } }
+
+/* ===== גרסה 3, סבב 2 ===== */
+/* הצבי מציץ מאחורי השמש בלוגו */
+.hero-logo { position: relative; }
+.hero-art, .hero-word { position: relative; z-index: 1; }
+.sun-peek {
+    position: absolute;
+    z-index: 0;
+    width: 74px;
+    left: -36px;
+    top: 30%;
+    rotate: -16deg;
+    animation: sun-peek 4.5s ease-in-out infinite;
+}
+.sun-peek svg { width: 100%; height: auto; display: block; }
+@keyframes sun-peek { 0%, 100% { translate: 0 0; } 50% { translate: -3px -4px; } }
+
+/* הצבי מציץ מאחורי הקצה של קופסת "מה צריך" */
+.need.peek { background: none; isolation: isolate; }
+.need.peek::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--paper-2); z-index: -1; }
+.need.peek .peek-deer { z-index: -2; animation-name: peek-bob2; }
+@keyframes peek-bob2 { 0%, 100% { transform: translateY(-62%); } 50% { transform: translateY(-68%); } }
+
+/* אריחי משחקים: צבע לכל אחד וסיבוב קל */
+.tile.tile-game h3 { min-height: 1.9em; }
+.tiles .tile-game:nth-of-type(2) { background: var(--peach); rotate: -1.5deg; }
+.tiles .tile-game:nth-of-type(3) { background: var(--paper); }
+.tiles .tile-game:nth-of-type(4) { background: #F6D7B4; rotate: 1.2deg; }
+
+.faq summary, .need p, .sec-sub { text-wrap: balance; }
+
+@media (min-width: 900px) {
+    .need { display: grid; grid-template-columns: 1fr auto; column-gap: 24px; align-items: center; }
+    .need p { grid-column: 1; }
+    .need .btn { grid-column: 2; grid-row: 1 / 3; }
+    .sun-peek { width: 110px; left: -50px; }
+}
+
+@media (prefers-reduced-motion: reduce) { .sun-peek { animation: none; } }
+
+/* ===================== גרסה 4: עמוד משרות ===================== */
+.hero h1 { font-size: clamp(52px, 15vw, 92px); }
+.hero .sub-h { display: block; font-family: var(--display); font-weight: 700; font-size: clamp(30px, 8.6vw, 50px); color: var(--burnt); line-height: 1; margin-top: 6px; }
+.hero .lead { margin-top: 14px; }
+.hero-ctas.single { grid-template-columns: 1fr; max-width: 300px; }
+
+/* מסננים */
+.filters { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 14px; margin: 0 -20px; padding-inline: 20px; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
+.filter {
+    flex-shrink: 0;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 14.5px;
+    font-weight: 500;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.filter b { font-weight: 700; margin-inline-start: 4px; }
+.filter[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+/* כרטיס משרה */
+.jobs { display: grid; gap: 12px; }
+.job {
+    position: relative;
+    background: #FBF5EB;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius);
+    padding: 16px 16px 14px;
+    overflow: hidden;
+}
+.job[hidden] { display: none; }
+.job .dept { font-size: 12.5px; font-weight: 700; color: var(--burnt-text); }
+.job h3 { font-family: var(--display); font-weight: 700; font-size: 34px; line-height: .95; margin: 4px 0 8px; text-wrap: balance; }
+.job .meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13.5px; color: var(--ink-2); }
+.job .meta span::before { content: '• '; color: var(--sun); }
+.job .meta span:first-child::before { content: ''; }
+.job .salary { margin-top: 10px; font-size: 16px; font-weight: 700; }
+.job .perks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.job .perk { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--paper-2); color: var(--ink-2); }
+.job .job-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; }
+.job .closed-note { font-size: 12.5px; color: var(--ink-3); }
+.job .apply-closed {
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--ink-3);
+    background: transparent;
+    color: var(--ink-3);
+    font-family: var(--body);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.job .apply-closed.shake { animation: shake .45s; }
+@keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+
+/* משרה סגורה: חותמת דיו */
+.job.closed > *:not(.stamp) { opacity: .62; filter: saturate(.55); }
+.job.closed .job-foot { opacity: 1; filter: none; }
+.stamp {
+    position: absolute;
+    top: 18px;
+    left: 12px;
+    rotate: -13deg;
+    padding: 4px 12px 2px;
+    border: 3px solid #B5341A;
+    border-radius: 10px;
+    color: #B5341A;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: .5px;
+    background: rgba(251, 245, 235, 0.6);
+    mix-blend-mode: multiply;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.2 1.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.2 1.75'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    pointer-events: none;
+}
+.job:nth-child(2n) .stamp { rotate: 9deg; left: auto; right: 46%; top: 22px; }
+.job:nth-child(3n) .stamp { rotate: -6deg; top: 40px; }
+
+/* המשרה הפתוחה */
+.job.open {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+    box-shadow: 0 6px 0 var(--sun);
+    padding: 20px 18px 18px;
+}
+.job.open .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--sun);
+    border-radius: 999px;
+    padding: 4px 12px;
+}
+.job.open .badge i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); display: block; animation: blinkdot 1.4s infinite; }
+@keyframes blinkdot { 50% { opacity: .25; } }
+.job.open h3 { font-size: 44px; color: var(--sun); margin-top: 10px; }
+.job.open .pitch { font-size: 16.5px; color: rgba(244, 234, 219, 0.9); }
+.job.open .salary { color: var(--paper); }
+.job.open .perk { background: rgba(244, 234, 219, 0.12); color: var(--paper); }
+.job.open details { margin-top: 14px; border-top: 1px solid rgba(244, 234, 219, 0.18); }
+.job.open summary { list-style: none; display: flex; justify-content: space-between; align-items: center; padding: 14px 0 6px; font-weight: 700; cursor: pointer; }
+.job.open summary::-webkit-details-marker { display: none; }
+.job.open summary::after { content: '+'; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: transform .2s; }
+.job.open details[open] summary::after { transform: rotate(45deg); }
+.job.open .details { list-style: none; padding: 4px 0 4px; }
+.job.open .details li { font-size: 15px; line-height: 1.55; color: rgba(244, 234, 219, 0.88); padding: 5px 0; }
+.job.open .details li::before { content: '✦ '; color: var(--sun); }
+.job.open .btn { margin-top: 16px; border-color: var(--sun); box-shadow: 0 4px 0 #000; }
+.job.open .open-deer { position: absolute; left: 10px; top: -4px; width: 64px; rotate: 10deg; }
+.job.open .open-deer svg { width: 100%; height: auto; display: block; }
+
+/* תרבות ארגונית: סרטון + יום כיף */
+.culture-block + .culture-block { margin-top: 26px; }
+.culture-block h3.block-title { font-family: var(--display); font-weight: 700; font-size: 34px; line-height: 1; margin-bottom: 4px; }
+.culture-block p.block-line { font-size: 15.5px; color: var(--ink-2); margin-bottom: 12px; }
+.games-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+
+footer .gender { font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
+
+@media (min-width: 900px) {
+    .jobs { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .job.open { grid-column: 1 / -1; }
+    .filters { margin: 0; padding-inline: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) { .job.open .badge i { animation: none; } }
+/* בלי סרטון באתר: הפרסומת מופצת קודם, והאתר הוא היעד של הקישור */
+
+/* המשרה הפתוחה: הצבי מציץ מעל הכרטיס */
+.job.open { overflow: visible; isolation: isolate; background: none; margin-top: 46px; }
+.job.open::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--ink); z-index: -1; }
+.job.open .open-deer { position: absolute; top: 0; left: 22px; width: 70px; rotate: 0deg; transform: translateY(-64%); z-index: -2; animation: peek-bob2 3.6s ease-in-out infinite; }
+.toast { white-space: normal; text-align: center; max-width: min(340px, calc(100vw - 40px)); width: max-content; line-height: 1.45; }
+
+/* חותמת בפינה העליונה, לא על הטייטל */
+.job.closed .dept { min-height: 40px; }
+.stamp { top: 12px; left: 12px; right: auto; font-size: 25px; padding: 3px 10px 1px; border-width: 2.5px; rotate: -8deg; }
+.job:nth-child(2n) .stamp { rotate: 5deg; left: 18px; right: auto; top: 14px; }
+.job:nth-child(3n) .stamp { rotate: -4deg; top: 10px; }
+.job.closed > *:not(.stamp) { opacity: .74; filter: saturate(.6); }
+
+/* ===================== גרסה 5: גריד משרות ===================== */
+.job-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.job-grid .job-tile[hidden] { display: none; }
+
+.job-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 158px;
+    padding: 14px 12px 12px;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--paper);
+    text-align: right;
+    font-family: var(--body);
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 4px 0 rgba(46, 23, 16, 0.25);
+    transition: transform .12s;
+    -webkit-tap-highlight-color: transparent;
+}
+.job-tile:active { transform: scale(.97); }
+.job-tile::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 9px;
+    height: 9px;
+    border-top: 2px solid rgba(244, 234, 219, 0.55);
+    border-left: 2px solid rgba(244, 234, 219, 0.55);
+    rotate: -45deg;
+}
+.job-tile h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 25px;
+    line-height: .95;
+    color: var(--sun);
+    margin: 30px 0 auto;
+    text-wrap: balance;
+}
+.job-tile .jt-pay { display: flex; flex-direction: column; margin-top: 10px; }
+.job-tile .jt-pay small { font-size: 12px; color: rgba(244, 234, 219, 0.7); }
+.job-tile .jt-pay b { font-family: var(--display); font-weight: 700; font-size: 30px; line-height: 1; color: var(--paper); direction: ltr; text-align: right; }
+
+/* חותמת על רקע כהה */
+.job-tile .stamp {
+    top: 10px;
+    left: 8px;
+    font-size: 17px;
+    padding: 2px 7px 1px;
+    border-width: 2px;
+    border-radius: 7px;
+    color: #FF7A55;
+    border-color: #FF7A55;
+    background: transparent;
+    mix-blend-mode: normal;
+    rotate: -9deg;
+}
+.job-grid .job-tile:nth-child(2n) .stamp { rotate: 6deg; left: 10px; top: 12px; }
+.job-grid .job-tile:nth-child(3n) .stamp { rotate: -4deg; }
+
+/* המשרה הפתוחה: שכר חודשי באותה שפה של הריבועים */
+.job.open .open-pay { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-top: 12px; }
+.job.open .open-pay small { width: 100%; font-size: 12.5px; color: rgba(244, 234, 219, 0.7); }
+.job.open .open-pay b { font-family: var(--display); font-weight: 700; font-size: 40px; line-height: 1; color: var(--paper); direction: ltr; }
+.job.open .open-pay span { font-size: 16px; font-weight: 700; color: var(--sun); }
+.job.open { margin-top: 56px; }
+
+/* חלון פרטי משרה */
+.job-detail { position: relative; max-width: 520px; margin: 0 auto; padding: 24px 20px 34px; }
+.job-detail .stamp { top: 22px; left: 18px; font-size: 26px; }
+.job-detail .dept { font-size: 13px; font-weight: 700; color: var(--burnt-text); min-height: 44px; }
+.job-detail h3 { font-family: var(--display); font-weight: 700; font-size: 44px; line-height: .95; margin: 2px 0 16px; text-wrap: balance; }
+.jd-list { border-top: 1.5px solid var(--ink); margin-bottom: 14px; }
+.jd-list > div { display: grid; grid-template-columns: 88px 1fr; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.jd-list dt { font-size: 13px; font-weight: 700; color: var(--ink-3); padding-top: 2px; }
+.jd-list dd { font-size: 15.5px; line-height: 1.5; color: var(--ink); }
+.job-detail .closed-note { font-size: 13px; color: var(--ink-3); margin-bottom: 14px; }
+.job-detail .btn { margin-top: 10px; }
+.job-detail .btn.shake { animation: shake .45s; }
+.jd-reply {
+    margin: 12px 0 2px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--paper-2);
+    font-size: 15.5px;
+    font-weight: 700;
+    text-align: center;
+    animation: rise .35s cubic-bezier(.2, 1.2, .4, 1);
+}
+
+@media (min-width: 900px) {
+    .job-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .job-tile { min-height: 190px; }
+    .job-tile h3 { font-size: 30px; }
+}
+
+/* חבר מביא חבר */
+.referral {
+    position: relative;
+    margin-top: 64px;
+    padding: 22px 18px 18px;
+    border: 2px dashed var(--ink);
+    border-radius: var(--radius);
+    background: #FBF5EB;
+}
+.referral .ref-kicker { display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--paper); background: var(--burnt-text); border-radius: 999px; padding: 3px 10px; }
+.referral h3 { font-family: var(--display); font-weight: 700; font-size: 36px; line-height: .95; margin: 10px 0 8px; }
+.referral p { font-size: 16px; color: var(--ink-2); text-wrap: pretty; }
+.referral p b { color: var(--ink); }
+.referral .btn { margin-top: 14px; }
+.referral .ref-note { font-size: 13px; color: var(--ink-3); text-align: center; margin-top: 10px; }
+.referral .ref-deer { position: absolute; top: 0; left: 18px; width: 66px; transform: translateY(-74%); }
+.referral .ref-deer svg { width: 100%; height: auto; display: block; }
+
+/* תיקוני QA */
+#open-role { scroll-margin-top: 110px; }
+@media (min-width: 900px) { .job-tile { min-height: 150px; } }

@@ -874,7 +874,7 @@ function ensureVolunteerEventSheet_() {
 
 // ============================================================
 // TEAM APPLICATIONS (team.html)
-// Schema: תאריך(0), שעה(1), שם(2), טלפון(3), תחומים(4), תוצאת שאלון(5), הערה(6), סטטוס(7)
+// Schema: תאריך(0), שעה(1), שם(2), טלפון(3), תחומים(4), תוצאת שאלון(5), הערה(6), סטטוס(7), ממליץ(8)
 // ============================================================
 
 function joinTeam(data) {
@@ -890,7 +890,7 @@ function joinTeam(data) {
     sheet.appendRow([
       fmtDate(now), fmtTime(now), name.slice(0, 80), "'" + phone.slice(0, 20),
       String(data.areas || '').slice(0, 200), String(data.quiz || '').slice(0, 40),
-      String(data.note || '').slice(0, 500), 'חדש'
+      String(data.note || '').slice(0, 500), 'חדש', String(data.ref || '').trim().slice(0, 80)
     ]);
     return { success: true };
   } catch (error) {
@@ -903,10 +903,14 @@ function ensureTeamSheet_() {
   let sheet = ss.getSheetByName('הצטרפות לצוות');
   if (!sheet) {
     sheet = ss.insertSheet('הצטרפות לצוות');
-    sheet.appendRow(['תאריך', 'שעה', 'שם', 'טלפון', 'תחומים', 'תוצאת שאלון', 'הערה', 'סטטוס']);
-    sheet.getRange(1, 1, 1, 8).setFontWeight('bold');
+    sheet.appendRow(['תאריך', 'שעה', 'שם', 'טלפון', 'תחומים', 'תוצאת שאלון', 'הערה', 'סטטוס', 'ממליץ']);
+    sheet.getRange(1, 1, 1, 9).setFontWeight('bold');
     sheet.setRightToLeft(true);
     sheet.setFrozenRows(1);
+  }
+  // עמודת "ממליץ" נוספה אחרי שהלשונית כבר נוצרה (חבר מביא חבר)
+  if (sheet.getRange(1, 9).getValue() === '') {
+    sheet.getRange(1, 9).setValue('ממליץ').setFontWeight('bold');
   }
   return sheet;
 }
@@ -957,7 +961,7 @@ function doPost(e) {
     switch (action) {
 
       case 'ping':
-        return jsonResponse({ success: true, version: 'v5-team-2026-10-06' });
+        return jsonResponse({ success: true, version: 'v6-referral-2026-10-07' });
 
       case 'debugEcho':
         return jsonResponse({ success: true, received: { action: p.action, note: p.note, customerName: p.customerName, products: p.products } });
@@ -1049,7 +1053,7 @@ function doPost(e) {
 
       // ── Team Applications ─────────────────────────────────
       case 'joinTeam':
-        return jsonResponse(joinTeam({ name: p.name, phone: p.phone, areas: p.areas, quiz: p.quiz, note: p.note }));
+        return jsonResponse(joinTeam({ name: p.name, phone: p.phone, areas: p.areas, quiz: p.quiz, note: p.note, ref: p.ref }));
 
       default:
         return jsonResponse({ success: false, message: 'פעולה לא מוכרת: ' + action });
