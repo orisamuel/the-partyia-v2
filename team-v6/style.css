@@ -1060,3 +1060,50 @@ footer .gender { font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
 }
 .join .also-talk { font-size: 14.5px; color: rgba(244, 234, 219, 0.85); text-align: center; margin-top: 14px; }
 .join .also-talk { text-wrap: balance; }
+
+/* ===================== קבוצות הוואטסאפ: כרטיס מזמין למתנדבים + קישור לעדכונים (08/10/2026) ===================== */
+.groups { display: grid; gap: 14px; padding-top: 76px; }
+.vol-card {
+    position: relative;
+    display: block;
+    padding: 22px 18px 18px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--peach);
+    box-shadow: 0 5px 0 var(--ink);
+    color: var(--ink);
+    text-decoration: none;
+    transition: transform .12s, box-shadow .12s;
+    -webkit-tap-highlight-color: transparent;
+}
+.vol-card:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.vol-card .vol-kicker { display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--paper); background: var(--ink); border-radius: 999px; padding: 3px 10px; }
+.vol-card h3 { font-family: var(--display); font-weight: 700; font-size: 40px; line-height: .95; margin: 10px 0 8px; }
+.vol-card p { font-size: 16px; color: var(--ink-2); text-wrap: pretty; }
+.vol-card .btn { margin-top: 16px; background: var(--ink); color: var(--paper); white-space: normal; text-align: center; }
+.vol-card .btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+.vol-card .vol-deer { position: absolute; top: 0; left: 18px; width: 70px; transform: translateY(-74%); }
+.vol-card .vol-deer svg { width: 100%; height: auto; display: block; }
+.upd-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    background: #FBF5EB;
+    color: var(--ink);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.upd-link:active { background: var(--paper-2); }
+.upd-link b { display: block; font-weight: 700; font-size: 16px; }
+.upd-link .upd-text > span { color: var(--ink-2); font-size: 14px; }
+.upd-link .upd-go { flex-shrink: 0; display: inline-flex; align-items: center; gap: 2px; padding: 6px 10px 6px 12px; border: 2px solid currentColor; border-radius: 999px; color: var(--burnt-text); font-size: 15px; font-weight: 700; }
+.upd-link .upd-go svg { width: 18px; height: 18px; }
+@media (min-width: 900px) {
+    .groups { grid-template-columns: 1.3fr 1fr; gap: 24px; align-items: stretch; padding-bottom: 40px; }
+    .upd-link { flex-direction: column; align-items: flex-start; justify-content: center; gap: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .vol-card { transition: none; } }
