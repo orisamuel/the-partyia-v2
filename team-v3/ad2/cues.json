@@ -1,0 +1,234 @@
+{
+  "_note": "מקור אמת לתזמון הפרסומת, גרסה 2 (team-v3/ad2). זמנים בשניות מתחילת הסרטון (השעון החדש). vo3, vo4, vo5 הוקלטו מחדש; האנימציה ב-scene.html כתובה על השעון של גרסה 1, ו-WARP שם ממפה ביניהם. mix.mjs בונה מכאן את הסאונד. השדות t/end/titles/cuts/vo/sfx על השעון החדש; זמנים שמופיעים בתוך הטקסט החופשי של visual נשארו מגרסה 1.",
+  "duration": 37.6,
+  "vo": [
+    {
+      "id": "vo1",
+      "t": 0.15,
+      "file": "vo1.mp3",
+      "text": "רגע, מי בעצם מפעיל את הפרתיה?"
+    },
+    {
+      "id": "vo2",
+      "t": 2.8,
+      "file": "vo2.mp3",
+      "text": "אנחנו! תושבים, בהתנדבות."
+    },
+    {
+      "id": "vo3",
+      "t": 5.45,
+      "file": "vo3.mp3",
+      "text": "ועכשיו מחפשים עוד אנשים לצוות הקבוע."
+    },
+    {
+      "id": "vo4",
+      "t": 8.5,
+      "file": "vo4.mp3",
+      "text": "ערב אחד בערך כל חודשיים: מגייסים מתנדבים, מקימים, מחלקים תפקידים, ומסדרים בסוף."
+    },
+    {
+      "id": "vo5",
+      "t": 15.2,
+      "file": "vo5.mp3",
+      "text": "ואת כל השאר מנהלים ביחד: ישיבה פעם בחודש או חודשיים, ובין לבין וואטסאפ."
+    },
+    {
+      "id": "vo6",
+      "t": 21.57,
+      "file": "vo6.mp3",
+      "text": "ניסיון? לא צריך. קוקטיילים? גם לא. רק רצון אמיתי ויכולת להתחייב."
+    },
+    {
+      "id": "vo7",
+      "t": 27.97,
+      "file": "vo7.mp3",
+      "text": "מכירים פה את כולם? אז חצי מהעבודה כבר עשיתם."
+    },
+    {
+      "id": "vo8",
+      "t": 32.02,
+      "file": "vo8.mp3",
+      "text": "כל הפרטים וההרשמה בקישור בהודעה. נתראה מאחורי הבר!"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "hook",
+      "t": 0,
+      "end": 2.7,
+      "titles": [
+        {
+          "t": 0.15,
+          "text": "מי מפעיל את הפרתיה?"
+        }
+      ],
+      "visual": "Frame 1 is already full (WhatsApp shows it as the thumbnail): cream paper, the orange sun in the lower half, the cute deer peeking from behind it, ears first, then eyes; it blinks and looks at camera. Big ink title, small bounce."
+    },
+    {
+      "id": "us",
+      "t": 2.7,
+      "end": 5.35,
+      "titles": [
+        {
+          "t": 2.84,
+          "text": "אנחנו!"
+        },
+        {
+          "t": 3.62,
+          "text": "תושבים, בהתנדבות"
+        }
+      ],
+      "visual": "The real logo (emblem + wordmark) lands on the sun like a print stamp (stamp sfx at 2.84). The deer hops next to it and waves; a few simple ink-line neighbour silhouettes draw on behind."
+    },
+    {
+      "id": "otherside",
+      "t": 5.35,
+      "end": 8.4,
+      "titles": [
+        {
+          "t": 5.45,
+          "text": "מחפשים עוד אנשים"
+        },
+        {
+          "t": 7.27,
+          "text": "לצוות הקבוע"
+        }
+      ],
+      "visual": "An ink bar counter slides in from below with three dashed empty slots behind it. On 'לצוות' the deer jumps over it into the first slot and beckons 'come'. (ad2: no bar towel.)"
+    },
+    {
+      "id": "evening",
+      "t": 8.4,
+      "end": 15.1,
+      "titles": [
+        {
+          "t": 8.54,
+          "text": "ערב אחד, בערך כל חודשיים"
+        }
+      ],
+      "cuts": [
+        {
+          "t": 10.52,
+          "word": "מגייסים",
+          "visual": "deer typing with two hooves, 'רשמו אותי!' chat bubbles pile up (pop sfx)"
+        },
+        {
+          "t": 11.74,
+          "word": "מקימים",
+          "visual": "deer carries a wobbling tower of plastic chairs that almost falls and somehow stays (boing sfx)"
+        },
+        {
+          "t": 12.56,
+          "word": "מחלקים",
+          "visual": "the deer points; three ink neighbours pop into their stations, nearest first: a bar with a tap, a registration table with an open notebook, shopping bags. Then both hooves up (pop sfx on each)"
+        },
+        {
+          "t": 13.82,
+          "word": "ומסדרים",
+          "visual": "deer sets down the last chair and pulls the string-lights cord, lights go off (click sfx at 14.35)"
+        }
+      ],
+      "visual": "Title stays on top through the sequence; four hard cuts on the words, each with a small one-word label in a corner (מגייסים / מקימים / מחלקים / מסדרים)."
+    },
+    {
+      "id": "team",
+      "t": 15.1,
+      "end": 21.47,
+      "titles": [
+        {
+          "t": 15.28,
+          "text": "כל השאר, ביחד"
+        },
+        {
+          "t": 17.46,
+          "text": "ישיבה פעם בחודש או חודשיים"
+        },
+        {
+          "t": 20.72,
+          "text": "ובין לבין, וואטסאפ"
+        }
+      ],
+      "visual": "Pull back: on 'כל השאר' a cash box, a megaphone and a bottle crate pop onto the table; the deer at a round table with a few ink figures, the sun hangs above like a lamp. A calendar page flips once (flip sfx at 16.48). A generic chat bubble 'מי מגיע?' fills with thumbs-up (pop at 19.62); the deer high-fives a neighbour."
+    },
+    {
+      "id": "noexp",
+      "t": 21.47,
+      "end": 27.87,
+      "titles": [
+        {
+          "t": 21.63,
+          "text": "ניסיון? לא צריך."
+        },
+        {
+          "t": 23.63,
+          "text": "קוקטיילים? גם לא."
+        },
+        {
+          "t": 25.51,
+          "text": "רק רצון אמיתי"
+        }
+      ],
+      "visual": "The deer shakes a cocktail shaker like a pro; on 'קוקטיילים' the shaker slips out of its hoof and spins out of frame (whoosh at 22.9, distant clatter at 23.7). The deer shrugs and smiles, zero embarrassment. 'רק רצון אמיתי' lands calmly."
+    },
+    {
+      "id": "everyone",
+      "t": 27.87,
+      "end": 31.92,
+      "titles": [
+        {
+          "t": 28.39,
+          "text": "מכירים פה את כולם?"
+        },
+        {
+          "t": 30.03,
+          "text": "חצי מהעבודה כבר עשיתם"
+        }
+      ],
+      "visual": "Illustrated top-down map of the settlement's houses in ink lines on paper. From every house an orange dot pops like an incoming message until the whole map is lit (small pops). The deer, in a corner, winks."
+    },
+    {
+      "id": "end",
+      "t": 31.92,
+      "end": 37.6,
+      "titles": [
+        {
+          "t": 32.08,
+          "text": "כל הפרטים וההרשמה בקישור"
+        },
+        {
+          "t": 34.78,
+          "text": "נתראה מאחורי הבר!"
+        }
+      ],
+      "visual": "Clean end card: cream paper, sun + the real logo centered. The deer rises from the bottom, waves, then points DOWN with both hooves; a hand-drawn orange arrow bounces toward the bottom of the screen (where the link sits in the WhatsApp message). Chime at 30.9. Hold calmly to 37.6, readable without sound."
+    }
+  ],
+  "music": {
+    "file": "music.mp3",
+    "t": 0,
+    "cutAt": 37,
+    "cutFade": 0.9,
+    "volume": 0.5
+  },
+  "sfx": [
+    { "file": "sfx_stamp.mp3", "t": 2.84, "v": 0.7 },
+    { "file": "sfx_whoosh.mp3", "t": 7.21, "v": 0.5 },
+    { "file": "sfx_pop.mp3", "t": 10.52, "v": 0.55 },
+    { "file": "sfx_pop.mp3", "t": 10.86, "v": 0.45 },
+    { "file": "sfx_boing.mp3", "t": 11.79, "v": 0.6 },
+    { "file": "sfx_pop.mp3", "t": 12.61, "v": 0.5 },
+    { "file": "sfx_pop.mp3", "t": 12.9, "v": 0.45 },
+    { "file": "sfx_pop.mp3", "t": 13.19, "v": 0.45 },
+    { "file": "sfx_click.mp3", "t": 14.44, "v": 0.6 },
+    { "file": "sfx_pop.mp3", "t": 15.58, "v": 0.3 },
+    { "file": "sfx_pop.mp3", "t": 15.74, "v": 0.28 },
+    { "file": "sfx_pop.mp3", "t": 15.91, "v": 0.28 },
+    { "file": "sfx_flip.mp3", "t": 17.46, "v": 0.55 },
+    { "file": "sfx_pop.mp3", "t": 20.72, "v": 0.55 },
+    { "file": "sfx_whoosh.mp3", "t": 24.02, "v": 0.55 },
+    { "file": "sfx_clatter.mp3", "t": 24.82, "v": 0.4 },
+    { "file": "sfx_pop.mp3", "t": 30.07, "v": 0.4 },
+    { "file": "sfx_pop.mp3", "t": 30.37, "v": 0.35 },
+    { "file": "sfx_chime.mp3", "t": 32.02, "v": 0.55 }
+  ]
+}
