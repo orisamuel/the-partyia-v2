@@ -48,14 +48,32 @@ function warmupServer() {
     fetch(CONFIG.SCRIPT_URL + '?action=ping').catch(() => {});
 }
 
+// POST עם JSON כ-text/plain: בלי preflight, ובלי סיסמה או טוקן בכתובת.
+// הערכים עוברים כמחרוזות, בדיוק כמו בפרמטרים של כתובת.
 async function apiCall(action, params = {}) {
     if (typeof CONFIG === 'undefined') throw new Error('CONFIG לא טעון');
-    const url = CONFIG.SCRIPT_URL + '?' + new URLSearchParams({ action, ...params });
-    const res = await fetch(url, { redirect: 'follow' });
+    const body = Object.fromEntries(new URLSearchParams({ action, ...params }));
+    const session = getAuthSession();
+    if (session) body.token = session.token;
+    const res = await fetch(CONFIG.SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(body),
+        redirect: 'follow'
+    });
     if (!res.ok) throw new Error('שגיאת שרת: ' + res.status);
     const text = await res.text();
-    try { return JSON.parse(text); }
+    let data;
+    try { data = JSON.parse(text); }
     catch { return { success: true, raw: text }; }
+    // הסשן פג או לא קיים בשרת: חוזרים למסך הכניסה, ומשם בחזרה לדף הזה
+    if (data && data.authError) {
+        clearAuthSession();
+        sessionStorage.setItem('partyia_redirect', window.location.href);
+        window.location.href = 'login.html';
+        return new Promise(() => {});
+    }
+    return data;
 }
 
 // ── Toast Notifications ────────────────────────────────────
@@ -100,15 +118,15 @@ function showStatus(message, type = 'info', duration = 5000) {
 
 // ── Auth ────────────────────────────────────────────────────
 
+// השרת בודק את הטוקן בכל פנייה ומחליט מתי הסשן פג (12 שעות בלי שימוש)
 const AUTH_KEY     = 'partyia_auth';
-const AUTH_TTL_MS  = 12 * 60 * 60 * 1000; // 12 שעות
 
 function getAuthSession() {
     try {
         const raw = sessionStorage.getItem(AUTH_KEY);
         if (!raw) return null;
         const s = JSON.parse(raw);
-        if (!s.loggedIn || Date.now() > s.exp) {
+        if (!s.loggedIn || !s.token) {
             sessionStorage.removeItem(AUTH_KEY);
             return null;
         }
@@ -116,11 +134,11 @@ function getAuthSession() {
     } catch (_) { return null; }
 }
 
-function setAuthSession(username) {
+function setAuthSession(username, token) {
     sessionStorage.setItem(AUTH_KEY, JSON.stringify({
         loggedIn: true,
         user: username,
-        exp: Date.now() + AUTH_TTL_MS
+        token
     }));
 }
 
@@ -129,7 +147,16 @@ function clearAuthSession() {
 }
 
 function logout() {
+    const session = getAuthSession();
     clearAuthSession();
+    if (session && typeof CONFIG !== 'undefined') {
+        fetch(CONFIG.SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'logout', token: session.token }),
+            keepalive: true
+        }).catch(() => {});
+    }
     window.location.href = 'login.html';
 }
 
@@ -185,12 +212,12 @@ async function submitReAuth() {
     const session = getAuthSession();
     if (!session) { window.location.href = 'login.html'; return; }
     try {
-        const res = await apiCall('validateCredentials', { username: session.user, password: pwd });
+        const res = await apiCall('validateCredentials', { password: pwd });
         if (res.success) {
             document.getElementById('reAuthModal').classList.remove('open');
             if (_reAuthCallback) { _reAuthCallback(); _reAuthCallback = null; }
         } else {
-            document.getElementById('reAuthError').textContent = 'סיסמה שגויה';
+            document.getElementById('reAuthError').textContent = res.locked ? res.message : 'סיסמה שגויה';
         }
     } catch (_) {
         document.getElementById('reAuthError').textContent = 'שגיאת חיבור';

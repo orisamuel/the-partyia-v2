@@ -8,7 +8,7 @@
 <link rel="icon" href="logo.png" type="image/png">
 <link rel="stylesheet" href="styles.css">
 <script src="config.js"></script>
-<script src="utils.js"></script>
+<script src="utils.js?v=2"></script>
 <style>
   .login-wrap {
     min-height: 100vh;
@@ -113,9 +113,9 @@ async function submitLogin() {
   btn.textContent = 'מתחבר...';
 
   try {
-    const res = await apiCall('validateCredentials', { username, password });
-    if (res.success) {
-      setAuthSession(username);
+    const res = await apiCall('login', { username, password });
+    if (res.success && res.token) {
+      setAuthSession(res.user || username, res.token);
       goAfterLogin();
     } else {
       errEl.textContent = res.message || 'שם משתמש או סיסמה שגויים';

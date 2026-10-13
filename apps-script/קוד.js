@@ -1,6 +1,6 @@
 // ============================================================
 // הפרתיה v4 — Google Apps Script Backend
-// Last updated: 2026-07-05 — volunteer event registration
+// Last updated: 2026-10-13 — server-side sessions (token on every call)
 // ============================================================
 // הגדר כאן את ה-ID של ה-Spreadsheet החדש שלך:
 const SHEET_ID = '1ANaiZRPldIIK_hTZiw3m0fULzaEbwUbwC3OtCFzaJmM';
@@ -55,6 +55,12 @@ function jsonResponse(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// טקסט מטופס ציבורי נכנס לגיליון כטקסט ולא כנוסחה (= + - @ בהתחלה)
+function asText_(v, max) {
+  const s = String(v || '').trim().slice(0, max);
+  return /^[=+\-@]/.test(s) ? "'" + s : s;
 }
 
 // ============================================================
@@ -711,7 +717,7 @@ function updateRequiredStock(productName, requiredStock, notes, category) {
   }
 }
 
-// Seed inventory from initial CSV data
+// Seed inventory from initial CSV data (מהעורך בלבד, לא דרך האתר)
 function seedInventory() {
   try {
     const sheet = ensureSheet('מלאי', INV_HEADERS);
@@ -771,7 +777,7 @@ function seedInventory() {
   }
 }
 
-// Seed initial beer sub-type breakdown (from Excel side table)
+// Seed initial beer sub-type breakdown (from Excel side table) (מהעורך בלבד)
 function seedBeerTypes() {
   try {
     const sheet = ensureSheet('מלאי', INV_HEADERS);
@@ -808,30 +814,133 @@ function seedBeerTypes() {
 
 // ============================================================
 // AUTH
+// המשתמשים והסיסמאות בלשונית "הגדרות" (שם משתמש, סיסמה).
+// כניסה מוצלחת מנפיקה טוקן אקראי, והדפדפן שולח אותו בכל פנייה (ב-POST, לא בכתובת).
+// בשרת נשמר רק ה-hash של הטוקן: ב-Script Properties (מקור האמת) וב-CacheService (קריאה מהירה).
+// סשן פג אחרי 12 שעות בלי שימוש, ובכל מקרה אחרי 7 ימים.
 // ============================================================
 
-function validateCredentials(username, password) {
-  try {
-    const ss = getSpreadsheet();
-    let settingsSheet = ss.getSheetByName('הגדרות');
-    if (!settingsSheet) {
-      // יצירה עם ברירות מחדל — המשתמש ישנה ישירות בגיליון
-      settingsSheet = ss.insertSheet('הגדרות');
-      settingsSheet.appendRow(['שם משתמש', 'סיסמה']);
-      settingsSheet.appendRow(['admin', 'partyia123']);
-    }
-    const data = settingsSheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]).trim() === String(username).trim() &&
-          String(data[i][1]).trim() === String(password).trim()) {
-        return { success: true };
-      }
-    }
-    return { success: false, message: 'שם משתמש או סיסמה שגויים' };
-  } catch (e) {
-    Logger.log('validateCredentials error: ' + e);
-    return { success: false, message: e.toString() };
+const SESSION_IDLE_MS = 12 * 60 * 60 * 1000;
+const SESSION_MAX_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_RENEW_MS = 60 * 60 * 1000;      // הארכה נכתבת לכל היותר פעם בשעה
+const LOGIN_MAX_FAILS = 10;                   // ניסיונות שגויים לשם משתמש,
+const LOGIN_LOCK_SEC = 15 * 60;               // ואז נעילה של רבע שעה
+
+function sha256Hex_(s) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(s), Utilities.Charset.UTF_8)
+    .map(b => ('0' + (b & 0xff).toString(16)).slice(-2)).join('');
+}
+
+function sessionKey_(token) {
+  return 'sess_' + sha256Hex_(token);
+}
+
+function cacheSession_(key, raw, exp) {
+  CacheService.getScriptCache().put(key, raw, Math.min(21600, Math.ceil((exp - Date.now()) / 1000)));
+}
+
+function saveSession_(key, s) {
+  const raw = JSON.stringify(s);
+  PropertiesService.getScriptProperties().setProperty(key, raw);
+  cacheSession_(key, raw, s.exp);
+}
+
+// מחזיר את שם המשתמש אם הפרטים נכונים, אחרת null
+function findUser_(username, password) {
+  const u = String(username || '').trim();
+  const p = String(password || '').trim();
+  if (!u || !p) return null;
+  const sheet = getSheet('הגדרות');
+  if (!sheet) return null;
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === u && String(data[i][1]).trim() === p) return u;
   }
+  return null;
+}
+
+// בדיקת סיסמה עם הגבלת ניסיונות לכל שם משתמש
+function checkCredentials_(username, password) {
+  const cache = CacheService.getScriptCache();
+  const failKey = 'fail_' + sha256Hex_(String(username || '').trim());
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const fails = parseInt(cache.get(failKey), 10) || 0;
+    if (fails >= LOGIN_MAX_FAILS) {
+      return { success: false, locked: true, message: 'יותר מדי ניסיונות שגויים. אפשר לנסות שוב בעוד רבע שעה.' };
+    }
+    const user = findUser_(username, password);
+    if (!user) {
+      cache.put(failKey, String(fails + 1), LOGIN_LOCK_SEC);
+      return { success: false, message: 'שם משתמש או סיסמה שגויים' };
+    }
+    cache.remove(failKey);
+    return { success: true, user };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function login(username, password) {
+  const check = checkCredentials_(username, password);
+  if (!check.success) return check;
+  purgeExpiredSessions_();
+  const token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  const now = Date.now();
+  saveSession_(sessionKey_(token), { user: check.user, created: now, exp: now + SESSION_IDLE_MS });
+  return { success: true, token, user: check.user };
+}
+
+// מחזיר את הסשן של הטוקן, או null אם אין או שפג. סשן בשימוש מתארך.
+function getSession_(token) {
+  if (!token || typeof token !== 'string' || token.length > 100) return null;
+  const key = sessionKey_(token);
+  const cached = CacheService.getScriptCache().get(key);
+  const raw = cached || PropertiesService.getScriptProperties().getProperty(key);
+  if (!raw) return null;
+  const s = JSON.parse(raw);
+  const now = Date.now();
+  if (now > s.exp || now - s.created > SESSION_MAX_MS) {
+    endSession_(key);
+    return null;
+  }
+  if (now + SESSION_IDLE_MS - s.exp > SESSION_RENEW_MS) {
+    s.exp = now + SESSION_IDLE_MS;
+    saveSession_(key, s);
+  } else if (!cached) {
+    cacheSession_(key, raw, s.exp);
+  }
+  return s;
+}
+
+function endSession_(key) {
+  PropertiesService.getScriptProperties().deleteProperty(key);
+  CacheService.getScriptCache().remove(key);
+}
+
+function logout(token) {
+  if (token && typeof token === 'string' && token.length <= 100) endSession_(sessionKey_(token));
+  return { success: true };
+}
+
+function purgeExpiredSessions_() {
+  const all = PropertiesService.getScriptProperties().getProperties();
+  const now = Date.now();
+  Object.keys(all).forEach(k => {
+    if (k.indexOf('sess_') !== 0) return;
+    try {
+      const s = JSON.parse(all[k]);
+      if (now <= s.exp && now - s.created <= SESSION_MAX_MS) return;
+    } catch (e) {}
+    endSession_(k);
+  });
+}
+
+// להריץ מהעורך כדי לנתק את כולם (למשל אחרי החלפת סיסמה או טלפון שאבד)
+function logoutAllSessions() {
+  const all = PropertiesService.getScriptProperties().getProperties();
+  Object.keys(all).forEach(k => { if (k.indexOf('sess_') === 0) endSession_(k); });
 }
 
 // ============================================================
@@ -851,7 +960,7 @@ function registerVolunteerEvent(name, guests) {
     const time = fmtTime(now);
     const guestCount = Math.max(1, Math.min(20, parseInt(guests, 10) || 1));
 
-    sheet.appendRow([date, time, String(name).trim(), guestCount]);
+    sheet.appendRow([date, time, asText_(name, 80), guestCount]);
 
     return { success: true };
   } catch (error) {
@@ -888,9 +997,9 @@ function joinTeam(data) {
     const now = new Date();
     // גרש בהתחלה כדי שהגיליון ישמור את ה-0 בתחילת המספר
     sheet.appendRow([
-      fmtDate(now), fmtTime(now), name.slice(0, 80), "'" + phone.slice(0, 20),
-      String(data.areas || '').slice(0, 200), String(data.quiz || '').slice(0, 40),
-      String(data.note || '').slice(0, 500), 'חדש', String(data.ref || '').trim().slice(0, 80)
+      fmtDate(now), fmtTime(now), asText_(name, 80), "'" + phone.slice(0, 20),
+      asText_(data.areas, 200), asText_(data.quiz, 40),
+      asText_(data.note, 500), 'חדש', asText_(data.ref, 80)
     ]);
     return { success: true };
   } catch (error) {
@@ -935,9 +1044,9 @@ function referFriend(data) {
     const now = new Date();
     // גרש בהתחלה כדי שהגיליון ישמור את ה-0 בתחילת המספר
     sheet.appendRow([
-      fmtDate(now), fmtTime(now), refName.slice(0, 80), "'" + refPhone.slice(0, 20),
-      friendName.slice(0, 80), "'" + friendPhone.slice(0, 20),
-      String(data.why || '').slice(0, 500), 'חדש'
+      fmtDate(now), fmtTime(now), asText_(refName, 80), "'" + refPhone.slice(0, 20),
+      asText_(friendName, 80), "'" + friendPhone.slice(0, 20),
+      asText_(data.why, 500), 'חדש'
     ]);
     return { success: true };
   } catch (error) {
@@ -989,25 +1098,54 @@ function keepWarm() {
 
 // ============================================================
 // HTTP HANDLER
+// GET: רק ping (חימום השרת). כל השאר ב-POST.
+// מערכת ההזמנות שולחת JSON כ-text/plain, עם הטוקן בגוף הבקשה (utils.js, apiCall).
+// הטפסים הציבוריים שולחים form-urlencoded, ורק הפעולות שלהם פתוחות בלי טוקן.
 // ============================================================
 
+const API_VERSION = 'v8-auth-2026-10-13';
+const PUBLIC_ACTIONS = ['ping', 'login', 'logout', 'registerVolunteerEvent', 'joinTeam', 'referFriend'];
+
 function doGet(e) {
-  return doPost(e);
+  if (e && e.parameter && e.parameter.action === 'ping') {
+    return jsonResponse({ success: true, version: API_VERSION });
+  }
+  return jsonResponse({ success: false, message: 'פעולה לא זמינה' });
+}
+
+function readParams_(e) {
+  const post = e && e.postData;
+  if (post && /^text\/plain/.test(post.type || '')) {
+    try { return JSON.parse(post.contents) || {}; } catch (err) { return {}; }
+  }
+  return (e && e.parameter) || {};
 }
 
 function doPost(e) {
   try {
-    if (!e || !e.parameter) return jsonResponse({ success: false, message: 'אין פרמטרים' });
-    const action = e.parameter.action;
-    const p = e.parameter;
+    const p = readParams_(e);
+    const action = p.action;
+    const isPublic = PUBLIC_ACTIONS.indexOf(action) !== -1;
+    const session = isPublic ? null : getSession_(p.token);
+    if (!isPublic && !session) {
+      return jsonResponse({ success: false, authError: true, message: 'צריך להתחבר מחדש' });
+    }
 
     switch (action) {
 
       case 'ping':
-        return jsonResponse({ success: true, version: 'v7-refer-friend-2026-10-08' });
+        return jsonResponse({ success: true, version: API_VERSION });
 
-      case 'debugEcho':
-        return jsonResponse({ success: true, received: { action: p.action, note: p.note, customerName: p.customerName, products: p.products } });
+      // ── Auth ──────────────────────────────────────────────
+      case 'login':
+        return jsonResponse(login(p.username, p.password));
+
+      case 'logout':
+        return jsonResponse(logout(p.token));
+
+      // אימות חוזר לפני פעולה קריטית (products.html)
+      case 'validateCredentials':
+        return jsonResponse(checkCredentials_(session.user, p.password));
 
       // ── Products ──────────────────────────────────────────
       case 'getProducts':
@@ -1080,15 +1218,6 @@ function doPost(e) {
 
       case 'updateRequiredStock':
         return jsonResponse(updateRequiredStock(p.productName, p.requiredStock, p.notes, p.category));
-
-      case 'validateCredentials':
-        return jsonResponse(validateCredentials(p.username, p.password));
-
-      case 'seedInventory':
-        return jsonResponse(seedInventory());
-
-      case 'seedBeerTypes':
-        return jsonResponse(seedBeerTypes());
 
       // ── Volunteer Event ───────────────────────────────────
       case 'registerVolunteerEvent':

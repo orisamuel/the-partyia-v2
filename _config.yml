@@ -1,0 +1,15 @@
+# GitHub Pages (Jekyll): קבצים פנימיים שלא מוגשים באתר.
+# תיקייה נכתבת עם / בסוף. בלי / זו התאמה לפי תחילת השם: "team-v3/ad" היה מוריד גם את team-v3/ad2-1080.mp4.
+exclude:
+  - CLAUDE.md
+  - README.md
+  - microcopy.md
+  - apps-script/
+  - team/trailer/
+  - team-v2/video/
+  - team-v3/ad/
+  - team-v3/ad2/
+  - team/og-card.html
+  - team-v2/og-card.html
+  - team-v3/og-card.html
+  - team-v4/og-card.html
