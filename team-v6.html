@@ -22,7 +22,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Karantina:wght@700&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="team-v6/style.css?v=10">
+    <link rel="stylesheet" href="team-v6/style.css?v=12">
 </head>
 <body>
 
@@ -439,12 +439,25 @@
     /* חבר מביא חבר: טופס המלצה */
     $('refDeer').innerHTML = Deer.svg({ mood: 'wink', title: '' });
     $('volDeer').innerHTML = Deer.svg({ mood: 'happy', title: '' });
-    $('refOpen').addEventListener('click', () => {
+    function showRefForm() {
+        if (!$('refDone').hidden) return;
         $('refForm').hidden = false;
         $('refOpen').hidden = true;
         $('refOpen').setAttribute('aria-expanded', 'true');
-        $('rFriendName').focus();
-    });
+    }
+    $('refOpen').addEventListener('click', () => { showRefForm(); $('rFriendName').focus(); });
+    // קישור ישיר לטופס ההמלצה: team.html#refer (refer.html מפנה לכאן). הטופס נפתח בלי פוקוס, כדי שהמקלדת לא תקפוץ
+    function openRefFromLink() {
+        if (location.hash !== '#refer') return;
+        showRefForm();
+        $('referral').scrollIntoView({ block: 'start' });
+    }
+    openRefFromLink();
+    // שוב אחרי שהפונטים והתמונות נטענו והדף זז, אבל רק אם עוד לא גללו או התחילו להקליד (אחרת זה מושך אותם אחורה)
+    let userMoved = false;
+    ['touchstart', 'wheel', 'keydown', 'pointerdown'].forEach(t => addEventListener(t, () => { userMoved = true; }, { passive: true, once: true }));
+    window.addEventListener('load', () => { if (!userMoved) openRefFromLink(); });
+    window.addEventListener('hashchange', openRefFromLink);
     $('refMeta').addEventListener('click', () => { $('refJoke').hidden = false; });
     $('refForm').addEventListener('submit', async ev => {
         ev.preventDefault();

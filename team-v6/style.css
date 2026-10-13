@@ -1107,3 +1107,6 @@ footer .gender { font-size: 12.5px; color: var(--ink-3); margin-top: 6px; }
     .upd-link { flex-direction: column; align-items: flex-start; justify-content: center; gap: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .vol-card { transition: none; } }
+
+/* קישור ישיר לטופס ההמלצה (#refer): מתחת לסרגל העליון, עם מקום לצבי שמציץ מעל הכרטיס */
+#referral { scroll-margin-top: 62px; }   /* + scroll-padding-top של html (68px) = כ-130px מלמעלה */

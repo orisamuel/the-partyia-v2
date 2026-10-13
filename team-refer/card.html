@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<!--
+  מקור לתמונת "חבר מביא חבר" (team-refer/). הטקסט של אורי (13/10/2026). אותו עיצוב בשני גדלים:
+    card.html?r=45   -> 1122x1402: תמונה לשליחה בצ'אט, וגם תמונת התצוגה של refer.html בוואטסאפ
+    card.html?r=916  -> 1080x1920: לסטטוס
+  רינדור: node team-refer/render.mjs (צריך puppeteer-core דרך MG_MODULES)
+-->
+<style>
+    @font-face { font-family: 'Karantina'; font-weight: 700; src: url(../team-v3/ad/fonts/karantina-hebrew.woff2) format('woff2'); unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+FB1D-FB4F; }
+    @font-face { font-family: 'Karantina'; font-weight: 700; src: url(../team-v3/ad/fonts/karantina-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F, U+2190-2193; }
+    @font-face { font-family: 'Rubik'; font-weight: 400 700; src: url(../team-v3/ad/fonts/rubik-hebrew.woff2) format('woff2'); unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+FB1D-FB4F; }
+    @font-face { font-family: 'Rubik'; font-weight: 400 700; src: url(../team-v3/ad/fonts/rubik-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F, U+2190-2193; }
+    :root {
+        --paper: #F4EADB; --paper-2: #EBDDC7; --ink: #2E1710; --ink-2: #5E4135;
+        --sun: #E8873B; --burnt: #C4531A; --peach: #F2C79C;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: var(--paper); overflow: hidden; }
+    .card {
+        position: relative;
+        width: 1122px; height: 1402px;
+        overflow: hidden;
+        display: flex; flex-direction: column; align-items: center;
+        padding: 96px 70px 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: 'Rubik', sans-serif;
+        text-align: center;
+    }
+    .card::after {
+        content: ''; position: absolute; inset: 0; opacity: .38; mix-blend-mode: multiply; pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .22 0 0 0 0 .12 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .frame { position: absolute; inset: 34px; border: 4px solid var(--ink); border-radius: 34px; pointer-events: none; }
+    .chip {
+        display: inline-flex; align-items: center; gap: 16px; white-space: nowrap;
+        padding: 14px 34px; border: 3px solid var(--ink); border-radius: 999px;
+        font-size: 38px; font-weight: 700; background: var(--paper);
+    }
+    .chip i { width: 18px; height: 18px; border-radius: 50%; background: var(--burnt); display: block; }
+    h1 {
+        margin-top: 44px;
+        font-family: 'Karantina', sans-serif; font-weight: 700; font-size: 132px; line-height: .9; letter-spacing: .5px;
+    }
+    h1 .l { display: block; width: max-content; margin-inline: auto; white-space: nowrap; }
+    h1 .love { display: block; width: max-content; margin-inline: auto; margin-top: 14px; color: var(--burnt); font-size: 150px; white-space: nowrap; }
+
+    /* the heart, the deer behind it, and a small voucher tucked at its side */
+    .stage { position: relative; isolation: isolate; margin-top: 96px; width: 400px; height: 346px; }
+    .heart { position: absolute; inset: 0; filter: drop-shadow(0 9px 0 var(--ink)); }
+    .heart svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    .peeker { position: absolute; left: 50%; top: -80px; width: 140px; margin-left: -70px; z-index: -1; }
+    .peeker svg { width: 100%; height: auto; display: block; }
+    .deer .deer-eye { animation: none; }
+    .spark { position: absolute; color: var(--burnt); font-size: 44px; line-height: 1; }
+    .ticket { position: absolute; right: -196px; bottom: 6px; width: 300px; height: 122px; transform: rotate(9deg); filter: drop-shadow(0 6px 0 var(--ink)); }
+    .ticket svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .ticket .t-txt { position: absolute; top: 0; bottom: 0; right: 0; left: 82px; display: flex; align-items: center; justify-content: center; gap: 12px; font-weight: 700; }
+    .ticket .t-k { font-size: 28px; }
+    .ticket .t-a { font-family: 'Karantina', sans-serif; font-size: 86px; line-height: 1; direction: ltr; }
+    .ticket .t-a small { font-family: 'Rubik', sans-serif; font-size: 42px; margin-right: 4px; vertical-align: 8px; }
+    .ticket .t-stub { position: absolute; top: 0; bottom: 0; left: 0; width: 82px; display: flex; align-items: center; justify-content: center; }
+    .ticket .t-stub img { width: 56px; transform: rotate(-9deg); }
+
+    .aside { margin-top: 60px; font-size: 36px; font-weight: 500; line-height: 1.32; color: var(--ink-2); }
+    .cta {
+        margin-top: 34px; display: inline-flex; align-items: center; gap: 18px;
+        padding: 20px 46px; border-radius: 999px; background: var(--ink); color: var(--paper);
+        font-size: 42px; font-weight: 700; white-space: nowrap;
+    }
+    .cta svg { width: 40px; height: 40px; }
+    .brand { display: none; }
+
+    /* 9:16 status */
+    body.r916 .card { width: 1080px; height: 1920px; padding-top: 160px; }
+    body.r916 .chip { font-size: 42px; }
+    body.r916 h1 { margin-top: 70px; font-size: 136px; }
+    body.r916 h1 .love { font-size: 156px; margin-top: 18px; }
+    body.r916 .stage { margin-top: 170px; width: 470px; height: 406px; }
+    body.r916 .aside { margin-top: 100px; font-size: 40px; }
+    body.r916 .cta { margin-top: 50px; font-size: 46px; }
+    body.r916 .brand { display: block; position: absolute; bottom: 116px; left: 50%; transform: translateX(-50%); width: 290px; }
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="frame"></div>
+    <div class="chip"><i></i>חבר מביא חבר</div>
+    <h1><span class="l">שדכו את החבר/ה המושלמ/ת</span><span class="l">לצוות הפרתיה</span><span class="love">ותקבלו את אהבתנו לנצח!</span></h1>
+    <div class="stage">
+        <div class="peeker" id="deer"></div>
+        <div class="heart">
+            <svg viewBox="0 0 100 90" aria-hidden="true">
+                <path d="M50 87 C21 66 3 49 3 28 C3 13.5 14 3 27.5 3 C38 3 46 9 50 18 C54 9 62 3 72.5 3 C86 3 97 13.5 97 28 C97 49 79 66 50 87 Z"
+                      fill="#E8873B" stroke="#2E1710" stroke-width="1.6" stroke-linejoin="round"/>
+                <path d="M15 24 C16 15 22 10 30 10" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <span class="spark" style="left: -64px; top: 40px;">✦</span>
+        <span class="spark" style="left: -30px; top: 236px; font-size: 30px;">✦</span>
+        <div class="ticket">
+            <svg viewBox="0 0 300 122" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M14 0 H66 A16 16 0 0 0 98 0 H286 A14 14 0 0 1 300 14 V47 A14 14 0 0 0 300 75 V108 A14 14 0 0 1 286 122 H98 A16 16 0 0 0 66 122 H14 A14 14 0 0 1 0 108 V75 A14 14 0 0 0 0 47 V14 A14 14 0 0 1 14 0 Z"
+                      fill="#F2C79C" stroke="#2E1710" stroke-width="4" stroke-linejoin="round"/>
+                <path d="M82 18 V104" stroke="#2E1710" stroke-width="3.5" stroke-dasharray="9 8" stroke-linecap="round"/>
+            </svg>
+            <div class="t-stub"><img src="../team-v2/emblem.webp" alt=""></div>
+            <div class="t-txt"><span class="t-k">שובר</span><span class="t-a"><small>₪</small>50</span></div>
+        </div>
+    </div>
+    <p class="aside">(וגם שובר של 50 ש״ח למימוש בפרתיה<br>אבל מה זה משנה)</p>
+    <div class="cta">לטופס ההמלצה בקישור<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></div>
+    <img class="brand" src="../team-v2/wordmark-ink.webp" alt="">
+</div>
+<script src="../team-v2/deer.js"></script>
+<script>
+    if (new URLSearchParams(location.search).get('r') === '916') document.body.classList.add('r916');
+    document.getElementById('deer').innerHTML = Deer.svg({ mood: 'wink', title: '' });
+    // every headline line fits inside the frame (the first one is long)
+    document.fonts.ready.then(() => {
+        const max = document.body.classList.contains('r916') ? 900 : 940;
+        document.querySelectorAll('h1 .l, h1 .love').forEach((el) => {
+            let fs = parseFloat(getComputedStyle(el).fontSize);
+            while (el.offsetWidth > max && fs > 60) { fs -= 2; el.style.fontSize = fs + 'px'; }
+        });
+        document.body.dataset.fitted = '1';
+    });
+</script>
+</body>
+</html>
