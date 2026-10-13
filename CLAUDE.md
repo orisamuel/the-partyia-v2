@@ -23,7 +23,7 @@
 - **לנתק את כולם** (טלפון שאבד, סיסמה שדלפה): להחליף סיסמה בגיליון, ואז להריץ `logoutAllSessions` מעורך ה-Apps Script.
 - **פעולה ציבורית חדשה:** להוסיף ל-`PUBLIC_ACTIONS`, ולהעביר כל טקסט מהמשתמש דרך `asText_` (כדי ש-`=` בתחילת שם לא ייכנס לגיליון כנוסחה). דף חדש במערכת ההזמנות: רק דרך `apiCall`, אף פעם לא fetch עם פרמטרים בכתובת.
 - ירדו מה-API: `debugEcho`, `seedInventory`, `seedBeerTypes` (שתי האחרונות נשארו בקוד, להרצה מהעורך בלבד).
-- **קבצים פנימיים:** `_config.yml` (Jekyll של Pages) מוציא מהאתר את `CLAUDE.md`, `microcopy.md`, `README.md`, `apps-script/`, תיקיות הבנייה של הסרטונים (`team/trailer/`, `team-v2/video/`, `team-v3/ad/`, `team-v3/ad2/`) ואת קובצי `og-card.html`. תיקייה חדשה ברשימה נכתבת עם `/` בסוף: בלי `/` זו התאמה לפי תחילת השם, ו-`team-v3/ad` היה מוריד גם את `team-v3/ad2-1080.mp4`.
+- **קבצים פנימיים:** `_config.yml` (Jekyll של Pages) מוציא מהאתר את `CLAUDE.md`, `microcopy.md`, `README.md`, `apps-script/`, תיקיות הבנייה של הסרטונים (`team/trailer/`, `team-v2/video/`, `team-v3/ad/`, `team-v3/ad2/`) ואת קובצי `og-card.html` (וגם `team-refer/card.html` ו-`team-refer/render.mjs`). תיקייה חדשה ברשימה נכתבת עם `/` בסוף: בלי `/` זו התאמה לפי תחילת השם, ו-`team-v3/ad` היה מוריד גם את `team-v3/ad2-1080.mp4`.
 - **אחרי שינוי בשרת:** לבדוק כאורח שהפעולות הפרטיות מחזירות `authError`, ולהדפיס רק את מבנה התשובה, אף פעם לא נתונים.
 
 ## עמוד הצוות: הכתובת הסופית היא `team.html`
