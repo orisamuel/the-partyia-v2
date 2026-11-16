@@ -92,7 +92,7 @@
     .result { display: none; text-align: center; }
     .result.on { display: block; }
     .result .emo { font-size: 50px; line-height: 1.1; }
-    .result h3 { margin-top: 6px; font-weight: 800; font-size: 28px; line-height: 1.1; }
+    .result h3 { margin-top: 6px; font-weight: 800; font-size: 28px; line-height: 1.15; text-wrap: balance; }
     .result p { margin-top: 10px; }
     .result .place { display: inline-block; margin-top: 12px; padding: 6px 16px; border-radius: 999px; background: var(--ink); color: var(--paper); font-weight: 700; }
     .result.wait-list .place { background: var(--sun); color: var(--ink); }
@@ -215,7 +215,7 @@ function showResult(r) {
         $('r-text').textContent = waiting ? 'המספר הזה כבר ברשימת ההמתנה.' : 'המספר הזה כבר רשום אצלנו, והמקום שלך שמור.';
     } else if (waiting) {
         show('r-emo', false); show('r-place', false);
-        $('r-title').textContent = 'כל המקומות כבר נתפסו 😞';
+        $('r-title').textContent = 'כל המקומות כבר נתפסו 😞';
         $('r-text').textContent = 'אבל צירפנו אותך לרשימת המתנה';
     } else {
         show('r-emo', true); show('r-place', true);
