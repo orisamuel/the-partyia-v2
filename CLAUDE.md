@@ -83,3 +83,8 @@
 - `cues.json` הוא מקור האמת לתזמון (קריינות, כותרות, אפקטים). `mix.mjs` בונה ממנו את `audio/mix.wav`. `trailer.html` האנימציה (GSAP, 1080x1920, `window.__seek(t)`), `render.mjs` מצלם פריימים ומוציא `team/trailer.mp4` (720p לעמוד) ו-`team/trailer-1080.mp4`.
 - רינדור מחדש: שרת סטטי על הריפו בפורט 8765 (`python -m http.server 8765`), `node team/trailer/mix.mjs`, ואז `node team/trailer/render.mjs` (צריך puppeteer-core ו-ffmpeg).
 - קול: ElevenLabs ישיר (`ELEVENLABS_API_KEY`), מודל `eleven_v4`, קול Adam (`pNInz6obpgDQGcFmaJgB`). "הפרתיה" נכתב לקריין `הַפָּארְטִיָּה`. "שֶׁלָּכֶם" בניקוד יצא "של לוחם", בלי ניקוד יצא נכון. לבדוק כל טייק בתמלול (scribe) לפני שמשתמשים. המוזיקה והאפקטים מ-ElevenLabs (music + sound-generation).
+
+## ערב "קלוד ובירה" (`claude.html`, 16/11/2026)
+- דף הרשמה לערב "קלוד קוד למתחילים" של אורי, רביעי 25/11/2026. נכסים ב-`claude-evening/` (תמונה, תמונת שיתוף, גופן), הלוגו מ-`team-v2/`.
+- **השרת שלו נפרד מהשרת של הפרתיה:** Apps Script + גיליון בחשבון ori@42creative.co.il. הקוד, הבדיקות וכל ההחלטות בפרויקט `Desktop\קלוד\claude-beginners-evening` (`CLAUDE.md` ו-`backend/`). לא נוגע ב-`apps-script/` של הפרתיה.
+- בפרסום 15 מקומות. השרת מאשר רק 10, ואחר כך רשימת המתנה. הדף לא יודע את התקרה.
