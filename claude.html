@@ -15,7 +15,7 @@
 <!--
   ההרשמה לערב "קלוד ובירה" (קלוד קוד למתחילים), רביעי 25/11/2026.
   השרת שלו נפרד מהשרת של מערכת ההזמנות: Apps Script + גיליון בחשבון 42, הקוד בפרויקט claude-beginners-evening (backend/).
-  15 מקומות בפרסום. השרת מחליט מתי עוברים לרשימת המתנה, ולא שולח לדף את התקרה.
+  15 מקומות בפרסום. השרת מחליט מתי עוברים לרשימת המתנה. הדף לא מציג כמה מקומות נשארו (אורי, 16/11).
   הנכסים בתיקייה claude-evening/ (תמונה, תמונת שיתוף, גופן). הלוגו מ-team-v2/.
 -->
 <style>
@@ -45,7 +45,6 @@
         background: var(--ink); color: var(--paper); box-shadow: 0 14px 34px rgba(46, 23, 16, .28); }
     .facts .when { font-weight: 800; font-size: 28px; line-height: 1.1; color: var(--sun); white-space: nowrap; }
     .facts .where { margin-top: 4px; font-size: 18px; font-weight: 600; }
-    .spots { margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: #3d2219; color: var(--peach); font-size: 15px; font-weight: 600; }
     .chip.hot { background: var(--sun); color: var(--ink); }
     .cta { display: flex; align-items: center; justify-content: center; margin-top: 14px; min-height: 52px; border-radius: 14px;
@@ -115,7 +114,6 @@
     <div class="facts">
         <div class="when">רביעי 25.11 · 20:00</div>
         <div class="where">בפרתיה, נופי פרת · בהרשמה מראש</div>
-        <div class="spots"><span class="chip" id="spots">15 מקומות בלבד</span></div>
         <a class="cta" href="#register">להרשמה</a>
     </div>
 
@@ -201,31 +199,26 @@ async function apiCall(action, params, timeoutMs) {
     } finally { clearTimeout(t); }
 }
 
-// how many places are left (numbers only)
-function showSpots(s) {
-    if (!s || !s.success) return;
-    const el = $('spots');
-    if (s.left > 0) { el.textContent = s.left === 1 ? 'נשאר מקום אחד!' : `נשארו ${s.left} מקומות`; el.classList.toggle('hot', s.left <= 4); }
-    else { el.textContent = 'המקומות נגמרו · אפשר להירשם לרשימת ההמתנה'; el.classList.add('hot'); $('send').textContent = 'להירשם לרשימת ההמתנה'; }
-}
-apiCall('status', {}, 40000).then(showSpots).catch(() => {});
+// wake the server while the page is read, so the registration itself answers fast
+apiCall('ping', {}, 60000).catch(() => {});
 
 function showResult(r) {
     const waiting = r.status === 'רשימת המתנה';
     const box = $('result');
     box.classList.toggle('wait-list', waiting);
     $('form').style.display = 'none';
+    const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
     if (r.already) {
+        show('r-emo', true); show('r-place', false);
         $('r-emo').textContent = '👋';
         $('r-title').textContent = 'כבר נרשמת';
-        $('r-place').textContent = waiting ? `רשימת המתנה · מקום ${r.place}` : 'יש לך מקום';
-        $('r-text').textContent = 'המספר הזה כבר רשום אצלנו. אין צורך לעשות שום דבר נוסף.';
+        $('r-text').textContent = waiting ? 'המספר הזה כבר ברשימת ההמתנה.' : 'המספר הזה כבר רשום אצלנו, והמקום שלך שמור.';
     } else if (waiting) {
-        $('r-emo').textContent = '⏳';
-        $('r-title').textContent = 'נרשמת לרשימת ההמתנה';
-        $('r-place').textContent = `מקום ${r.place} ברשימת ההמתנה`;
-        $('r-text').textContent = 'כל המקומות כבר תפוסים. אם יתפנה מקום, אורי יעדכן אותך בוואטסאפ.';
+        show('r-emo', false); show('r-place', false);
+        $('r-title').textContent = 'כל המקומות כבר נתפסו 😞';
+        $('r-text').textContent = 'אבל צירפנו אותך לרשימת המתנה';
     } else {
+        show('r-emo', true); show('r-place', true);
         $('r-emo').textContent = '🎉';
         $('r-title').textContent = 'נרשמת! יש לך מקום';
         $('r-place').textContent = 'המקום שלך שמור';
