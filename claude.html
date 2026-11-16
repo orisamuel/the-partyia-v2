@@ -8,7 +8,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="קלוד ובירה · הפרתיה">
 <meta property="og:description" content="בואו ללמוד לעבוד עם קלוד קוד. רביעי 25.11, 20:00, בפרתיה. בהרשמה מראש.">
-<meta property="og:image" content="https://orisamuel.github.io/the-partyia-v2/claude-evening/og.jpg?v=1">
+<meta property="og:image" content="https://orisamuel.github.io/the-partyia-v2/claude-evening/og.jpg?v=2">
 <meta property="og:image:width" content="1254">
 <meta property="og:image:height" content="1254">
 <meta name="theme-color" content="#F4EADB">
@@ -31,22 +31,14 @@
     .wrap { max-width: 560px; margin: 0 auto; }
     .en { direction: ltr; unicode-bidi: isolate; }
 
-    /* hero: the ad, as a page: logo, headline, the rhyme, the stamp, the photo */
+    /* hero: logo, headline, the line under it, the photo */
     .hero { position: relative; padding: 22px 16px 0; text-align: center; }
     .hero .logo { display: block; margin: 0 auto; width: 92px; height: auto; }
     .hero .word { display: block; margin: 4px auto 0; width: 112px; height: auto; }
     h1 { margin-top: 10px; font-weight: 800; font-size: 19.5vw; line-height: .95; letter-spacing: -1px; white-space: nowrap; }
-    .rhyme { margin-top: 8px; font-weight: 800; font-size: 8.4vw; line-height: 1.16; color: var(--sun); }
-    .rhyme .l { display: block; }
-    .r { position: relative; display: inline-block; color: var(--ink); }
-    .r::after { content: ''; position: absolute; left: -3px; right: -3px; bottom: -4px; height: 8px;
-        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 14' preserveAspectRatio='none'%3E%3Cpath d='M2 9 C 12 3, 22 13, 32 7 S 50 4, 58 8' fill='none' stroke='%23C9381E' stroke-width='4.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%; }
-    .stamp { position: relative; z-index: 2; display: block; width: fit-content; margin: 14px auto -22px 6px; padding: 10px 14px 12px;
-        border: 4px solid #C9381E; border-radius: 10px; outline: 1.5px solid #C9381E; outline-offset: -9px;
-        color: #C9381E; font-weight: 800; font-size: 15px; line-height: 1.22; transform: rotate(-6deg); background: rgba(244, 234, 219, .94); }
-    .stamp b { display: block; font-size: 20px; margin: 1px 0; }
+    .rhyme { margin: 8px 0 18px; font-weight: 800; font-size: 6.4vw; line-height: 1.2; }
     .photo { display: block; width: calc(100% + 32px); margin: 0 -16px; height: auto; aspect-ratio: 1200 / 410; object-fit: cover; }
-    @media (min-width: 560px) { h1 { font-size: 110px; } .rhyme { font-size: 47px; } .stamp { font-size: 18px; } .stamp b { font-size: 24px; } }
+    @media (min-width: 560px) { h1 { font-size: 110px; } .rhyme { font-size: 34px; } }
 
     /* the facts, over the bottom of the photo */
     .facts { position: relative; z-index: 3; margin: -34px 16px 0; padding: 18px 18px 16px; border-radius: 22px;
@@ -116,8 +108,7 @@
         <img class="logo" src="team-v2/emblem.webp" alt="הפרתיה" width="900" height="783">
         <img class="word" src="team-v2/wordmark-ink.webp" alt="" width="1157" height="383">
         <h1>קלוד ובירה</h1>
-        <p class="rhyme"><span class="l">בואו ללמ<span class="r">וד</span></span><span class="l">לעב<span class="r">וד</span> עם קל<span class="r">וד</span> ק<span class="r">וד</span></span></p>
-        <div class="stamp">החרוז לא יצא בכוונה.<b>אבל איזה מגניב</b>שזה יצא ככה, אה?</div>
+        <p class="rhyme">בואו ללמוד לעבוד עם קלוד קוד</p>
         <img class="photo" src="claude-evening/photo.jpg" alt="מחשב נייד עם קוד וכוס בירה על הבר" width="1200" height="410" fetchpriority="high">
     </header>
 
