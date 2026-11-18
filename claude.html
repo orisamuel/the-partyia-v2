@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>קלוד ובירה · הפרתיה</title>
-<meta name="description" content="ערב היכרות מעשי עם קלוד קוד מאפס, עם בירה ביד. רביעי 25.11, 20:00, בפרתיה. בהרשמה מראש, 15 מקומות.">
+<meta name="description" content="ערב היכרות מעשי עם קלוד קוד מאפס, עם בירה ביד. רביעי 25.11, 20:00, בפרתיה. הרשימה מלאה, ואפשר להירשם לרשימת המתנה.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="קלוד ובירה · הפרתיה">
-<meta property="og:description" content="ערב היכרות מעשי עם קלוד קוד מאפס, עם בירה ביד. רביעי 25.11, 20:00, בפרתיה. בהרשמה מראש.">
+<meta property="og:description" content="ערב היכרות מעשי עם קלוד קוד מאפס, עם בירה ביד. רביעי 25.11, 20:00, בפרתיה. הרשימה מלאה, ואפשר להירשם לרשימת המתנה.">
 <meta property="og:image" content="https://orisamuel.github.io/the-partyia-v2/claude-evening/og.jpg?v=3">
 <meta property="og:image:width" content="1254">
 <meta property="og:image:height" content="1254">
@@ -16,6 +16,7 @@
   ההרשמה לערב "קלוד ובירה" (קלוד קוד למתחילים), רביעי 25/11/2026.
   השרת שלו נפרד מהשרת של מערכת ההזמנות: Apps Script + גיליון בחשבון 42, הקוד בפרויקט claude-beginners-evening (backend/).
   15 מקומות בפרסום. השרת מחליט מתי עוברים לרשימת המתנה. הדף לא מציג כמה מקומות נשארו (אורי, 16/11).
+  מ-18/11 הרשימה מלאה (אורי): הדף אומר את זה, הטופס הוא לרשימת המתנה, והשרת (FULL) שם שם כל הרשמה חדשה.
   הנכסים בתיקייה claude-evening/ (תמונה, תמונת שיתוף, גופן). הלוגו מ-team-v2/.
 -->
 <style>
@@ -119,8 +120,8 @@
 
     <div class="facts">
         <div class="when">רביעי 25.11 · 20:00</div>
-        <div class="where">הפרתיה · בהרשמה מראש</div>
-        <a class="cta" href="#register">לשמור מקום</a>
+        <div class="where">הפרתיה · הרשימה מלאה</div>
+        <a class="cta" href="#register">לרשימת המתנה</a>
     </div>
 
     <section>
@@ -164,12 +165,13 @@
     </section>
 
     <section id="register">
-        <h2>שומרים לכם מקום</h2>
+        <h2 id="reg-title">רשימת המתנה</h2>
+        <p class="lead" id="reg-lead">הרשימה מלאה כבר, אבל אפשר להירשם לרשימת המתנה, ואולי נפתח עוד ערב בהמשך.</p>
         <form id="form" novalidate>
             <label for="name">איך קוראים לכם?</label>
             <input type="text" id="name" name="name" autocomplete="name" maxlength="60" required>
 
-            <label for="phone">טלפון <small>(בשביל קבוצת הוואטסאפ של הערב)</small></label>
+            <label for="phone">טלפון <small>(כדי שנוכל לחזור אליכם)</small></label>
             <input type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" maxlength="20" required>
 
             <div class="q" id="q-computer">איזה מחשב תביאו?</div>
@@ -191,7 +193,7 @@
 
             <div class="hp" aria-hidden="true"><label for="website">אתר</label><input type="text" id="website" name="website" tabindex="-1" autocomplete="off"></div>
 
-            <button class="send" type="submit" id="send">שמרו לי מקום</button>
+            <button class="send" type="submit" id="send">צרפו אותי לרשימת המתנה</button>
             <div class="wait" id="wait" aria-live="polite"></div>
             <div class="err" id="err" role="alert"></div>
         </form>
@@ -234,15 +236,18 @@ function showResult(r) {
     box.classList.toggle('wait-list', waiting);
     $('form').style.display = 'none';
     const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
+    // someone who got a place before the list filled up should not read "the list is full" above it
+    if (!waiting) { $('reg-title').textContent = 'ההרשמה שלך'; show('reg-lead', false); }
     if (r.already) {
         show('r-emo', true); show('r-place', false);
         $('r-emo').textContent = '👋';
         $('r-title').textContent = 'כבר נרשמת';
         $('r-text').textContent = waiting ? 'המספר הזה כבר ברשימת ההמתנה.' : 'המספר הזה כבר רשום אצלנו, והמקום שלך שמור.';
     } else if (waiting) {
-        show('r-emo', false); show('r-place', false);
-        $('r-title').textContent = 'כל המקומות כבר נתפסו 😞';
-        $('r-text').textContent = 'אבל צירפנו אותך לרשימת המתנה';
+        show('r-emo', true); show('r-place', false);
+        $('r-emo').textContent = '🙌';
+        $('r-title').textContent = 'צירפנו אותך לרשימת המתנה';
+        $('r-text').textContent = 'אם יתפנה מקום, נחזור אליך.';
     } else {
         show('r-emo', true); show('r-place', false);
         $('r-emo').textContent = '🎉';
@@ -274,7 +279,7 @@ $('form').addEventListener('submit', async (ev) => {
     // one id per attempt, so a second click or a retry never registers twice
     data.rid = store.get('cb-rid') || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
     store.set('cb-rid', data.rid);
-    send.disabled = true; send.textContent = 'שומרים לך מקום...';
+    send.disabled = true; send.textContent = 'מצרפים אותך...';
     const slow = setTimeout(() => { wait.textContent = 'זה יכול לקחת עד חצי דקה. לא לסגור את הדף.'; }, 4000);
     try {
         const r = await apiCall('register', data, 60000);
@@ -283,7 +288,7 @@ $('form').addEventListener('submit', async (ev) => {
         showResult(r);
     } catch (e) {
         fail(e.name === 'AbortError' ? 'לא הצלחנו להתחבר לשרת. אפשר לנסות שוב, זה לא יירשם פעמיים.' : (e.message || 'משהו השתבש. אפשר לנסות שוב.'));
-        send.disabled = false; send.textContent = 'שמרו לי מקום';
+        send.disabled = false; send.textContent = 'צרפו אותי לרשימת המתנה';
     } finally { clearTimeout(slow); wait.textContent = ''; }
 });
 </script>
