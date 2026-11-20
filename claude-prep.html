@@ -17,7 +17,8 @@
   אורי, 20/11: "רק הורדות ומנוי (והמלצה לבוא עם כרטיס אשראי בשביל עוד כל מיני דברים)". לא מדברים עם קלוד לפני הערב,
   ואין בפרתיה וויי-פיי (עובדים מנקודה חמה). מבנה הערב והחלטות: הפרויקט claude-beginners-evening (plan.md, CLAUDE.md).
   הקישורים והפקודות נבדקו ב-20/11/2026: Git 2.56.1, Python 3.14.10, Node 26.13.1 LTS (קישורים ישירים), winget Gyan.FFmpeg,
-  Homebrew (השורה מ-brew.sh), ו-brew: git, python@3.13, node, ffmpeg. הסימונים ✓ נשמרים רק בדפדפן של מי שמסמן.
+  Homebrew (השורה מ-brew.sh), ו-brew: git, python@3.13, node, ffmpeg, gh. winget GitHub.cli. חשבון GitHub (מומלץ, 20/11): כדי לפרסם אתרים ב-GitHub Pages בערב.
+  הסימונים ✓ נשמרים רק בדפדפן של מי שמסמן.
 -->
 <style>
     @font-face { font-family: 'Karantina'; font-weight: 700; font-display: swap; src: url(claude-evening/fonts/karantina-hebrew.woff2) format('woff2'); unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+FB1D-FB4F; }
@@ -137,7 +138,7 @@
             <button type="button" data-os="mac" aria-pressed="false">Mac</button>
         </div>
         <div class="track"><div class="fill" id="fill"></div></div>
-        <div class="count" id="count">0 מתוך 4</div>
+        <div class="count" id="count">0 מתוך 5</div>
     </div>
 
     <ol class="steps">
@@ -173,6 +174,11 @@
                         <p>לוחצים על התחל, כותבים <bdi>PowerShell</bdi> ופותחים. מדביקים את השורה הזאת ולוחצים <bdi>Enter</bdi>:</p>
                         <div class="code" id="ffmpegCmd">winget install -e --id Gyan.FFmpeg --accept-source-agreements --accept-package-agreements</div>
                         <div><button class="copy" type="button" data-copy="ffmpegCmd">להעתיק את השורה</button></div></div>
+                    <div class="tool"><b class="t"><bdi>GitHub CLI</bdi></b>
+                        <p class="why-it">איתו קלוד מפרסם בשבילכם אתרים ב-<bdi>GitHub Pages</bdi>.</p>
+                        <p>באותו <bdi>PowerShell</bdi>, מדביקים ולוחצים <bdi>Enter</bdi>:</p>
+                        <div class="code" id="ghCmd">winget install -e --id GitHub.cli --accept-source-agreements --accept-package-agreements</div>
+                        <div><button class="copy" type="button" data-copy="ghCmd">להעתיק את השורה</button></div></div>
                 </div>
                 <div class="tools mac-only">
                     <div class="tool"><b class="t">1. <bdi>Homebrew</bdi></b>
@@ -183,9 +189,9 @@
                         <p style="margin-top: 6px;">הוא מבקש את הסיסמה של המק. התווים לא מופיעים כשמקלידים: מקלידים בכל זאת ולוחצים <bdi>Enter</bdi>. ההתקנה לוקחת כמה דקות טובות.</p>
                         <p><b>בסוף כתוב <bdi>Next steps</bdi>, עם כמה שורות.</b> מעתיקים אותן כמו שהן לאותו <bdi>Terminal</bdi> ומריצים.</p></div>
                     <div class="tool"><b class="t">2. כל השאר, בשורה אחת</b>
-                        <p class="why-it"><bdi>Git</bdi>, <bdi>Python</bdi>, <bdi>Node</bdi> ו-<bdi>ffmpeg</bdi>: התוכנות שקלוד עובד איתן כשהוא בונה אקסל ומסמכים, אתרים, ועורך וידאו.</p>
+                        <p class="why-it"><bdi>Git</bdi>, <bdi>Python</bdi>, <bdi>Node</bdi>, <bdi>ffmpeg</bdi> ו-<bdi>GitHub CLI</bdi>: התוכנות שקלוד עובד איתן כשהוא בונה אקסל ומסמכים, אתרים, עורך וידאו, ומפרסם לאינטרנט.</p>
                         <p>באותו <bdi>Terminal</bdi>, מדביקים ולוחצים <bdi>Enter</bdi>:</p>
-                        <div class="code" id="brewAll">brew install git python@3.13 node ffmpeg</div>
+                        <div class="code" id="brewAll">brew install git python@3.13 node ffmpeg gh</div>
                         <div><button class="copy" type="button" data-copy="brewAll">להעתיק את השורה</button></div></div>
                 </div>
                 <p class="callout"><b>בסוף:</b> מפעילים את המחשב מחדש.</p>
@@ -203,8 +209,18 @@
             </div>
         </li>
 
+        <li class="step" data-step="github">
+            <div class="step-head"><span class="n">4</span><h3>חשבון ב-<bdi>GitHub</bdi> <span class="tag">מומלץ</span></h3></div>
+            <div class="body">
+                <p>חינם. בערב נחבר אותו לקלוד, כדי שיוכל לפרסם בשבילכם אתרים ב-<bdi>GitHub Pages</bdi>.</p>
+                <div class="btns"><a class="btn" href="https://github.com/signup" target="_blank" rel="noopener">לפתיחת חשבון ב-<bdi>GitHub</bdi></a></div>
+                <p class="ok">נכנסים ל-<bdi>github.com</bdi> עם החשבון.</p>
+                <label class="check"><input type="checkbox">סיימתי את השלב הזה</label>
+            </div>
+        </li>
+
         <li class="step" data-step="hotspot">
-            <div class="step-head"><span class="n">4</span><h3>בודקים נקודה חמה</h3></div>
+            <div class="step-head"><span class="n">5</span><h3>בודקים נקודה חמה</h3></div>
             <div class="body">
                 <p>בפרתיה עובדים מהטלפון. מפעילים בטלפון נקודה חמה (<bdi>Hotspot</bdi>), ומחברים אליה את המחשב.</p>
                 <p class="ok">המחשב גולש דרך הטלפון.</p>
