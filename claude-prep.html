@@ -4,19 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>קלוד ובירה · מתכוננים לרביעי</title>
-<meta name="description" content="מה מתקינים בבית לפני ערב קלוד ובירה, עם כל הקישורים. חשוב מאוד, כדי שקלוד יעבוד חלק ובערב רק נעשה.">
+<meta name="description" content="מה מורידים ומתקינים בבית לפני ערב קלוד ובירה, עם כל הקישורים, כדי שבערב עצמו נתחיל לעבוד מהדקה הראשונה.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="קלוד ובירה · מתכוננים לרביעי">
-<meta property="og:description" content="מה מתקינים בבית לפני הערב, עם כל הקישורים. חשוב מאוד, כדי שקלוד יעבוד חלק.">
+<meta property="og:description" content="מה מורידים ומתקינים בבית לפני הערב, עם כל הקישורים.">
 <meta property="og:image" content="https://orisamuel.github.io/the-partyia-v2/claude-evening/og.jpg?v=3">
 <meta property="og:image:width" content="1254">
 <meta property="og:image:height" content="1254">
 <meta name="theme-color" content="#F4EADB">
 <!--
   אתר ההכנה לערב "קלוד ובירה" (רביעי 25/11/2026), למשתתפים שנרשמו. נשלח בקבוצת הוואטסאפ של הערב.
-  מבנה הערב והחלטות: הפרויקט claude-beginners-evening (plan.md, CLAUDE.md). דף ההרשמה: claude.html.
-  הקישורים נבדקו ב-20/11/2026. ההורדות ל-Windows הן קישורים ישירים לקובצי ההתקנה (Git 2.56.1, Python 3.14.10, Node 26.13.1 LTS). התיקייה המבולגנת (claude-evening/messy-folder.zip) בדויה כולה.
-  הסימונים ✓ נשמרים רק בדפדפן של מי שמסמן.
+  אורי, 20/11: "רק הורדות ומנוי (והמלצה לבוא עם כרטיס אשראי בשביל עוד כל מיני דברים)". לא מדברים עם קלוד לפני הערב,
+  ואין בפרתיה וויי-פיי (עובדים מנקודה חמה). מבנה הערב והחלטות: הפרויקט claude-beginners-evening (plan.md, CLAUDE.md).
+  הקישורים והפקודות נבדקו ב-20/11/2026: Git 2.56.1, Python 3.14.10, Node 26.13.1 LTS (קישורים ישירים), winget Gyan.FFmpeg,
+  Homebrew (השורה מ-brew.sh), ו-brew: git, python@3.13, node, ffmpeg. הסימונים ✓ נשמרים רק בדפדפן של מי שמסמן.
 -->
 <style>
     @font-face { font-family: 'Karantina'; font-weight: 700; font-display: swap; src: url(claude-evening/fonts/karantina-hebrew.woff2) format('woff2'); unicode-range: U+0590-05FF, U+200C-2010, U+20AA, U+FB1D-FB4F; }
@@ -33,30 +34,26 @@
     .wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 64px; }
     a { color: var(--burnt); font-weight: 600; }
     b, strong { font-weight: 700; }
-    .en, code, kbd { direction: ltr; unicode-bidi: isolate; }
-    h1, h2, .karantina { font-family: 'Karantina', 'Rubik', sans-serif; font-weight: 700; line-height: .95; }
+    .en, code, kbd, bdi { direction: ltr; unicode-bidi: isolate; }
+    h1, h2 { font-family: 'Karantina', 'Rubik', sans-serif; font-weight: 700; line-height: .95; }
 
-    /* head */
     header { padding: 26px 0 6px; text-align: center; }
     header img { width: 86px; height: auto; display: block; margin: 0 auto 8px; }
     .meta { font-size: 15px; font-weight: 600; color: var(--burnt); }
     h1 { font-size: 64px; margin-top: 4px; }
     h1 span { display: block; font-size: 40px; color: var(--burnt); margin-top: 4px; }
 
-    /* "on a phone" note */
     .phone { display: none; margin-top: 16px; padding: 14px 16px; border-radius: 18px; background: var(--peach); font-size: 16px; }
     .phone.on { display: block; }
     .phone b { display: block; font-size: 17px; }
-    .phone button { margin-top: 10px; }
 
-    /* why at home */
     .why { margin-top: 18px; padding: 20px 20px 22px; border-radius: 22px; background: var(--ink); color: var(--paper); }
     .why h2 { font-size: 40px; color: var(--sun); }
-    .why ol { margin: 10px 22px 0 0; display: grid; gap: 8px; }
+    .why .sub { margin-top: 6px; color: var(--peach); font-weight: 600; }
+    .why ol { margin: 12px 22px 0 0; display: grid; gap: 8px; }
     .why li::marker { color: var(--sun); font-weight: 700; }
-    .why .when { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(242, 199, 156, .35); color: var(--peach); font-weight: 600; }
+    .why .note { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(242, 199, 156, .35); color: var(--peach); font-weight: 600; }
 
-    /* progress, sticky */
     .bar { position: sticky; top: 0; z-index: 20; margin: 20px -16px 0; padding: 10px 16px; background: var(--paper); border-bottom: 2px solid var(--ink); display: flex; align-items: center; gap: 12px; }
     .bar .track { flex: 1; height: 10px; border-radius: 99px; background: var(--paper-2); overflow: hidden; }
     .bar .fill { height: 100%; width: 0; background: var(--ok); border-radius: 99px; transition: width .3s; }
@@ -65,64 +62,42 @@
     .os button { border: 0; background: var(--card); color: var(--ink); font: 600 15px 'Rubik', sans-serif; padding: 7px 14px; min-height: 40px; cursor: pointer; }
     .os button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 
-    /* steps */
-    .steps { list-style: none; margin-top: 18px; display: grid; gap: 16px; counter-reset: s; }
-    .step { position: relative; padding: 18px 18px 20px; border-radius: 22px; background: var(--card); border: 2px solid var(--ink); }
+    .steps { list-style: none; margin-top: 18px; display: grid; gap: 16px; }
+    .step { padding: 18px 18px 20px; border-radius: 22px; background: var(--card); border: 2px solid var(--ink); min-width: 0; }
     .step.done { border-color: var(--ok); background: var(--okbg); }
     .step-head { display: flex; align-items: flex-start; gap: 12px; }
     .n { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--sun); font-family: 'Karantina', sans-serif; font-size: 32px; line-height: 1; }
     .step.done .n { background: var(--ok); color: #fff; }
     .step h3 { flex: 1; font-size: 21px; line-height: 1.3; padding-top: 6px; }
-    .tag { display: inline-block; margin-right: 6px; padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; vertical-align: 2px; }
-    .tag.rec { background: var(--sun); color: var(--ink); }
-    .tag.opt { background: var(--paper-2); color: var(--ink-2); }
+    .tag { display: inline-block; margin-right: 6px; padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; vertical-align: 2px; background: var(--sun); color: var(--ink); }
+    .body { margin-top: 10px; display: grid; gap: 10px; min-width: 0; }
+    .why-it { color: var(--ink-2); font-size: 15.5px; }
+    .ok { padding: 9px 12px; border-radius: 12px; background: var(--paper-2); font-size: 15.5px; }
+    .ok::before { content: '✓ איך יודעים שזה עבד: '; font-weight: 700; color: var(--ok); }
+    .callout { padding: 9px 12px; border-radius: 12px; background: var(--peach); font-size: 15.5px; }
+    .tools { display: grid; gap: 10px; min-width: 0; }
+    .tool { padding: 12px 14px; border-radius: 16px; border: 2px solid var(--line); background: #fff; min-width: 0; }
+    .tool b.t { display: block; font-size: 18px; }
+    .tool p { margin-top: 4px; font-size: 16px; }
+    .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 18px; border-radius: 14px; border: 2px solid var(--ink); background: var(--sun); color: var(--ink); font: 700 16px 'Rubik', sans-serif; text-decoration: none; cursor: pointer; }
+    .btn.ghost { background: var(--card); }
+    .win-only, .mac-only { display: none; }
+    body[data-os="win"] .win-only, body[data-os="mac"] .mac-only { display: grid; }
+    .code { margin-top: 8px; direction: ltr; text-align: left; padding: 12px 14px; border-radius: 14px; background: var(--ink); color: #FFE8CC; font: 14.5px/1.5 Consolas, 'Courier New', monospace; overflow-x: auto; white-space: pre; }
+    .copy { margin-top: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: var(--ink); color: var(--paper); font: 600 16px 'Rubik', sans-serif; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+    .copy svg { width: 18px; height: 18px; }
+    .copy.done { background: var(--ok); }
     .check { margin-top: 4px; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; border-radius: 14px; border: 2px dashed var(--line); font-size: 16px; font-weight: 700; color: var(--ink-2); cursor: pointer; user-select: none; }
     .check input { width: 24px; height: 24px; accent-color: var(--ok); cursor: pointer; }
     .step.done .check { border-style: solid; border-color: var(--ok); color: var(--ok); background: #fff; }
-    .note { padding: 9px 12px; border-radius: 12px; background: var(--peach); font-size: 15.5px; }
-    .body { margin-top: 10px; display: grid; gap: 10px; }
-    .body p { font-size: 17px; }
-    .why-it { color: var(--ink-2); font-size: 15.5px; }
-    .why-it b { color: var(--ink); }
-    .ok { padding: 9px 12px; border-radius: 12px; background: var(--paper-2); font-size: 15.5px; }
-    .ok::before { content: '✓ איך יודעים שזה עבד: '; font-weight: 700; color: var(--ok); }
-    .tools { display: grid; gap: 10px; }
-    .step, .body, .tools, .tool { min-width: 0; }
-    .tool { padding: 12px 14px; border-radius: 16px; border: 2px solid var(--line); background: #fff; }
-    .tool b.t { display: block; font-size: 18px; }
-    .tool p { margin-top: 4px; font-size: 16px; }
-    .btns { display: flex; flex-wrap: wrap; gap: 8px; }
-    .btn { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 18px; border-radius: 14px; border: 2px solid var(--ink); background: var(--sun); color: var(--ink); font: 700 16px 'Rubik', sans-serif; text-decoration: none; cursor: pointer; }
-    .btn.ghost { background: var(--card); }
-    .btn .en { font-weight: 600; }
-    .win-only, .mac-only { display: none; }
-    body[data-os="win"] .win-only, body[data-os="mac"] .mac-only { display: grid; }
-    body[data-os="win"] span.win-only, body[data-os="mac"] span.mac-only { display: inline; }
-    .path { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; direction: ltr; }
-    .path span { padding: 1px 10px; border-radius: 8px; background: var(--ink); color: var(--paper); font-weight: 600; font-size: 15px; white-space: nowrap; }
-
-    /* prompts and code to copy */
-    .prompt { padding: 14px 16px; border-radius: 16px; background: #fff; border: 2px solid var(--ink); }
-    .prompt .label { font-size: 13px; font-weight: 700; color: var(--burnt); }
-    .prompt p { margin-top: 4px; font-size: 17.5px; line-height: 1.6; }
-    .slot { background: var(--peach); border-radius: 6px; padding: 0 4px; font-weight: 600; }
-    .code { direction: ltr; text-align: left; padding: 12px 14px; border-radius: 14px; background: var(--ink); color: #FFE8CC; font: 14.5px/1.5 Consolas, 'Courier New', monospace; overflow-x: auto; white-space: pre; }
-    .copy { margin-top: 10px; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 0; background: var(--ink); color: var(--paper); font: 600 16px 'Rubik', sans-serif; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
-    .copy svg { width: 18px; height: 18px; }
-    .copy.done { background: var(--ok); }
 
     section.more { margin-top: 30px; }
     section.more > h2 { font-size: 42px; display: flex; align-items: center; gap: 10px; }
     section.more > h2 .ic { font-size: 28px; }
-    .intro { margin-top: 4px; color: var(--ink-2); }
     .plain { list-style: none; margin-top: 12px; display: grid; gap: 10px; }
     .plain li { padding: 12px 14px; border-radius: 16px; background: var(--card); border: 2px solid var(--line); }
     .plain li b { display: block; }
-    .keys { margin-top: 12px; padding: 16px; border-radius: 20px; background: var(--ink); color: var(--paper); }
-    .keys .prompt { margin-top: 12px; color: var(--ink); }
-    .keys ul { margin: 10px 20px 0 0; display: grid; gap: 6px; color: var(--peach); }
-    .keys .copy, .why .copy { background: var(--sun); color: var(--ink); }
-    kbd { font: 600 14px Consolas, monospace; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--ink-2); background: #fff; }
 
     footer { margin-top: 44px; padding-top: 20px; border-top: 2px solid var(--ink); text-align: center; color: var(--ink-2); font-size: 14.5px; }
     footer img { width: 50px; height: auto; display: block; margin: 0 auto 8px; }
@@ -141,18 +116,19 @@
 
     <div class="phone" id="phone">
         <b>📱 פתחתם בטלפון?</b>
-        את כל מה שבדף הזה עושים במחשב הנייד שתביאו לערב. שלחו לעצמכם את הקישור, או פתחו את הקבוצה בוואטסאפ ווב.
+        את ההורדות עושים במחשב הנייד שתביאו לערב. שלחו לעצמכם את הקישור, או פתחו את הקבוצה בוואטסאפ ווב.
         <div><button class="copy" type="button" id="copyLink">להעתיק את הקישור</button></div>
     </div>
 
     <div class="why">
-        <h2>חשוב מאוד: מתקינים הכול בבית</h2>
+        <h2>חשוב מאוד: מורידים ומתקינים בבית</h2>
+        <p class="sub">כדי שבערב עצמו נתחיל לעבוד מהדקה הראשונה.</p>
         <ol>
-            <li><b>קלוד עובד חלק רק עם הכלים שמותקנים אצלכם.</b> כדי לבנות אקסל הוא צריך <span class="en">Python</span>, כדי לערוך סרטון הוא צריך <span class="en">ffmpeg</span>. בלי זה הוא נתקע, או מתחיל להתקין באמצע.</li>
-            <li><b>בפאב יש וויי-פיי אחד לחמישה עשר מחשבים.</b> מה שלא הותקן בבית, לא יותקן שם.</li>
-            <li><b>חלק מההתקנות מבקשות סיסמה של המחשב או אישור בחלון.</b> את זה רק אתם יכולים לעשות.</li>
+            <li><b>בפרתיה אין וויי-פיי.</b> כל אחד מתחבר לנקודה חמה מהטלפון שלו, והורדות גדולות שם לא ייגמרו בזמן.</li>
+            <li><b>קלוד עובד חלק רק עם התוכנות שמותקנות אצלכם.</b> כשהן כבר שם, הוא מתחיל לעבוד מיד.</li>
+            <li><b>חלק מההתקנות מבקשות סיסמה של המחשב או אישור בחלון.</b> את זה עושים בשקט בבית.</li>
         </ol>
-        <div class="when">לוקח בערך חצי שעה עד שעה. כדאי לסיים עד שני בערב, 23.11.</div>
+        <p class="note">רק מתקינים. את העבודה עם קלוד עצמו מתחילים יחד ברביעי.</p>
     </div>
 
     <div class="bar">
@@ -161,152 +137,102 @@
             <button type="button" data-os="mac" aria-pressed="false">Mac</button>
         </div>
         <div class="track"><div class="fill" id="fill"></div></div>
-        <div class="count" id="count">0 מתוך 6</div>
+        <div class="count" id="count">0 מתוך 4</div>
     </div>
 
     <ol class="steps">
-        <!-- 1 -->
         <li class="step" data-step="claude">
-            <div class="step-head"><span class="n">1</span><h3>מתקינים את <span class="en">Claude</span>, עם מנוי</h3></div>
+            <div class="step-head"><span class="n">1</span><h3>מתקינים את <bdi>Claude</bdi>, עם מנוי</h3></div>
             <div class="body">
-                <p>מורידים את <span class="en">Claude</span> למחשב ונכנסים עם החשבון. צריך מנוי בתשלום, <span class="en">Pro</span>: 20 דולר לחודש, ואפשר לבטל.</p>
-                <div class="btns"><a class="btn" href="https://claude.com/download" target="_blank" rel="noopener">⬇ להורדת <span class="en">Claude</span></a>
+                <p>מורידים את <bdi>Claude</bdi> למחשב ונכנסים עם החשבון. צריך מנוי בתשלום, <bdi>Pro</bdi>: 20 דולר לחודש, ואפשר לבטל.</p>
+                <div class="btns"><a class="btn" href="https://claude.com/download" target="_blank" rel="noopener">⬇ להורדת <bdi>Claude</bdi></a>
                     <a class="btn ghost" href="https://claude.com/pricing" target="_blank" rel="noopener">המנויים</a></div>
-                <p class="ok">בצד של החלון יש לשונית <span class="en">Code</span>, והיא נפתחת בלי לבקש לשדרג.</p>
+                <p class="ok">בצד של החלון יש לשונית <bdi>Code</bdi>, והיא נפתחת בלי לבקש לשדרג. בינתיים לא כותבים לו כלום.</p>
                 <label class="check"><input type="checkbox">סיימתי את השלב הזה</label>
             </div>
         </li>
 
-        <!-- 2 -->
         <li class="step" data-step="tools">
-            <div class="step-head"><span class="n">2</span><h3>מתקינים את הכלים שקלוד עובד איתם</h3></div>
+            <div class="step-head"><span class="n">2</span><h3>מתקינים את התוכנות שקלוד עובד איתן</h3></div>
             <div class="body">
                 <div class="tools win-only">
-                    <div class="tool"><b class="t"><span class="en">Git</span></b>
+                    <div class="tool"><b class="t"><bdi>Git</bdi></b>
                         <p class="why-it">דרכו קלוד מריץ פקודות במחשב, ואיתו הוא שומר גרסאות שאפשר לחזור אליהן.</p>
-                        <p>מורידים, ו-<span class="en">Next</span> עד הסוף בלי לשנות כלום.</p>
-                        <div class="btns" style="margin-top: 8px;"><a class="btn" href="https://github.com/git-for-windows/git/releases/download/v2.56.1.windows.1/Git-2.56.1-64-bit.exe">⬇ להורדת <span class="en">Git</span></a></div></div>
-                    <div class="tool"><b class="t"><span class="en">Python</span></b>
-                        <p class="why-it">איתו קלוד בונה אקסל, <span class="en">Word</span> ו-<span class="en">PDF</span>, ועורך תמונות.</p>
-                        <p>במסך הראשון של ההתקנה מסמנים <b>✔ <span class="en">Add python.exe to PATH</span></b>, ורק אז <span class="en">Install Now</span>.</p>
-                        <div class="btns" style="margin-top: 8px;"><a class="btn" href="https://www.python.org/ftp/python/3.14.10/python-3.14.10-amd64.exe">⬇ להורדת <span class="en">Python</span></a></div></div>
-                    <div class="tool"><b class="t"><span class="en">Node.js</span></b>
+                        <p>מורידים, ו-<bdi>Next</bdi> עד הסוף בלי לשנות כלום.</p>
+                        <div class="btns"><a class="btn" href="https://github.com/git-for-windows/git/releases/download/v2.56.1.windows.1/Git-2.56.1-64-bit.exe">⬇ להורדת <bdi>Git</bdi></a></div></div>
+                    <div class="tool"><b class="t"><bdi>Python</bdi></b>
+                        <p class="why-it">איתו קלוד בונה אקסל, <bdi>Word</bdi> ו-<bdi>PDF</bdi>, ועורך תמונות.</p>
+                        <p>במסך הראשון של ההתקנה מסמנים <b>✔ <bdi>Add python.exe to PATH</bdi></b>, ורק אז <bdi>Install Now</bdi>.</p>
+                        <div class="btns"><a class="btn" href="https://www.python.org/ftp/python/3.14.10/python-3.14.10-amd64.exe">⬇ להורדת <bdi>Python</bdi></a></div></div>
+                    <div class="tool"><b class="t"><bdi>Node.js</bdi></b>
                         <p class="why-it">עוד כלי שקלוד משתמש בו כשהוא בונה אתרים, מסמכים ומצגות.</p>
-                        <p>מורידים, ו-<span class="en">Next</span> עד הסוף בלי לשנות כלום.</p>
-                        <div class="btns" style="margin-top: 8px;"><a class="btn" href="https://nodejs.org/dist/v26.13.1/node-v26.13.1-x64.msi">⬇ להורדת <span class="en">Node.js</span></a></div></div>
+                        <p>מורידים, ו-<bdi>Next</bdi> עד הסוף בלי לשנות כלום.</p>
+                        <div class="btns"><a class="btn" href="https://nodejs.org/dist/v26.13.1/node-v26.13.1-x64.msi">⬇ להורדת <bdi>Node.js</bdi></a></div></div>
+                    <div class="tool"><b class="t"><bdi>ffmpeg</bdi></b>
+                        <p class="why-it">איתו קלוד עורך וידאו וקול.</p>
+                        <p>לוחצים על התחל, כותבים <bdi>PowerShell</bdi> ופותחים. מדביקים את השורה הזאת ולוחצים <bdi>Enter</bdi>:</p>
+                        <div class="code" id="ffmpegCmd">winget install -e --id Gyan.FFmpeg --accept-source-agreements --accept-package-agreements</div>
+                        <div><button class="copy" type="button" data-copy="ffmpegCmd">להעתיק את השורה</button></div></div>
                 </div>
                 <div class="tools mac-only">
-                    <div class="tool"><b class="t"><span class="en">Homebrew</span></b>
-                        <p class="why-it">המחסן של הכלים במק. ממנו קלוד מתקין את כל השאר (<span class="en">Git</span>, <span class="en">Python</span>, <span class="en">Node</span>, <span class="en">ffmpeg</span>), בלי לבקש סיסמה כל פעם.</p>
+                    <div class="tool"><b class="t">1. <bdi>Homebrew</bdi></b>
+                        <p class="why-it">המחסן של התוכנות במק. ממנו מתקינים את כל השאר.</p>
                         <p>פותחים את האפליקציה <bdi>Terminal</bdi> (מחפשים אותה ב-<bdi>Spotlight</bdi>), מדביקים בה את השורה הזאת ולוחצים <bdi>Enter</bdi>:</p>
                         <div class="code" id="brewCmd">/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</div>
                         <div><button class="copy" type="button" data-copy="brewCmd">להעתיק את השורה</button></div>
-                        <p style="margin-top: 6px;">הוא מבקש את הסיסמה של המק. התווים לא מופיעים כשמקלידים: מקלידים בכל זאת ולוחצים <span class="en">Enter</span>. ההתקנה לוקחת כמה דקות טובות.</p>
-                        <p><b>בסוף כתוב <span class="en">Next steps</span>, עם כמה שורות.</b> מעתיקים אותן כמו שהן לאותו <span class="en">Terminal</span> ומריצים.</p></div>
+                        <p style="margin-top: 6px;">הוא מבקש את הסיסמה של המק. התווים לא מופיעים כשמקלידים: מקלידים בכל זאת ולוחצים <bdi>Enter</bdi>. ההתקנה לוקחת כמה דקות טובות.</p>
+                        <p><b>בסוף כתוב <bdi>Next steps</bdi>, עם כמה שורות.</b> מעתיקים אותן כמו שהן לאותו <bdi>Terminal</bdi> ומריצים.</p></div>
+                    <div class="tool"><b class="t">2. כל השאר, בשורה אחת</b>
+                        <p class="why-it"><bdi>Git</bdi>, <bdi>Python</bdi>, <bdi>Node</bdi> ו-<bdi>ffmpeg</bdi>: התוכנות שקלוד עובד איתן כשהוא בונה אקסל ומסמכים, אתרים, ועורך וידאו.</p>
+                        <p>באותו <bdi>Terminal</bdi>, מדביקים ולוחצים <bdi>Enter</bdi>:</p>
+                        <div class="code" id="brewAll">brew install git python@3.13 node ffmpeg</div>
+                        <div><button class="copy" type="button" data-copy="brewAll">להעתיק את השורה</button></div></div>
                 </div>
-                <p class="note"><b>חשוב:</b> אחרי ההתקנות סוגרים את <span class="en">Claude</span> לגמרי ופותחים מחדש, כדי שיראה את מה שהתקנתם.</p>
-                <p class="ok">בשלב 5 קלוד בודק בעצמו שהכול מותקן.</p>
+                <p class="callout"><b>בסוף:</b> מפעילים את המחשב מחדש.</p>
+                <p class="ok">כל התקנה נגמרה בהודעה שהיא הצליחה, בלי שגיאה באדום.</p>
                 <label class="check"><input type="checkbox">סיימתי את השלב הזה</label>
             </div>
         </li>
 
-        <!-- 3 -->
-        <li class="step" data-step="folder">
-            <div class="step-head"><span class="n">3</span><h3>מורידים את התיקייה המבולגנת</h3></div>
+        <li class="step" data-step="chrome">
+            <div class="step-head"><span class="n">3</span><h3><bdi>Google Chrome</bdi></h3></div>
             <div class="body">
-                <p>חשבונות וקבלות של משפחה בדויה. עליה עובדים בתחילת הערב, כולם יחד.</p>
-                <div class="btns"><a class="btn" href="claude-evening/messy-folder.zip" download>⬇ להוריד את התיקייה המבולגנת</a></div>
-                <p><span class="win-only" style="display: none;">לחיצה ימנית על הקובץ, <span class="en">Extract All</span>, ושמים את התיקייה על שולחן העבודה.</span><span class="mac-only" style="display: none;">לחיצה כפולה על הקובץ, וגוררים את התיקייה לשולחן העבודה.</span></p>
-                <p class="ok">על שולחן העבודה יש תיקייה בשם <span class="en">messy-folder</span>, ובה 14 קבצים.</p>
+                <p>אם אין לכם, מורידים. בערב נחבר אליו את קלוד, כדי שיוכל לעבוד גם בדפדפן.</p>
+                <div class="btns"><a class="btn" href="https://www.google.com/chrome/" target="_blank" rel="noopener">⬇ להורדת <bdi>Chrome</bdi></a></div>
                 <label class="check"><input type="checkbox">סיימתי את השלב הזה</label>
             </div>
         </li>
 
-        <!-- 4 -->
-        <li class="step" data-step="open">
-            <div class="step-head"><span class="n">4</span><h3>פותחים אותה בקלוד</h3></div>
+        <li class="step" data-step="hotspot">
+            <div class="step-head"><span class="n">4</span><h3>בודקים נקודה חמה</h3></div>
             <div class="body">
-                <p>ב-<span class="en">Claude</span>, לשונית <span class="en">Code</span>. מתחת לשורת הכתיבה:</p>
-                <p><span class="path"><span>Local</span>→<span>Open folder…</span>→<span>messy-folder</span></span></p>
-                <p class="ok">שם התיקייה מופיע מתחת לשורת הכתיבה.</p>
-                <label class="check"><input type="checkbox">סיימתי את השלב הזה</label>
-            </div>
-        </li>
-
-        <!-- 5 -->
-        <li class="step" data-step="prep">
-            <div class="step-head"><span class="n">5</span><h3>שולחים לו את משפט ההכנה</h3></div>
-            <div class="body">
-                <p>הוא בודק מה חסר ומשלים. בכל שלב קוראים מה הוא רוצה לעשות, ומאשרים. אם קופץ חלון שמבקש אישור או סיסמה, זה אתם.</p>
-                <div class="prompt"><div class="label">משפט ההכנה</div>
-                    <p class="pr">אני מתכונן לערב קלוד ובירה. תבדוק מה מותקן במחשב שלי ותשלים את מה שחסר, כדי שתוכל לעבוד חלק עם אקסל, Word, מצגות, PDF, תמונות וסרטונים (למשל Python והספריות שלו, Node ו-ffmpeg). לפני כל התקנה, תסביר לי במשפט אחד מה זה ולמה צריך. אם משהו צריך את הסיסמה של המחשב או אישור בחלון, תעצור ותגיד לי בדיוק מה לעשות. בסוף תבדוק שהכול עובד, ותכתוב לי בשלוש שורות מה מותקן ומה עוד חסר.</p></div>
-                <p class="ok">הוא כותב בשלוש שורות מה מותקן, ושלא חסר כלום.</p>
-                <label class="check"><input type="checkbox">סיימתי את השלב הזה</label>
-            </div>
-        </li>
-
-        <!-- 6 -->
-        <li class="step" data-step="test">
-            <div class="step-head"><span class="n">6</span><h3>בודקים, ושולחים צילום מסך לקבוצה</h3></div>
-            <div class="body">
-                <div class="prompt"><div class="label">כותבים לו</div><p class="pr">מה יש בתיקייה הזאת? תסביר לי בשלוש שורות.</p></div>
-                <p class="ok">הוא מספר מה יש בתיקייה. צילום מסך של התשובה לקבוצה, ואתם מוכנים ✅</p>
+                <p>בפרתיה עובדים מהטלפון. מפעילים בטלפון נקודה חמה (<bdi>Hotspot</bdi>), ומחברים אליה את המחשב.</p>
+                <p class="ok">המחשב גולש דרך הטלפון.</p>
                 <label class="check"><input type="checkbox">סיימתי את השלב הזה</label>
             </div>
         </li>
     </ol>
 
-    <section class="more" id="more">
-        <h2><span class="ic">🌐</span>מומלץ: קלוד בדפדפן</h2>
-        <p class="intro">התוסף <span class="en">Claude in Chrome</span> נותן לקלוד לעבוד בדפדפן: לחפש, להשוות, למלא טפסים. נראה אותו בערב.</p>
-        <ul class="plain">
-            <li><b>צריך <span class="en">Google Chrome</span></b>התוסף עובד רק בכרום, לא באדג' ולא בדפדפנים אחרים. <a href="https://www.google.com/chrome/" target="_blank" rel="noopener">להורדת כרום</a></li>
-            <li><b>מתקינים את התוסף</b>ונכנסים בו עם אותו חשבון של <span class="en">Claude</span>. <a href="https://claude.com/claude-in-chrome" target="_blank" rel="noopener">לדף התוסף</a></li>
-        </ul>
-    </section>
-
-    <section class="more">
-        <h2><span class="ic">🔌</span>רשות: מחברים עוד ידיים</h2>
-        <p class="intro">מי שרוצה לנסות בערב על המייל, היומן או הדרייב שלו, או לייצר תמונות וסרטונים.</p>
-        <ul class="plain">
-            <li><b>מייל, יומן ודרייב</b>ב-<span class="en">Claude</span>: <span class="en">Customize</span>, ואז <span class="en">Connectors</span>, ומחברים את <span class="en">Gmail</span>, <span class="en">Google Calendar</span> או <span class="en">Google Drive</span>. מחברים רק מה שתרצו לנסות.</li>
-            <li><b>תמונות, סרטונים וקול: <span class="en">fal</span></b>פותחים חשבון ב-<a href="https://fal.ai/" target="_blank" rel="noopener"><span class="en">fal.ai</span></a> וטוענים קצת קרדיט: משלמים לפי שימוש, תמונה עולה בדרך כלל סנטים, סרטון יותר. ואז ב-<span class="en">Claude</span>: <span class="en">Customize</span>, <span class="en">Connectors</span>, <span class="en">Add custom connector</span>. שם: <code>fal</code>, כתובת: <code>https://mcp.fal.ai/mcp-relay</code>. נכנסים לחשבון <span class="en">fal</span> בדפדפן, בלי להעתיק שום מפתח.</li>
-        </ul>
-    </section>
-
-    <section class="more">
-        <h2><span class="ic">🔑</span>שירות נתן לכם מפתח?</h2>
-        <div class="keys">
-            <b>לא מדביקים אותו בצ'אט.</b> מה שמודבק בצ'אט נשמר בהיסטוריה, ומשם הוא יכול להגיע לקובץ, לגיט או לאתר. במקום זה, אומרים לקלוד:
-            <div class="prompt"><div class="label">כותבים לו</div><p class="pr">יש לי מפתח של [שירות]. אל תבקש ממני להדביק אותו כאן. תפתח לי חלון עם שדה מוסתר, אני אדביק בו את המפתח, ותשמור אותו במחשב מחוץ לתיקיית הפרויקט. תשתמש בו רק לפי השם שלו, ואף פעם אל תדפיס אותו.</p></div>
-            <ul>
-                <li>אחרי ששמר, סוגרים את <span class="en">Claude</span> ופותחים מחדש.</li>
-                <li>יש לשירות חיבור בלי מפתח, כמו <span class="en">fal</span>? עדיף.</li>
-            </ul>
-        </div>
-    </section>
-
-    <section class="more">
-        <h2><span class="ic">🧯</span>נתקעתם?</h2>
-        <ul class="plain">
-            <li><b>הלשונית <span class="en">Code</span> מבקשת לשדרג</b>המנוי עוד לא פעיל.</li>
-            <li><b>התקנה נתקעה או הופיעה שגיאה</b>מעתיקים לקלוד את השגיאה, או גוררים אליו צילום מסך, ואומרים "זה מה שקרה".</li>
-            <li><b>הוא לא מוצא משהו שהתקנתם עכשיו</b>סוגרים את <span class="en">Claude</span> לגמרי ופותחים מחדש.</li>
-            <li><b>ועדיין תקוע</b>כותבים בקבוצה עם צילום מסך, או מגיעים ב-19:30 ומסדרים את זה לפני שמתחילים.</li>
-        </ul>
-    </section>
-
     <section class="more">
         <h2><span class="ic">🎒</span>מה מביאים ברביעי</h2>
         <ul class="plain">
             <li><b>💻 מחשב נייד ומטען</b>בלי מטען המחשב לא יחזיק את הערב.</li>
+            <li><b>📱 טלפון עם חבילת גלישה</b>אין וויי-פיי בפרתיה: עובדים מנקודה חמה. כדאי גם מטען לטלפון.</li>
+            <li><b>💳 כרטיס אשראי</b>מומלץ, בשביל עוד כל מיני דברים.</li>
             <li><b>🍺 צמא</b>הבר פתוח.</li>
+        </ul>
+    </section>
+
+    <section class="more">
+        <h2><span class="ic">🧯</span>נתקעתם בהתקנה?</h2>
+        <ul class="plain">
+            <li><b>כותבים בקבוצה</b>עם צילום מסך של מה שרואים, ונעזור.</li>
         </ul>
     </section>
 
     <footer>
         <img src="team-v2/emblem.webp" alt="" width="900" height="783">
-        קלוד ובירה בפרתיה, הפאב הקהילתי בהתנדבות של נופי פרת. כל המסמכים בתיקייה המבולגנת בדויים.
+        קלוד ובירה בפרתיה, הפאב הקהילתי בהתנדבות של נופי פרת.
     </footer>
 </div>
 <div class="toast" role="status" aria-live="polite"></div>
@@ -319,7 +245,6 @@
     function setOS(os) {
         document.body.dataset.os = os;
         document.querySelectorAll('.os button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.os === os)));
-        document.querySelectorAll('span.win-only, span.mac-only').forEach((s) => { s.style.display = s.classList.contains(os === 'mac' ? 'mac-only' : 'win-only') ? 'inline' : 'none'; });
         store.set('cb-prep-os', os);
     }
     document.querySelectorAll('.os button').forEach((b) => b.addEventListener('click', () => setOS(b.dataset.os)));
@@ -331,7 +256,7 @@
 
     // checklist, remembered in this browser only
     const steps = [...document.querySelectorAll('.step')];
-    const saved = (() => { try { return JSON.parse(store.get('cb-prep-done') || '{}'); } catch (e) { return {}; } })();
+    const saved = (() => { try { return JSON.parse(store.get('cb-prep-done2') || '{}'); } catch (e) { return {}; } })();
     function progress() {
         const done = steps.filter((s) => s.classList.contains('done')).length;
         document.getElementById('fill').style.width = (done / steps.length * 100) + '%';
@@ -343,26 +268,17 @@
         s.classList.toggle('done', box.checked);
         box.addEventListener('change', () => {
             s.classList.toggle('done', box.checked);
-            saved[s.dataset.step] = box.checked; store.set('cb-prep-done', JSON.stringify(saved));
+            saved[s.dataset.step] = box.checked; store.set('cb-prep-done2', JSON.stringify(saved));
             progress();
         });
     });
     progress();
 
-    // copy buttons: prompts get one each, [slots] are highlighted
+    // copy buttons
     const COPY_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>';
-    const esc = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    document.querySelectorAll('.pr').forEach((p) => {
-        const text = p.textContent.trim();
-        p.innerHTML = esc(text).replace(/\[[^\]]*\]/g, (m) => `<span class="slot">${m}</span>`);
-        const b = document.createElement('button');
-        b.className = 'copy'; b.type = 'button'; b.innerHTML = COPY_ICON + '<span>העתקה</span>';
-        b.addEventListener('click', () => copy(text, b, 'הועתק. עכשיו מדביקים בקלוד'));
-        p.parentElement.after(b);
-    });
     document.querySelectorAll('[data-copy]').forEach((b) => {
         b.innerHTML = COPY_ICON + '<span>' + b.textContent + '</span>';
-        b.addEventListener('click', () => copy(document.getElementById(b.dataset.copy).textContent.trim(), b, 'הועתק. עכשיו מדביקים ב-Terminal'));
+        b.addEventListener('click', () => copy(document.getElementById(b.dataset.copy).textContent.trim(), b, 'הועתק. עכשיו מדביקים ולוחצים Enter'));
     });
     const linkBtn = document.getElementById('copyLink');
     linkBtn.innerHTML = COPY_ICON + '<span>' + linkBtn.textContent + '</span>';
